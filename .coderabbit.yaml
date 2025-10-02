@@ -24,8 +24,7 @@ reviews:
   auto_review:
     enabled: true
     drafts: true
-  finishing_touches:
-    abort_on_close: true
-    disable_cache: false
+  abort_on_close: true
+  disable_cache: false
 chat:
   auto_reply: true
