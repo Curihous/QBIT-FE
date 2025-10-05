@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QBIT - 카카오 로그인 테스트</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #E6F4F1;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        .container {
+            text-align: center;
+            max-width: 400px;
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #323232;
+            font-style: italic;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .tagline {
+            color: #7F7F7F;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+        
+        .owl {
+            width: 200px;
+            height: 200px;
+            margin: 20px auto;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="%23FFD700"/><circle cx="40" cy="40" r="8" fill="%23000"/><circle cx="60" cy="40" r="8" fill="%23000"/><path d="M35 60 Q50 70 65 60" stroke="%23000" stroke-width="2" fill="none"/></svg>') center/contain no-repeat;
+        }
+        
+        .kakao-btn {
+            background: #FEE500;
+            border: none;
+            border-radius: 12px;
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .kakao-btn:hover {
+            background: #FFE55C;
+            transform: translateY(-2px);
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #f0f0f0;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QBIT</h1>
+        <p class="tagline">당신의 투자를 더 스마트하게</p>
+        
+        <div class="owl"></div>
+        
+        <button class="kakao-btn" onclick="testKakaoLogin()">
+            카카오로 시작하기
+        </button>
+        
+        <div class="status" id="status">
+            카카오 로그인 버튼을 클릭해보세요!
+        </div>
+    </div>
+
+    <script>
+        function testKakaoLogin() {
+            const status = document.getElementById('status');
+            status.innerHTML = '카카오 로그인 페이지로 이동 중...';
+            
+            // 백엔드 OAuth2 엔드포인트로 리다이렉트
+            window.location.href = 'https://api.qbit.o-r.kr/oauth2/authorization/kakao';
+        }
+        
+        // URL 파라미터 확인 (OAuth 콜백 처리)
+        window.addEventListener('load', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const accessToken = urlParams.get('accessToken');
+            const userId = urlParams.get('userId');
+            const isNewUser = urlParams.get('isNewUser');
+            
+            if (accessToken && userId) {
+                const status = document.getElementById('status');
+                status.innerHTML = `
+                    <strong>✅ 로그인 성공!</strong><br>
+                    User ID: ${userId}<br>
+                    신규 사용자: ${isNewUser}<br>
+                    Access Token: ${accessToken.substring(0, 20)}...
+                `;
+                status.style.background = '#d4edda';
+                status.style.color = '#155724';
+            }
+        });
+    </script>
+</body>
+</html>
