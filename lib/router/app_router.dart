@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/login_success_screen.dart';
 import '../screens/home/home_screen.dart';
@@ -64,26 +66,59 @@ class _RootScreenState extends State<_RootScreen> {
   }
 
   Future<void> _checkFirstLaunch() async {
-    // 첫 실행 여부 확인
-    final isFirstLaunch = await AppRouter._storage.read(key: AppRouter._isFirstLaunchKey);
-    
-    if (isFirstLaunch == null) {
-      // 최초 실행 - 로그인 화면으로 이동하고 플래그 설정
-      await AppRouter._storage.write(key: AppRouter._isFirstLaunchKey, value: 'false');
+    try {
+      // 웹 환경에서는 shared_preferences만 사용
+      if (kIsWeb) {
+        final prefs = await SharedPreferences.getInstance();
+        final isFirstLaunch = prefs.getString(AppRouter._isFirstLaunchKey);
+        
+        if (isFirstLaunch == null) {
+          // 최초 실행 - 로그인 화면으로 이동하고 플래그 설정
+          await prefs.setString(AppRouter._isFirstLaunchKey, 'false');
+          if (mounted) {
+            context.go('/login');
+          }
+        } else {
+          // 재실행 - 로그인 상태 확인 후 적절한 화면으로 이동
+          final apiService = ApiService();
+          final isLoggedIn = await apiService.isLoggedIn();
+          
+          if (mounted) {
+            if (isLoggedIn) {
+              context.go('/home');
+            } else {
+              context.go('/login');
+            }
+          }
+        }
+      } else {
+        // 모바일/데스크톱 환경에서는 flutter_secure_storage 사용
+        final isFirstLaunch = await AppRouter._storage.read(key: AppRouter._isFirstLaunchKey);
+        
+        if (isFirstLaunch == null) {
+          // 최초 실행 - 로그인 화면으로 이동하고 플래그 설정
+          await AppRouter._storage.write(key: AppRouter._isFirstLaunchKey, value: 'false');
+          if (mounted) {
+            context.go('/login');
+          }
+        } else {
+          // 재실행 - 로그인 상태 확인 후 적절한 화면으로 이동
+          final apiService = ApiService();
+          final isLoggedIn = await apiService.isLoggedIn();
+          
+          if (mounted) {
+            if (isLoggedIn) {
+              context.go('/home');
+            } else {
+              context.go('/login');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // 오류 발생 시 로그인 화면으로 이동
       if (mounted) {
         context.go('/login');
-      }
-    } else {
-      // 재실행 - 로그인 상태 확인 후 적절한 화면으로 이동
-      final apiService = ApiService();
-      final isLoggedIn = await apiService.isLoggedIn();
-      
-      if (mounted) {
-        if (isLoggedIn) {
-          context.go('/home');
-        } else {
-          context.go('/login');
-        }
       }
     }
   }

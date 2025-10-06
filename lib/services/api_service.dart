@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart' hide Options;
 import 'package:dio/src/options.dart' as dio_options;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 
 final logger = Logger();
@@ -24,12 +26,55 @@ class ApiService {
     _setupInterceptors();
   }
 
+  // 웹 환경에서 안전한 토큰 읽기
+  Future<String?> _readToken(String key) async {
+    if (kIsWeb) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        return prefs.getString(key);
+      } catch (e) {
+        logger.e('웹 환경에서 토큰 읽기 실패: $e');
+        return null;
+      }
+    } else {
+      return await _storage.read(key: key);
+    }
+  }
+
+  // 웹 환경에서 안전한 토큰 쓰기
+  Future<void> _writeToken(String key, String value) async {
+    if (kIsWeb) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(key, value);
+      } catch (e) {
+        logger.e('웹 환경에서 토큰 쓰기 실패: $e');
+      }
+    } else {
+      await _storage.write(key: key, value: value);
+    }
+  }
+
+  // 웹 환경에서 안전한 토큰 삭제
+  Future<void> _deleteToken(String key) async {
+    if (kIsWeb) {
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(key);
+      } catch (e) {
+        logger.e('웹 환경에서 토큰 삭제 실패: $e');
+      }
+    } else {
+      await _storage.delete(key: key);
+    }
+  }
+
   void _setupInterceptors() {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           // 요청 시 액세스 토큰 자동 추가
-          final token = await _storage.read(key: _accessTokenKey);
+          final token = await _readToken(_accessTokenKey);
           if (token != null) {
             options.headers['Authorization'] = 'Bearer $token';
           }
@@ -41,7 +86,7 @@ class ApiService {
             final refreshed = await _refreshToken();
             if (refreshed) {
               // 토큰 갱신 성공 시 원래 요청 재시도
-              final token = await _storage.read(key: _accessTokenKey);
+              final token = await _readToken(_accessTokenKey);
               error.requestOptions.headers['Authorization'] = 'Bearer $token';
               final response = await _dio.fetch(error.requestOptions);
               handler.resolve(response);
@@ -74,10 +119,10 @@ class ApiService {
         
         // JWT 토큰 저장
         if (data['accessToken'] != null) {
-          await _storage.write(key: _accessTokenKey, value: data['accessToken']);
+          await _writeToken(_accessTokenKey, data['accessToken']);
         }
         if (data['refreshToken'] != null) {
-          await _storage.write(key: _refreshTokenKey, value: data['refreshToken']);
+          await _writeToken(_refreshTokenKey, data['refreshToken']);
         }
         
         logger.i('백엔드 로그인 성공: ${data['userId']}');
@@ -119,10 +164,10 @@ class ApiService {
         
         // JWT 토큰 저장
         if (data['accessToken'] != null) {
-          await _storage.write(key: _accessTokenKey, value: data['accessToken']);
+          await _writeToken(_accessTokenKey, data['accessToken']);
         }
         if (data['refreshToken'] != null) {
-          await _storage.write(key: _refreshTokenKey, value: data['refreshToken']);
+          await _writeToken(_refreshTokenKey, data['refreshToken']);
         }
         
         logger.i('백엔드 로그인 성공: ${data['userId']}');
@@ -143,7 +188,7 @@ class ApiService {
   /// 토큰 갱신
   Future<bool> _refreshToken() async {
     try {
-      final refreshToken = await _storage.read(key: _refreshTokenKey);
+      final refreshToken = await _readToken(_refreshTokenKey);
       if (refreshToken == null) return false;
 
       final response = await _dio.post(
@@ -155,7 +200,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final data = response.data;
-        await _storage.write(key: _accessTokenKey, value: data['accessToken']);
+        await _writeToken(_accessTokenKey, data['accessToken']);
         logger.i('토큰 갱신 성공');
         return true;
       }
@@ -184,8 +229,8 @@ class ApiService {
       final response = await _dio.post('/auth/logout');
       if (response.statusCode == 200) {
         // 로컬 토큰 삭제
-        await _storage.delete(key: _accessTokenKey);
-        await _storage.delete(key: _refreshTokenKey);
+        await _deleteToken(_accessTokenKey);
+        await _deleteToken(_refreshTokenKey);
         logger.i('로그아웃 성공');
         return true;
       }
@@ -197,7 +242,7 @@ class ApiService {
 
   /// 저장된 액세스 토큰 확인
   Future<String?> getAccessToken() async {
-    return await _storage.read(key: _accessTokenKey);
+    return await _readToken(_accessTokenKey);
   }
 
   /// 로그인 상태 확인
