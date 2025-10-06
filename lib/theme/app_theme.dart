@@ -9,16 +9,15 @@ class AppTheme {
   static const Color textSecondaryColor = Color(0xFF7F7F7F); // 그레이 600
   static const Color kakaoYellow = Color(0xFFFEE500);
   
-  // 폰트 정의
-  static const String primaryFontFamily = 'Pretendard'; // 원하는 폰트로 변경 가능
+  static const String primaryFontFamily = 'Pretendard';
   
-  // 텍스트 스타일 정의
+  // 텍스트 스타일 
   static const TextStyle headingLarge = TextStyle(
     fontSize: 36,
     fontWeight: FontWeight.bold,
     color: textPrimaryColor,
     letterSpacing: 2,
-    fontStyle: FontStyle.italic, // 이탤릭체 추가
+    fontStyle: FontStyle.italic, 
   );
   
   static const TextStyle headingMedium = TextStyle(
@@ -46,12 +45,6 @@ class AppTheme {
   static const TextStyle bodySmall = TextStyle(
     fontSize: 12,
     color: textSecondaryColor,
-  );
-  
-  static const TextStyle buttonText = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-    color: Colors.black, // 카카오 버튼용
   );
   
   // 카드 스타일
@@ -83,7 +76,7 @@ class AppTheme {
     centerTitle: true,
   );
   
-  // 전체 테마
+  // 전체
   static ThemeData get lightTheme => ThemeData(
     colorScheme: ColorScheme.fromSeed(
       seedColor: primaryColor,

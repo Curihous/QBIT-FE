@@ -37,7 +37,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>localhost</string>
+				<string>qbit</string>
 			</array>
 		</dict>
 	</array>

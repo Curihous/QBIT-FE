@@ -54,13 +54,13 @@ class ApiService {
     );
   }
 
-  /// 카카오 로그인 후 백엔드로 토큰 전송
-  Future<Map<String, dynamic>?> sendKakaoTokenToBackend(String kakaoAccessToken) async {
+  /// 카카오 인가 코드를 백엔드로 전송
+  Future<Map<String, dynamic>?> sendKakaoCodeToBackend(String code) async {
     try {
       final response = await _dio.post(
-        '/auth/kakao',
+        '/login/oauth2/code/kakao',
         data: {
-          'accessToken': kakaoAccessToken,
+          'code': code,
         },
         options: dio_options.Options(
           headers: {
@@ -80,16 +80,61 @@ class ApiService {
           await _storage.write(key: _refreshTokenKey, value: data['refreshToken']);
         }
         
-        logger.i('✅ 백엔드 로그인 성공: ${data['userId']}');
+        logger.i('백엔드 로그인 성공: ${data['userId']}');
         return data;
       }
     } catch (error) {
-      logger.e('❌ 백엔드 로그인 실패: $error');
+      logger.e('백엔드 로그인 실패: $error');
       if (error is DioException) {
-        logger.e('❌ 응답 상태: ${error.response?.statusCode}');
-        logger.e('❌ 응답 데이터: ${error.response?.data}');
-        logger.e('❌ 요청 URL: ${error.requestOptions.uri}');
-        logger.e('❌ 요청 데이터: ${error.requestOptions.data}');
+        logger.e('응답 상태: ${error.response?.statusCode}');
+        logger.e('응답 데이터: ${error.response?.data}');
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+        logger.e('요청 데이터: ${error.requestOptions.data}');
+      }
+    }
+    return null;
+  }
+
+  /// 카카오 사용자 정보를 백엔드로 전송 (REST API 방식)
+  Future<Map<String, dynamic>?> sendKakaoUserInfoToBackend(
+    String kakaoAccessToken, 
+    Map<String, dynamic> kakaoUserInfo
+  ) async {
+    try {
+      final response = await _dio.post(
+        '/auth/kakao',
+        data: {
+          'kakaoAccessToken': kakaoAccessToken,
+          'kakaoUserInfo': kakaoUserInfo,
+        },
+        options: dio_options.Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        // JWT 토큰 저장
+        if (data['accessToken'] != null) {
+          await _storage.write(key: _accessTokenKey, value: data['accessToken']);
+        }
+        if (data['refreshToken'] != null) {
+          await _storage.write(key: _refreshTokenKey, value: data['refreshToken']);
+        }
+        
+        logger.i('백엔드 로그인 성공: ${data['userId']}');
+        return data;
+      }
+    } catch (error) {
+      logger.e('백엔드 로그인 실패: $error');
+      if (error is DioException) {
+        logger.e('응답 상태: ${error.response?.statusCode}');
+        logger.e('응답 데이터: ${error.response?.data}');
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+        logger.e('요청 데이터: ${error.requestOptions.data}');
       }
     }
     return null;
@@ -102,7 +147,7 @@ class ApiService {
       if (refreshToken == null) return false;
 
       final response = await _dio.post(
-        '/auth/refresh',
+        '/auth/refresh-tokens', // 백엔드 API에 맞춰 수정
         data: {
           'refreshToken': refreshToken,
         },
@@ -111,11 +156,11 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = response.data;
         await _storage.write(key: _accessTokenKey, value: data['accessToken']);
-        logger.i('✅ 토큰 갱신 성공');
+        logger.i('토큰 갱신 성공');
         return true;
       }
     } catch (error) {
-      logger.e('❌ 토큰 갱신 실패: $error');
+      logger.e('토큰 갱신 실패: $error');
     }
     return false;
   }
@@ -128,7 +173,7 @@ class ApiService {
         return response.data;
       }
     } catch (error) {
-      logger.e('❌ 사용자 정보 조회 실패: $error');
+      logger.e('사용자 정보 조회 실패: $error');
     }
     return null;
   }
@@ -141,11 +186,11 @@ class ApiService {
         // 로컬 토큰 삭제
         await _storage.delete(key: _accessTokenKey);
         await _storage.delete(key: _refreshTokenKey);
-        logger.i('✅ 로그아웃 성공');
+        logger.i('로그아웃 성공');
         return true;
       }
     } catch (error) {
-      logger.e('❌ 로그아웃 실패: $error');
+      logger.e('로그아웃 실패: $error');
     }
     return false;
   }

@@ -136,7 +136,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                     child: const Center(
                                       child: Text(
                                         '카카오로 로그인',
-                                        style: AppTheme.buttonText,
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black,
+                                        ),
                                       ),
                                     ),
                                   );
@@ -148,8 +152,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               
+              // 디버그 버튼 (개발용)
+              TextButton(
+                onPressed: () {
+                  context.go('/debug');
+                },
+                child: const Text(
+                  '디버그 화면',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+              
               // 하단 여백
-              const SizedBox(height: 80),
+              const SizedBox(height: 40),
             ],
           ),
         ),

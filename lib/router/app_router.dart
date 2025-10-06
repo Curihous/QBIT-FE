@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../screens/auth/login_screen.dart';
+import '../screens/auth/login_success_screen.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/debug/debug_screen.dart';
+import '../screens/investment/investment_screen.dart';
 import '../services/api_service.dart';
 
 class AppRouter {
@@ -10,12 +13,12 @@ class AppRouter {
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
   static final GoRouter router = GoRouter(
-    initialLocation: '/login', // 바로 로그인 화면으로
+    initialLocation: '/',
     routes: [
       GoRoute(
         path: '/',
         name: 'root',
-        builder: (context, state) => const LoginScreen(), // 간단하게 로그인 화면으로
+        builder: (context, state) => const _RootScreen(),
       ),
       GoRoute(
         path: '/login',
@@ -23,9 +26,24 @@ class AppRouter {
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
+        path: '/oauth',
+        name: 'oauth',
+        builder: (context, state) => const LoginSuccessScreen(), // 성공 화면으로 변경
+      ),
+      GoRoute(
         path: '/home',
         name: 'home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/debug',
+        name: 'debug',
+        builder: (context, state) => const DebugScreen(),
+      ),
+      GoRoute(
+        path: '/investment',
+        name: 'investment',
+        builder: (context, state) => const InvestmentScreen(),
       ),
     ],
   );
