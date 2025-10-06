@@ -7,9 +7,7 @@
 ## 빌드 명령어
 
 ```bash
-# 개발 서버 실행 (5000포트)
+# 개발 서버 실행 (웹, 5000포트)
+cd apps\web
 flutter run -d web-server --web-port 5000
-
-# 프로덕션 빌드
-flutter build web
 ```

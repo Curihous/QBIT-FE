@@ -9,8 +9,13 @@ dependencies:
   flutter:
     sdk: flutter
   go_router: ^16.2.4
+  app_links: ^6.3.2
+  flutter_secure_storage: ^9.2.2
+  shared_preferences: ^2.3.2
   qbit_core:
     path: ../core
+  qbit_services:
+    path: ../services
 
 dev_dependencies:
   flutter_test:
