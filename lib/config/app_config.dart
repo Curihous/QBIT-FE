@@ -1,19 +1,25 @@
+import 'env_config.dart';
+
 class AppConfig {
   // 카카오 앱 키 
-  static const String kakaoNativeAppKey = '4c24647305b6aeb66cb91d758c64399d';
+  static String get kakaoNativeAppKey => EnvConfig.kakaoNativeAppKey;
   
   // 카카오 REST API 키 (REST API 방식용)
-  static const String kakaoRestApiKey = '4c24647305b6aeb66cb91d758c64399d';
+  static String get kakaoRestApiKey => EnvConfig.kakaoRestApiKey;
   
   // 백엔드 API 설정
-  static const String baseUrl = 'https://api.qbit.o-r.kr';
-  static const String backendUrl = 'https://api.qbit.o-r.kr';
+  static String get baseUrl => EnvConfig.baseUrl;
+  static String get backendUrl => EnvConfig.backendUrl;
   
   // 카카오 OAuth 설정
-  static const String kakaoRedirectUri = 'https://api.qbit.o-r.kr/login/oauth2/code/kakao';
+  static String get kakaoRedirectUri => EnvConfig.kakaoRedirectUri;
   
   // 개발용 로컬호스트 설정
-  static const String localhostPort = '5000';
-  static const String localhostUrl = 'http://localhost:$localhostPort';
+  static String get localhostPort => EnvConfig.localhostPort;
+  static String get localhostUrl => EnvConfig.localhostUrl;
+  
+  // 앱 설정
+  static String get appName => EnvConfig.appName;
+  static String get appDescription => EnvConfig.appDescription;
 }
 

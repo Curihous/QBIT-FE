@@ -23,9 +23,12 @@ class KakaoAuthService {
       logger.i('카카오 로그인 시작: $authUrl');
 
       if (await canLaunchUrl(Uri.parse(authUrl))) {
-        // 외부 브라우저로 실행 (카카오톡 앱 연동 가능)
-        await launchUrl(Uri.parse(authUrl), mode: LaunchMode.externalApplication);
-        logger.i('카카오 로그인 페이지로 리다이렉트 완료 (외부 브라우저)');
+        // 웹 환경에서는 platformDefault 사용, 모바일에서는 externalApplication 사용
+        await launchUrl(
+          Uri.parse(authUrl), 
+          mode: LaunchMode.platformDefault, // externalApplication 대신 platformDefault 사용
+        );
+        logger.i('카카오 로그인 페이지로 리다이렉트 완료');
         return true;
       } else {
         logger.e('$authUrl 를 열 수 없습니다.');

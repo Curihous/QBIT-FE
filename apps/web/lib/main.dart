@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:app_links/app_links.dart';
-import 'config/app_config.dart';
-import 'config/env_config.dart';
+import 'package:qbit_core/config/app_config.dart';
+import 'package:qbit_core/config/env_config.dart';
+import 'package:qbit_shared/themes/app_theme.dart';
+import 'package:qbit_services/api/url_handler_service.dart';
 import 'router/app_router.dart';
-import 'theme/app_theme.dart';
-import 'services/url_handler_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,17 +34,17 @@ void main() async {
     return true;
   };
   
-  runApp(const MyApp());
+  runApp(const QbitWebApp());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class QbitWebApp extends StatefulWidget {
+  const QbitWebApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<QbitWebApp> createState() => _QbitWebAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _QbitWebAppState extends State<QbitWebApp> {
   final _appLinks = AppLinks();
 
   @override
@@ -54,7 +54,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _initDeepLinks() {
-    // 앱이 이미 실행 중일 때 URL 처리
+    // 웹에서는 URL 변경 감지
     _appLinks.uriLinkStream.listen(
       (Uri uri) {
         UrlHandlerService.handleIncomingUrl(uri.toString());
@@ -64,7 +64,7 @@ class _MyAppState extends State<MyApp> {
       },
     );
 
-    // 앱이 종료된 상태에서 URL로 실행될 때 처리
+    // 초기 URL 처리
     _appLinks.getInitialLink().then((Uri? uri) {
       if (uri != null) {
         UrlHandlerService.handleIncomingUrl(uri.toString());

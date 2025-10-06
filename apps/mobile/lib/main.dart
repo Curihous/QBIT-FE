@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:app_links/app_links.dart';
-import 'config/app_config.dart';
-import 'config/env_config.dart';
+import 'package:qbit_core/config/app_config.dart';
+import 'package:qbit_core/config/env_config.dart';
+import 'package:qbit_shared/themes/app_theme.dart';
+import 'package:qbit_services/api/url_handler_service.dart';
 import 'router/app_router.dart';
-import 'theme/app_theme.dart';
-import 'services/url_handler_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
