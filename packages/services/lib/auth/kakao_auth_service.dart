@@ -3,57 +3,49 @@ import 'package:logger/logger.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:qbit_core/config/app_config.dart';
+import 'package:flutter/material.dart';
 
 final logger = Logger();
 
 class KakaoAuthService {
   static final Dio _dio = Dio();
 
-  /// 카카오 로그인 실행 (REST API 방식)
+  /// 카카오 로그인 실행
   static Future<bool> login() async {
     try {
-      // 플랫폼에 따라 다른 키 사용
-      String clientId;
-      if (kIsWeb) {
-        // 웹에서는 REST API 키 사용
-        clientId = AppConfig.kakaoRestApiKey;
-      } else {
-        // 모바일에서는 네이티브 앱 키 사용
-        clientId = AppConfig.kakaoNativeAppKey;
-      }
-      
-      // 카카오톡 로그인을 위한 추가 파라미터
-      final authUrl = 'https://kauth.kakao.com/oauth/authorize?'
-          'client_id=$clientId&'
-          'redirect_uri=${Uri.encodeComponent(AppConfig.kakaoRedirectUri)}&'
-          'response_type=code&'
-          'scope=profile_nickname,account_email&'
-          'prompt=select_account&'
-          'state=error_check'; // 에러 체크용 state 파라미터 추가
+      // 백엔드 OAuth2 엔드포인트로 전체 페이지 이동
+      final authUrl = '${AppConfig.baseUrl}/oauth2/authorization/kakao';
       
       logger.i('카카오 로그인 시작: $authUrl');
 
-      if (await canLaunchUrl(Uri.parse(authUrl))) {
-        // 웹 환경과 모바일 환경에 따라 다른 모드 사용
-        LaunchMode launchMode;
-        if (kIsWeb) {
-          // 웹에서는 새 탭에서 열기
-          launchMode = LaunchMode.externalApplication;
-        } else {
-          // 모바일에서는 기본 모드
-          launchMode = LaunchMode.platformDefault;
+      if (kIsWeb) {
+        // 웹에서는 window.location.href 방식 사용
+        // TODO: 추후 변경 필요(문제없다면 모바일이랑 통일해도 될듯)
+        try {
+          // Flutter 웹에서 JavaScript 실행
+          await launchUrl(
+            Uri.parse(authUrl), 
+            mode: LaunchMode.platformDefault,
+          );
+        } catch (e) {
+          logger.e('웹 리다이렉트 실패: $e');
+          return false;
         }
-        
-        await launchUrl(
-          Uri.parse(authUrl), 
-          mode: launchMode,
-        );
-        logger.i('카카오 로그인 페이지로 리다이렉트 완료');
-        return true;
       } else {
-        logger.e('$authUrl 를 열 수 없습니다.');
-        return false;
+        // 모바일에서는 기본 모드
+        if (await canLaunchUrl(Uri.parse(authUrl))) {
+          await launchUrl(
+            Uri.parse(authUrl), 
+            mode: LaunchMode.platformDefault,
+          );
+        } else {
+          logger.e('$authUrl 를 열 수 없습니다.');
+          return false;
+        }
       }
+      
+      logger.i('백엔드 OAuth2 엔드포인트로 리다이렉트 완료');
+      return true;
     } catch (e, stack) {
       logger.e("로그인 중 예외 발생: $e\n$stack");
       return false;
