@@ -37,8 +37,32 @@ migrate_working_dir/
 /build/
 /coverage/
 
-# Web related
-/web/build/
+# Flutter build artifacts
+**/build/
+**/ios/build/
+**/android/build/
+**/web/build/
+**/windows/build/
+**/linux/build/
+**/macos/build/
+
+# Flutter cache files
+**/*.cache.dill.track.dill
+**/*.cache.dill
+**/flutter_assets/
+**/AssetManifest.bin
+**/AssetManifest.bin.json
+**/AssetManifest.json
+**/FontManifest.json
+**/NOTICES
+**/packages/
+**/shaders/
+
+# Flutter generated files
+**/Generated.xcconfig
+**/GeneratedPluginRegistrant.*
+**/generated_plugin_registrant.*
+**/flutter_export_environment.sh
 
 # Symbolication related
 app.*.symbols
@@ -55,25 +79,16 @@ app.*.map.json
 **/ios/Flutter/App.framework
 **/ios/Flutter/Flutter.framework
 **/ios/Flutter/Flutter.podspec
-**/ios/Flutter/Generated.xcconfig
 **/ios/Flutter/ephemeral/
 **/ios/Flutter/app.flx
 **/ios/Flutter/app.zip
-**/ios/Flutter/flutter_assets/
 **/ios/ServiceDefinitions.json
-**/ios/Runner/GeneratedPluginRegistrant.*
 
-# macOS related
+# Platform specific generated files
 **/macos/Flutter/GeneratedPluginRegistrant.swift
-
-# Windows related
-**/windows/flutter/generated_plugin_registrant.cc
-**/windows/flutter/generated_plugin_registrant.h
+**/windows/flutter/generated_plugin_registrant.*
 **/windows/flutter/generated_plugins.cmake
-
-# Linux related
-**/linux/flutter/generated_plugin_registrant.cc
-**/linux/flutter/generated_plugin_registrant.h
+**/linux/flutter/generated_plugin_registrant.*
 **/linux/flutter/generated_plugins.cmake
 
 # Environment variables
