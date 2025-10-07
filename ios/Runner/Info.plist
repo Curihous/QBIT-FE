@@ -29,7 +29,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<!-- TODO: iOS에서도 환경변수로 관리하도록 개선 필요 -->
+				<!-- 카카오 네이티브 앱 키: CI/CD에서 자동 교체됨 -->
 				<string>kakao2fd4280cde76fda045bf055db5875e86</string>
 			</array>
 		</dict>
