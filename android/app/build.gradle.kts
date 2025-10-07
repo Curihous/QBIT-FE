@@ -25,6 +25,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // 카카오 네이티브 앱 키를 BuildConfig로 관리
+        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"2fd4280cde76fda045bf055db5875e86\"")
+        manifestPlaceholders["kakaoNativeAppKey"] = "2fd4280cde76fda045bf055db5875e86"
     }
 
     buildTypes {
