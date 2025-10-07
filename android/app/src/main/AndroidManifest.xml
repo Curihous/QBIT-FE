@@ -6,12 +6,12 @@
         android:label="QBIT"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="false">
         
         
         <meta-data
             android:name="com.kakao.sdk.AppKey"
-            android:value="010c45e98ee5b2d21bed5ad0325553fb"/>
+            android:value="2fd4280cde76fda045bf055db5875e86"/>
         
         <activity
             android:name=".MainActivity"
@@ -55,7 +55,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <!-- 카카오 로그인 Redirect URI: kakao{NATIVE_APP_KEY}://oauth -->
-                <data android:scheme="kakao010c45e98ee5b2d21bed5ad0325553fb" android:host="oauth"/>
+                <data android:scheme="kakao2fd4280cde76fda045bf055db5875e86" android:host="oauth"/>
             </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.

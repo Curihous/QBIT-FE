@@ -92,10 +92,10 @@ app.*.map.json
 **/linux/flutter/generated_plugins.cmake
 
 # Environment variables
-# .env
-# .env.local
-# .env.development
-# .env.production
+.env
+.env.local
+.env.development
+.env.production
 
 # IDE files
 *.swp

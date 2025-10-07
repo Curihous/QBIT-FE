@@ -1,4 +1,4 @@
-package com.qbit.qbit_mobile
+package com.qbit.app
 
 import io.flutter.embedding.android.FlutterActivity
 
