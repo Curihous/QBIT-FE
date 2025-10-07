@@ -1,170 +1,236 @@
-import 'package:url_launcher/url_launcher.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
-import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
-import 'package:qbit_core/config/app_config.dart';
-import 'package:flutter/material.dart';
 
 final logger = Logger();
 
 class KakaoAuthService {
-  static final Dio _dio = Dio();
-
   /// 카카오 로그인 실행
-  static Future<bool> login() async {
-    try {
-      // 백엔드 OAuth2 엔드포인트로 전체 페이지 이동
-      final authUrl = '${AppConfig.baseUrl}/oauth2/authorization/kakao';
-      
-      logger.i('카카오 로그인 시작: $authUrl');
 
-      if (kIsWeb) {
-        // 웹에서는 window.location.href 방식 사용
-        // TODO: 추후 변경 필요(문제없다면 모바일이랑 통일해도 될듯)
+  /// 카카오톡 설치 여부에 따라 카카오톡 로그인 또는 카카오계정 로그인 시도
+  static Future<Map<String, dynamic>?> login() async {
+    try {
+      logger.i('카카오 로그인 시작');
+      
+      // 기존 토큰 확인
+      if (await AuthApi.instance.hasToken()) {
         try {
-          // Flutter 웹에서 JavaScript 실행
-          await launchUrl(
-            Uri.parse(authUrl), 
-            mode: LaunchMode.platformDefault,
-          );
-        } catch (e) {
-          logger.e('웹 리다이렉트 실패: $e');
-          return false;
+          AccessTokenInfo tokenInfo = await UserApi.instance.accessTokenInfo();
+          OAuthToken? token = await TokenManagerProvider.instance.manager.getToken();
+          
+          logger.i('기존 토큰 유효: userId=${tokenInfo.id}, accessToken=${token?.accessToken}');
+          
+          User user = await UserApi.instance.me();
+          logger.i('자동 로그인 성공: 닉네임=${user.kakaoAccount?.profile?.nickname}');
+          
+          return {
+            'success': true,
+            'userId': user.id.toString(),
+            'accessToken': token?.accessToken,
+            'nickname': user.kakaoAccount?.profile?.nickname,
+            'email': user.kakaoAccount?.email,
+          };
+        } catch (error) {
+          if (error is KakaoException && error.isInvalidTokenError()) {
+            logger.w('토큰 만료됨, 재로그인 필요');
+          } else {
+            logger.e('토큰 유효성 체크 실패: $error');
+          }
         }
       } else {
-        // 모바일에서는 기본 모드
-        if (await canLaunchUrl(Uri.parse(authUrl))) {
-          await launchUrl(
-            Uri.parse(authUrl), 
-            mode: LaunchMode.platformDefault,
-          );
-        } else {
-          logger.e('$authUrl 를 열 수 없습니다.');
-          return false;
+        logger.w('저장된 토큰 없음, 로그인 필요');
+      }
+
+      // 카카오톡 설치 여부 확인
+      bool isInstalled = await isKakaoTalkInstalled();
+      logger.i('카카오톡 설치 여부: $isInstalled');
+
+      if (isInstalled) {
+        try {
+          // 카카오톡으로 로그인 시도
+          OAuthToken token = await UserApi.instance.loginWithKakaoTalk();
+          logger.i('카카오톡 로그인 성공: accessToken=${token.accessToken}');
+          
+          User user = await UserApi.instance.me();
+          logger.i('사용자 정보: userId=${user.id}, 닉네임=${user.kakaoAccount?.profile?.nickname}');
+          
+          return {
+            'success': true,
+            'userId': user.id.toString(),
+            'accessToken': token.accessToken,
+            'nickname': user.kakaoAccount?.profile?.nickname,
+            'email': user.kakaoAccount?.email,
+          };
+        } catch (error) {
+          logger.w('카카오톡 로그인 실패: $error');
+          if (error is PlatformException && error.code == 'CANCELED') {
+            return {'success': false, 'error': '사용자 취소'};
+          }
+
+          // 카카오톡 로그인 실패 시 카카오계정 로그인으로
+          try {
+            OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
+            logger.i('카카오계정 로그인 성공: accessToken=${token.accessToken}');
+            
+            User user = await UserApi.instance.me();
+            logger.i('사용자 정보: userId=${user.id}, 닉네임=${user.kakaoAccount?.profile?.nickname}');
+            
+            return {
+              'success': true,
+              'userId': user.id.toString(),
+              'accessToken': token.accessToken,
+              'nickname': user.kakaoAccount?.profile?.nickname,
+              'email': user.kakaoAccount?.email,
+            };
+          } catch (error) {
+            logger.e('카카오계정 로그인 실패: $error');
+            return {'success': false, 'error': error.toString()};
+          }
+        }
+      } else {
+        // 카카오톡이 설치되지 않은 경우 카카오계정으로 로그인
+        try {
+          OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
+          logger.i('카카오계정 로그인 성공: accessToken=${token.accessToken}');
+          
+          User user = await UserApi.instance.me();
+          logger.i('사용자 정보: userId=${user.id}, 닉네임=${user.kakaoAccount?.profile?.nickname}');
+          
+          return {
+            'success': true,
+            'userId': user.id.toString(),
+            'accessToken': token.accessToken,
+            'nickname': user.kakaoAccount?.profile?.nickname,
+            'email': user.kakaoAccount?.email,
+          };
+        } catch (error) {
+          logger.e('카카오계정 로그인 실패: $error');
+          return {'success': false, 'error': error.toString()};
         }
       }
-      
-      logger.i('백엔드 OAuth2 엔드포인트로 리다이렉트 완료');
-      return true;
     } catch (e, stack) {
       logger.e("로그인 중 예외 발생: $e\n$stack");
+      return {'success': false, 'error': e.toString()};
+    }
+  }
+
+  /// 로그아웃
+  static Future<bool> logout() async {
+    try {
+      await UserApi.instance.logout();
+      logger.i('카카오 로그아웃 성공');
+      return true;
+    } catch (error) {
+      logger.e('카카오 로그아웃 실패: $error');
       return false;
     }
   }
 
-  /// 인가 코드로 액세스 토큰 요청 (REST API)
-  static Future<Map<String, dynamic>?> requestAccessToken(String code) async {
+  /// 연결 해제 
+  static Future<bool> unlink() async {
     try {
-      final response = await _dio.post(
-        'https://kauth.kakao.com/oauth/token',
-        data: {
-          'grant_type': 'authorization_code',
-          'client_id': AppConfig.kakaoRestApiKey,
-          'redirect_uri': AppConfig.kakaoRedirectUri,
-          'code': code,
+      await UserApi.instance.unlink();
+      logger.i('카카오 연결 해제 성공');
+      return true;
+    } catch (error) {
+      logger.e('카카오 연결 해제 실패: $error');
+      return false;
+    }
+  }
+
+  /// 토큰 존재 여부 조회 
+  static Future<bool> hasToken() async {
+    try {
+      bool hasToken = await AuthApi.instance.hasToken();
+      logger.i('토큰 존재 여부: $hasToken');
+      return hasToken;
+    } catch (error) {
+      logger.e('토큰 존재 여부 조회 실패: $error');
+      return false;
+    }
+  }
+
+  /// 액세스 토큰 정보 조회 
+  static Future<Map<String, dynamic>?> getTokenInfo() async {
+    try {
+      AccessTokenInfo tokenInfo = await UserApi.instance.accessTokenInfo();
+      logger.i('토큰 정보 조회 성공: userId=${tokenInfo.id}, expiresIn=${tokenInfo.expiresIn}');
+      
+      return {
+        'userId': tokenInfo.id,
+        'expiresIn': tokenInfo.expiresIn,
+        'appId': tokenInfo.appId,
+      };
+    } catch (error) {
+      logger.e('토큰 정보 조회 실패: $error');
+      return null;
+    }
+  }
+
+  /// 사용자 정보 조회 
+  static Future<Map<String, dynamic>?> getCurrentUser() async {
+    try {
+      User user = await UserApi.instance.me();
+      logger.i('사용자 정보 조회 성공: userId=${user.id}, 닉네임=${user.kakaoAccount?.profile?.nickname}');
+      
+      return {
+        'id': user.id,
+        'hasSignedUp': user.hasSignedUp,
+        'connectedAt': user.connectedAt?.toIso8601String(),
+        'synchedAt': user.synchedAt?.toIso8601String(),
+        'properties': user.properties,
+        'kakaoAccount': {
+          'profileNeedsAgreement': user.kakaoAccount?.profileNeedsAgreement,
+          'profileNicknameNeedsAgreement': user.kakaoAccount?.profileNicknameNeedsAgreement,
+          'profileImageNeedsAgreement': user.kakaoAccount?.profileImageNeedsAgreement,
+          'nameNeedsAgreement': user.kakaoAccount?.nameNeedsAgreement,
+          'name': user.kakaoAccount?.name,
+          'emailNeedsAgreement': user.kakaoAccount?.emailNeedsAgreement,
+          'isEmailValid': user.kakaoAccount?.isEmailValid,
+          'isEmailVerified': user.kakaoAccount?.isEmailVerified,
+          'email': user.kakaoAccount?.email,
+          'ageRangeNeedsAgreement': user.kakaoAccount?.ageRangeNeedsAgreement,
+          'ageRange': user.kakaoAccount?.ageRange?.toString(),
+          'birthdayNeedsAgreement': user.kakaoAccount?.birthdayNeedsAgreement,
+          'birthday': user.kakaoAccount?.birthday,
+          'birthdayType': user.kakaoAccount?.birthdayType?.toString(),
+          'birthyearNeedsAgreement': user.kakaoAccount?.birthyearNeedsAgreement,
+          'birthyear': user.kakaoAccount?.birthyear,
+          'genderNeedsAgreement': user.kakaoAccount?.genderNeedsAgreement,
+          'gender': user.kakaoAccount?.gender?.toString(),
+          'phoneNumberNeedsAgreement': user.kakaoAccount?.phoneNumberNeedsAgreement,
+          'phoneNumber': user.kakaoAccount?.phoneNumber,
+          'profile': {
+            'nickname': user.kakaoAccount?.profile?.nickname,
+            'thumbnailImageUrl': user.kakaoAccount?.profile?.thumbnailImageUrl,
+            'profileImageUrl': user.kakaoAccount?.profile?.profileImageUrl,
+            'isDefaultImage': user.kakaoAccount?.profile?.isDefaultImage,
+          },
         },
-        options: Options(
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        logger.i('액세스 토큰 요청 성공');
-        return response.data;
-      }
-    } catch (e) {
-      logger.e('액세스 토큰 요청 실패: $e');
+      };
+    } catch (error) {
+      logger.e('사용자 정보 조회 실패: $error');
+      return null;
     }
-    return null;
   }
 
-  /// 액세스 토큰으로 사용자 정보 조회 (REST API)
-  static Future<Map<String, dynamic>?> getUserInfo(String accessToken) async {
+  /// 간단한 사용자 정보 조회 (기본 정보만)
+  static Future<Map<String, dynamic>?> getSimpleUserInfo() async {
     try {
-      final response = await _dio.get(
-        'https://kapi.kakao.com/v2/user/me',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        logger.i('사용자 정보 조회 성공');
-        return response.data;
-      }
-    } catch (e) {
-      logger.e('사용자 정보 조회 실패: $e');
+      User user = await UserApi.instance.me();
+      logger.i('간단한 사용자 정보 조회 성공: userId=${user.id}, 닉네임=${user.kakaoAccount?.profile?.nickname}');
+      
+      return {
+        'userId': user.id.toString(),
+        'nickname': user.kakaoAccount?.profile?.nickname,
+        'email': user.kakaoAccount?.email,
+        'profileImageUrl': user.kakaoAccount?.profile?.profileImageUrl,
+        'thumbnailImageUrl': user.kakaoAccount?.profile?.thumbnailImageUrl,
+        'hasSignedUp': user.hasSignedUp,
+      };
+    } catch (error) {
+      logger.e('ㄴ간단한 사용자 정보 조회 실패: $error');
+      return null;
     }
-    return null;
-  }
-
-  /// 액세스 토큰 정보 조회 (REST API)
-  static Future<Map<String, dynamic>?> getTokenInfo(String accessToken) async {
-    try {
-      final response = await _dio.get(
-        'https://kapi.kakao.com/v1/user/access_token_info',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        logger.i('토큰 정보 조회 성공');
-        return response.data;
-      }
-    } catch (e) {
-      logger.e('토큰 정보 조회 실패: $e');
-    }
-    return null;
-  }
-
-  /// 로그아웃 (REST API)
-  static Future<bool> logout(String accessToken) async {
-    try {
-      final response = await _dio.post(
-        'https://kapi.kakao.com/v1/user/logout',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        logger.i('카카오 로그아웃 성공');
-        return true;
-      }
-    } catch (e) {
-      logger.e('카카오 로그아웃 실패: $e');
-    }
-    return false;
-  }
-
-  /// 연결 해제 (REST API)
-  static Future<bool> unlink(String accessToken) async {
-    try {
-      final response = await _dio.post(
-        'https://kapi.kakao.com/v1/user/unlink',
-        options: Options(
-          headers: {
-            'Authorization': 'Bearer $accessToken',
-          },
-        ),
-      );
-
-      if (response.statusCode == 200) {
-        logger.i('카카오 연결 해제 성공');
-        return true;
-      }
-    } catch (e) {
-      logger.e('카카오 연결 해제 실패: $e');
-    }
-    return false;
   }
 }

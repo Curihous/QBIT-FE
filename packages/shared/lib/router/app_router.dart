@@ -1,14 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/foundation.dart';
 import 'package:qbit_shared/screens/auth/login_screen.dart';
-import 'package:qbit_shared/screens/auth/login_success_screen.dart';
 import 'package:qbit_shared/screens/home/home_screen.dart';
-import 'package:qbit_shared/screens/debug/debug_screen.dart';
-import 'package:qbit_shared/screens/investment/investment_screen.dart';
-import 'package:qbit_shared/screens/alpaca/alpaca_connection_screen.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 
 class AppRouter {
@@ -29,29 +23,9 @@ class AppRouter {
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
-        path: '/oauth',
-        name: 'oauth',
-        builder: (context, state) => const LoginSuccessScreen(),
-      ),
-      GoRoute(
         path: '/home',
         name: 'home',
         builder: (context, state) => const HomeScreen(),
-      ),
-      GoRoute(
-        path: '/debug',
-        name: 'debug',
-        builder: (context, state) => const DebugScreen(),
-      ),
-      GoRoute(
-        path: '/investment',
-        name: 'investment',
-        builder: (context, state) => const InvestmentScreen(),
-      ),
-      GoRoute(
-        path: '/alpaca',
-        name: 'alpaca',
-        builder: (context, state) => const AlpacaConnectionScreen(),
       ),
     ],
   );
@@ -73,49 +47,27 @@ class _RootScreenState extends State<_RootScreen> {
 
   Future<void> _checkFirstLaunch() async {
     try {
-      // 웹 환경에서는 shared_preferences만 사용
-      if (kIsWeb) {
-        final prefs = await SharedPreferences.getInstance();
-        final isFirstLaunch = prefs.getString(AppRouter._isFirstLaunchKey);
-        
-        if (isFirstLaunch == null) {
-          // 최초 실행 - 로그인 화면으로 이동하고 플래그 설정
-          await prefs.setString(AppRouter._isFirstLaunchKey, 'false');
-          if (mounted) {
-            context.go('/login');
-          }
-        } else {
-          // 재실행 - 로그인 상태 확인 후 적절한 화면으로 이동
-          final isLoggedIn = await AuthService.isLoggedIn();
-          
-          if (mounted) {
-            if (isLoggedIn) {
-              context.go('/home');
-            } else {
-              context.go('/login');
-            }
-          }
+      // 모바일 환경: flutter_secure_storage 사용
+      final storage = FlutterSecureStorage();
+      final isFirstLaunch = await storage.read(key: AppRouter._isFirstLaunchKey);
+      
+      if (isFirstLaunch == null) {
+        // 최초 실행 - 로그인 화면으로 이동하고 플래그 설정
+        await storage.write(key: AppRouter._isFirstLaunchKey, value: 'false');
+        if (mounted) {
+          context.go('/login');
         }
       } else {
-        // 모바일/데스크톱 환경에서는 flutter_secure_storage 사용
-        final isFirstLaunch = await AppRouter._storage.read(key: AppRouter._isFirstLaunchKey);
-        
-        if (isFirstLaunch == null) {
-          // 최초 실행 - 로그인 화면으로 이동하고 플래그 설정
-          await AppRouter._storage.write(key: AppRouter._isFirstLaunchKey, value: 'false');
-          if (mounted) {
-            context.go('/login');
-          }
-        } else {
-          // 재실행 - 로그인 상태 확인 후 적절한 화면으로 이동
-          final isLoggedIn = await AuthService.isLoggedIn();
+        // 재실행 - 로그인 상태 확인 후 적절한 화면으로 이동
+        final isLoggedIn = await AuthService.isLoggedIn();
           
-          if (mounted) {
-            if (isLoggedIn) {
-              context.go('/home');
-            } else {
-              context.go('/login');
-            }
+        if (mounted) {
+          if (isLoggedIn) {
+            // 로그인되어 있으면 홈 화면으로
+            context.go('/home');
+          } else {
+            // 로그인되지 않았으면 로그인 화면으로
+            context.go('/login');
           }
         }
       }
