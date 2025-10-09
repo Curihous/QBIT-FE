@@ -3,11 +3,17 @@
 ## 요구사항
 - Flutter SDK (3.6.0 이상)
 - Dart SDK
+- iOS: Xcode, CocoaPods
+- Android: Android Studio, Android SDK
 
 ## 빌드 명령어
 
 ```bash
-# 개발 서버 실행 (웹, 5000포트)
-cd apps\web
-flutter run -d web-server --web-port 5000
+# iOS 실행
+cd apps/mobile
+flutter run -d [iOS 디바이스 ID]
+
+# Android 실행
+cd apps/mobile
+flutter run -d [Android 디바이스 ID]
 ```

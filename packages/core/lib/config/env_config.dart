@@ -58,17 +58,10 @@ class EnvConfig {
   }
 
   /// 백엔드 API 설정
-  static String get baseUrl => getValue('BASE_URL');
   static String get backendUrl => getValue('BACKEND_URL');
 
-  /// 카카오 OAuth 설정
+  /// 카카오 로그인 설정 (네이티브 앱 키만 필요)
   static String get kakaoNativeAppKey => getValue('KAKAO_NATIVE_APP_KEY');
-  static String get kakaoRestApiKey => getValue('KAKAO_REST_API_KEY');
-  static String get kakaoRedirectUri => getValue('KAKAO_REDIRECT_URI');
-
-  /// 개발 설정
-  static String get localhostPort => getValue('LOCALHOST_PORT');
-  static String get localhostUrl => getValue('LOCALHOST_URL');
 
   /// 앱 설정
   static String get appName => getValue('APP_NAME');
