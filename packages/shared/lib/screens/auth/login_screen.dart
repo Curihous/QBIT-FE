@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:qbit_services/auth/kakao_auth_service.dart';
+import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_theme.dart';
 import 'package:qbit_core/config/app_config.dart';
@@ -22,15 +22,28 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final result = await KakaoAuthService.login();
-      if (result?['success'] == true) {
+      // AuthService.login()은 카카오 SDK 로그인 + 백엔드 인증을 모두 처리
+      final result = await AuthService.login();
+      
+      if (result['success'] == true) {
         if (mounted) {
           // 로그인 성공 - 홈 화면으로 이동
+          final isNewUser = result['isNewUser'] ?? false;
+          if (isNewUser) {
+            // 신규 사용자면 환영 메시지 표시
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('환영합니다! 회원가입이 완료되었습니다.'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
           context.go('/home');
         }
       } else {
         if (mounted) {
-          String errorMessage = result?['error'] ?? '로그인에 실패했습니다';
+          String errorMessage = result['error'] ?? '로그인에 실패했습니다';
           if (errorMessage == '사용자 취소') {
             // 사용자가 취소한 경우는 별도 메시지 없이 처리
             return;

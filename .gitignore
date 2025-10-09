@@ -41,10 +41,6 @@ migrate_working_dir/
 **/build/
 **/ios/build/
 **/android/build/
-**/web/build/
-**/windows/build/
-**/linux/build/
-**/macos/build/
 
 # Flutter cache files
 **/*.cache.dill.track.dill

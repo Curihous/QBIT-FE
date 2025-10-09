@@ -26,9 +26,9 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         
-        // 카카오 네이티브 앱 키를 BuildConfig로 관리
-        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"2fd4280cde76fda045bf055db5875e86\"")
-        manifestPlaceholders["kakaoNativeAppKey"] = "2fd4280cde76fda045bf055db5875e86"
+        // 카카오 SDK는 Dart 코드에서 초기화하므로 여기서는 placeholder만 설정
+        // 실제 키는 .env 파일에서 관리
+        manifestPlaceholders["kakaoNativeAppKey"] = "KAKAO_KEY_PLACEHOLDER"
     }
 
     buildTypes {
