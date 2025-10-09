@@ -24,7 +24,7 @@ class AuthService {
         return kakaoResult ?? {'success': false, 'error': '카카오 로그인 실패'};
       }
       
-      final kakaoAccessToken = kakaoResult['accessToken'];
+      final kakaoAccessToken = kakaoResult?['accessToken'];
       if (kakaoAccessToken == null || kakaoAccessToken.isEmpty) {
         logger.e('카카오 액세스 토큰을 받지 못함');
         return {'success': false, 'error': '카카오 액세스 토큰을 받지 못했습니다'};
