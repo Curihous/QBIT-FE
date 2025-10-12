@@ -12,6 +12,7 @@ dependencies:
   app_links: ^6.3.2
   flutter_secure_storage: ^9.2.2
   shared_preferences: ^2.3.2
+  flutter_svg: ^2.0.10+1
   qbit_core:
     path: ../core
   qbit_services:

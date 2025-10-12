@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'app_colors.dart';
+import 'app_fonts.dart';
 
 /// 앱 테마 정의
 class AppTheme {
+  static const String fontFamily = 'Pretendard';
   /// 라이트 테마
   static ThemeData get lightTheme => ThemeData(
     useMaterial3: true,
@@ -15,16 +17,21 @@ class AppTheme {
       background: AppColors.background,
       error: AppColors.error,
     ),
-    fontFamily: AppTypography.fontFamily,
+    fontFamily: fontFamily,
     scaffoldBackgroundColor: AppColors.background,
     
     // AppBar Theme
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: AppColors.background,
-      foregroundColor: AppColors.textPrimary,
+      foregroundColor: AppColors.gray900,
       elevation: 0,
       centerTitle: true,
-      titleTextStyle: AppTypography.headingMedium,
+      titleTextStyle: TextStyle(
+        fontFamily: fontFamily,
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: AppColors.gray900,
+      ),
     ),
     
     // Card Theme
@@ -37,7 +44,7 @@ class AppTheme {
       shadowColor: AppColors.black.withOpacity(0.1),
     ),
     
-    // Elevated Button Theme
+    // 버튼 (계좌 연결, 리포트 확인 화면의 큰 검은색 버튼)
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
@@ -46,7 +53,11 @@ class AppTheme {
           borderRadius: AppBorderRadius.medium,
         ),
         minimumSize: const Size(double.infinity, 56),
-        textStyle: AppTypography.buttonLarge,
+        textStyle: const TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
         elevation: 2,
       ),
     ),
@@ -60,7 +71,11 @@ class AppTheme {
           borderRadius: AppBorderRadius.medium,
         ),
         minimumSize: const Size(double.infinity, 56),
-        textStyle: AppTypography.buttonLarge,
+        textStyle: const TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     ),
     
@@ -68,7 +83,11 @@ class AppTheme {
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
         foregroundColor: AppColors.primary,
-        textStyle: AppTypography.buttonMedium,
+        textStyle: const TextStyle(
+          fontFamily: fontFamily,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     ),
     
@@ -99,23 +118,13 @@ class AppTheme {
     ),
     
     // Text Theme
-    textTheme: const TextTheme(
-      headlineLarge: AppTypography.headingLarge,
-      headlineMedium: AppTypography.headingMedium,
-      headlineSmall: AppTypography.headingSmall,
-      bodyLarge: AppTypography.bodyLarge,
-      bodyMedium: AppTypography.bodyMedium,
-      bodySmall: AppTypography.bodySmall,
-      labelLarge: AppTypography.buttonLarge,
-      labelMedium: AppTypography.buttonMedium,
-      labelSmall: AppTypography.buttonSmall,
-    ),
+    textTheme: const TextTheme(),
     
     // Bottom Navigation Bar Theme
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: AppColors.surface,
-      selectedItemColor: AppColors.primary,
-      unselectedItemColor: AppColors.textSecondary,
+      selectedItemColor: AppColors.gray900,
+      unselectedItemColor: AppColors.gray300,
       type: BottomNavigationBarType.fixed,
       elevation: 8,
     ),
@@ -129,7 +138,7 @@ class AppTheme {
     
     // Icon Theme
     iconTheme: const IconThemeData(
-      color: AppColors.textPrimary,
+      color: AppColors.gray900,
       size: 24,
     ),
     
@@ -148,6 +157,6 @@ class AppTheme {
       seedColor: AppColors.primary,
       brightness: Brightness.dark,
     ),
-    scaffoldBackgroundColor: const Color(0xFF121212),
+    scaffoldBackgroundColor: AppColors.gray900,
   );
 }
