@@ -3,7 +3,7 @@ import 'dart:ui';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:qbit_core/config/app_config.dart';
 import 'package:qbit_core/config/env_config.dart';
-import 'package:qbit_shared/app.dart';
+import 'package:qbit_shared/main.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,5 +25,5 @@ void main() async {
     return true;
   };
   
-  runApp(const QbitApp());
+  runQbitApp();
 }
