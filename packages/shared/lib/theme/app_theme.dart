@@ -8,21 +8,24 @@ class AppTheme {
   /// 라이트 테마
   static ThemeData get lightTheme => ThemeData(
     useMaterial3: true,
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.primary,
-      brightness: Brightness.light,
+    colorScheme: const ColorScheme.light(
       primary: AppColors.primary,
       secondary: AppColors.primaryLight,
       surface: AppColors.white,
-      background: AppColors.background,
+      background: AppColors.white, 
       error: AppColors.error,
+      onPrimary: AppColors.white,
+      onSecondary: AppColors.white,
+      onSurface: AppColors.gray900,
+      onBackground: AppColors.gray900,
+      onError: AppColors.white,
     ),
     fontFamily: fontFamily,
-    scaffoldBackgroundColor: AppColors.background,
+    scaffoldBackgroundColor: AppColors.white,
     
     // AppBar Theme
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.white,
       foregroundColor: AppColors.gray900,
       elevation: 0,
       centerTitle: true,
