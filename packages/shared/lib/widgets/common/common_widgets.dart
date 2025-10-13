@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_fonts.dart';
 
@@ -210,35 +209,30 @@ class BottomNavigationBarWidget extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(
-                iconPath: 'assets/images/nav_icons/home.svg',
                 label: '홈',
                 index: 0,
                 isSelected: currentIndex == 0,
                 screenHeight: screenHeight,
               ),
               _buildNavItem(
-                iconPath: 'assets/images/nav_icons/book.svg',
                 label: '학습',
                 index: 1,
                 isSelected: currentIndex == 1,
                 screenHeight: screenHeight,
               ),
               _buildNavItem(
-                iconPath: 'assets/images/nav_icons/record.svg',
                 label: '기록',
                 index: 2,
                 isSelected: currentIndex == 2,
                 screenHeight: screenHeight,
               ),
               _buildNavItem(
-                iconPath: 'assets/images/nav_icons/chart.svg',
                 label: '거래',
                 index: 3,
                 isSelected: currentIndex == 3,
                 screenHeight: screenHeight,
               ),
               _buildNavItem(
-                iconPath: 'assets/images/nav_icons/analysis.svg',
                 label: '분석',
                 index: 4,
                 isSelected: currentIndex == 4,
@@ -268,7 +262,6 @@ class BottomNavigationBarWidget extends StatelessWidget {
   }
 
   Widget _buildNavItem({
-    required String iconPath,
     required String label,
     required int index,
     required bool isSelected,
@@ -298,11 +291,9 @@ class BottomNavigationBarWidget extends StatelessWidget {
           Flexible(
             child: Text(
               label,
-              style: TextStyle(
-                fontFamily: 'Pretendard',
+              style: AppFonts.navLabel.copyWith(
                 fontSize: fontSize,
                 color: isSelected ? AppColors.gray900 : AppColors.gray300,
-                fontWeight: FontWeight.bold,
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
@@ -313,4 +304,5 @@ class BottomNavigationBarWidget extends StatelessWidget {
       ),
     );
   }
+
 }

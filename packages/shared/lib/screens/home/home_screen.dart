@@ -13,36 +13,32 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
-
-  void _navigateToTrade() {
-    context.go('/trade');
+  // Derive the selected tab index from the current GoRouter location
+  int _getCurrentIndex() {
+    final location = GoRouterState.of(context).uri.path;
+    if (location.startsWith('/learning')) return 1;
+    if (location.startsWith('/record')) return 2;
+    if (location.startsWith('/trade')) return 3;
+    if (location.startsWith('/analysis')) return 4;
+    return 0;
   }
 
   void _onNavItemTap(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
-    
     // 네비게이션 바에서의 라우팅
     switch (index) {
       case 0:
-        // 현재 화면
+        context.go('/');
         break;
       case 1:
-        // 학습
         context.go('/learning');
         break;
       case 2:
-        // 기록
         context.go('/record');
         break;
       case 3:
-        // 거래
         context.go('/trade');
         break;
       case 4:
-        // 분석
         context.go('/analysis');
         break;
     }
@@ -84,8 +80,62 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // TODO: 홈 화면 UI 구현
+            // - PortfolioSummary 위젯 (포트폴리오 요약)
+            // - RecentTransactions 위젯 (최근 거래 내역)
+            // - MarketOverview 위젯 (시장 개요)
+            // - QuickActions 위젯 (빠른 액션 버튼들)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(32.0),
+              decoration: BoxDecoration(
+                color: AppColors.gray100,
+                borderRadius: BorderRadius.circular(12.0),
+                border: Border.all(color: AppColors.gray300),
+              ),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.home_outlined,
+                    size: 64.0,
+                    color: AppColors.gray300,
+                  ),
+                  const SizedBox(height: 16.0),
+                  Text(
+                    '홈 화면',
+                    style: AppFonts.titleLarge.copyWith(
+                      color: AppColors.gray300,
+                    ),
+                  ),
+                  const SizedBox(height: 8.0),
+                  Text(
+                    'TODO: 홈 화면 UI 구현 예정',
+                    style: AppFonts.bodyMedium.copyWith(
+                      color: AppColors.gray300,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16.0),
+                  Text(
+                    '구현 예정 기능:\n• 포트폴리오 요약\n• 최근 거래 내역\n• 시장 개요\n• 빠른 액션',
+                    style: AppFonts.bodySmall.copyWith(
+                      color: AppColors.gray300,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
       bottomNavigationBar: BottomNavigationBarWidget(
-        currentIndex: _currentIndex,
+        currentIndex: _getCurrentIndex(),
         onTap: _onNavItemTap,
       ),
       body: SingleChildScrollView(

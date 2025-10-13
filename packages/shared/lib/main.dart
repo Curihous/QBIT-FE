@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:ui';
 import 'package:app_links/app_links.dart';
 import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
@@ -16,22 +17,40 @@ void runQbitApp() async {
   // 환경 변수 초기화
   try {
     await EnvConfig.initialize();
-  } catch (e) {
-    // 개발 환경에서는 계속 진행
+  } catch (e, stackTrace) {
+    if (kDebugMode) {
+      debugPrint('EnvConfig.initialize failed: $e');
+      debugPrint('Stack trace: $stackTrace');
+    } else {
+      debugPrint('EnvConfig.initialize failed: $e');
+      // 프로덕션에서는 앱을 계속 실행하되 로그만 남김
+    }
   }
   
   // 카카오 SDK 초기화
   try {
     KakaoSdk.init(nativeAppKey: AppConfig.kakaoNativeAppKey);
-  } catch (e) {
-    // 초기화 실패 시 무시
+  } catch (e, stackTrace) {
+    if (kDebugMode) {
+      debugPrint('KakaoSdk.init failed: $e');
+      debugPrint('Stack trace: $stackTrace');
+    } else {
+      debugPrint('KakaoSdk.init failed: $e');
+      // 프로덕션에서는 앱을 계속 실행하되 로그만 남김
+    }
   }
   
   // API 클라이언트 초기화
   try {
     ApiClient.initialize();
-  } catch (e) {
-    // 초기화 실패 시 무시
+  } catch (e, stackTrace) {
+    if (kDebugMode) {
+      debugPrint('ApiClient.initialize failed: $e');
+      debugPrint('Stack trace: $stackTrace');
+    } else {
+      debugPrint('ApiClient.initialize failed: $e');
+      // 프로덕션에서는 앱을 계속 실행하되 로그만 남김
+    }
   }
   
   // 개발자 모드 에러 로그 활성화
@@ -41,7 +60,27 @@ void runQbitApp() async {
   
   // Dart 에러 처리
   PlatformDispatcher.instance.onError = (error, stack) {
-    return true;
+    // 에러 정보 수집
+    final errorDetails = FlutterErrorDetails(
+      exception: error,
+      stack: stack,
+      library: 'PlatformDispatcher',
+      context: ErrorDescription('Uncaught Dart error'),
+    );
+
+    if (kDebugMode) {
+      // 개발 환경: 에러를 콘솔에 출력하고 Flutter 에러 시스템에 보고
+      debugPrint('Uncaught Dart error: $error');
+      debugPrint('Stack trace: $stack');
+      FlutterError.reportError(errorDetails);
+    } else {
+      // 프로덕션 환경: 크래시 리포팅 서비스에 전달
+      // TODO: 실제 크래시 리포팅 서비스(Firebase Crashlytics, Sentry 등) 연동
+      // 예시: FirebaseCrashlytics.instance.recordError(error, stack);
+      debugPrint('Production error occurred: $error');
+    }
+
+    return true; // 에러가 처리되었음을 시스템에 알림
   };
   
   runApp(const QbitApp());
@@ -72,7 +111,9 @@ class _QbitAppState extends State<QbitApp> {
         // 카카오 SDK가 자동으로 Deep Link 처리
       },
       onError: (err) {
-        // Deep link 에러 무시
+        if (kDebugMode) {
+          debugPrint('Deep Link 처리 에러: $err');
+        }
       },
     );
 

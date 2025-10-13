@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -53,7 +54,7 @@ class AppRouter {
         name: 'stock-search',
         builder: (context, state) {
           final symbol = state.pathParameters['symbol'] ?? '';
-          return const StockSearchScreen();
+          return StockSearchScreen(symbol: symbol.isEmpty ? null : symbol);
         },
       ),
       GoRoute(
@@ -89,6 +90,8 @@ class _RootScreen extends StatefulWidget {
 }
 
 class _RootScreenState extends State<_RootScreen> {
+  StreamSubscription<void>? _tokenExpiredSub;
+
   @override
   void initState() {
     super.initState();
@@ -96,9 +99,15 @@ class _RootScreenState extends State<_RootScreen> {
     _setupTokenExpiredListener();
   }
 
+  @override
+  void dispose() {
+    _tokenExpiredSub?.cancel();
+    super.dispose();
+  }
+
   void _setupTokenExpiredListener() {
     // 토큰 만료 이벤트 리스너 설정
-    ApiClient.onTokenExpired.listen((_) {
+    _tokenExpiredSub = ApiClient.onTokenExpired.listen((_) {
       if (mounted) {
         // 토큰 만료 시 로그인 화면으로 이동
         context.go('/login');
@@ -115,22 +124,11 @@ class _RootScreenState extends State<_RootScreen> {
       if (isFirstLaunch == null) {
         // 최초 실행 - 스플래시 화면으로 이동하고 플래그 설정
         await storage.write(key: AppRouter._isFirstLaunchKey, value: 'false');
-        if (mounted) {
-          context.go('/splash');
-        }
-      } else {
-        // 재실행 - 로그인 상태 확인 후 적절한 화면으로 이동
-        final isLoggedIn = await AuthService.isLoggedIn();
-          
-        if (mounted) {
-          if (isLoggedIn) {
-            // 로그인되어 있으면 홈 화면으로
-            context.go('/home');
-          } else {
-            // 로그인되지 않았으면 스플래시 화면으로
-            context.go('/splash');
-          }
-        }
+      }
+      
+      // 항상 스플래시 화면으로 먼저 이동
+      if (mounted) {
+        context.go('/splash');
       }
     } catch (e) {
       // 오류 발생 시 스플래시 화면으로 이동
@@ -142,9 +140,9 @@ class _RootScreenState extends State<_RootScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.background, // 소프트 배경
-      body: Center(
+      body: const Center(
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary), // 메인 민트색
         ),
