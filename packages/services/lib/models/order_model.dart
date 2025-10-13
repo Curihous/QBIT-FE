@@ -6,14 +6,18 @@ part 'order_model.g.dart';
 class OrderModel {
   final String symbol;
   final String quantity;
+  @JsonKey(unknownEnumValue: OrderSide.unknown)
   final OrderSide side;
+  @JsonKey(unknownEnumValue: OrderType.unknown)
   final OrderType type;
+  @JsonKey(unknownEnumValue: TimeInForce.unknown)
   final TimeInForce timeInForce;
   final String? limitPrice;
   final String? stopPrice;
   
   // 추가 필드들 (API 응답용)
   final String? orderId;
+  @JsonKey(unknownEnumValue: OrderStatus.unknown)
   final OrderStatus? status;
   final String? filledQuantity;
   final String? filledAvgPrice;
@@ -74,13 +78,17 @@ class OrderModel {
 }
 
 // Order Request Model
-@JsonSerializable()
+@JsonSerializable(includeIfNull: false)
 class OrderRequest {
   final String symbol;
   final String quantity;
+  @JsonKey(unknownEnumValue: OrderSide.unknown)
   final OrderSide side;
+  @JsonKey(unknownEnumValue: OrderType.unknown)
   final OrderType type;
+  @JsonKey(unknownEnumValue: OrderStatus.unknown)
   final OrderStatus? status;
+  @JsonKey(unknownEnumValue: TimeInForce.unknown)
   final TimeInForce timeInForce;
   final String? limitPrice;
   final String? stopPrice;
@@ -122,6 +130,13 @@ enum OrderType {
   limit,
   @JsonValue('market')
   market,
+  @JsonValue('stop')
+  stop,
+  @JsonValue('stop_limit')
+  stopLimit,
+  @JsonValue('trailing_stop')
+  trailingStop,
+  unknown,
 }
 
 @JsonEnum()
@@ -130,18 +145,36 @@ enum OrderSide {
   buy,
   @JsonValue('sell')
   sell,
+  unknown,
 }
 
 @JsonEnum()
 enum OrderStatus {
-  @JsonValue('pending')
-  pending,
+  @JsonValue('new')
+  newOrder,
+  @JsonValue('pending_new')
+  pendingNew,
+  @JsonValue('accepted')
+  accepted,
+  @JsonValue('pending_cancel')
+  pendingCancel,
+  @JsonValue('pending_replace')
+  pendingReplace,
+  @JsonValue('partially_filled')
+  partiallyFilled,
   @JsonValue('filled')
   filled,
-  @JsonValue('cancelled')
-  cancelled,
+  @JsonValue('canceled')
+  canceled,
   @JsonValue('rejected')
   rejected,
+  @JsonValue('expired')
+  expired,
+  @JsonValue('done_for_day')
+  doneForDay,
+  @JsonValue('suspended')
+  suspended,
+  unknown,
 }
 
 @JsonEnum()
@@ -154,4 +187,9 @@ enum TimeInForce {
   ioc,
   @JsonValue('fok')
   fok,
+  @JsonValue('gtx')
+  gtx,
+  @JsonValue('gtd')
+  gtd,
+  unknown,
 }

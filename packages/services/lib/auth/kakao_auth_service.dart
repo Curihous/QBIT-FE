@@ -289,7 +289,8 @@ class KakaoAuthService {
       final now = DateTime.now();
       final expiresAt = now.add(Duration(seconds: tokenInfo.expiresIn));
       
-      if (!expiresAt.isBefore(now)) {
+      // 토큰이 유효한지 확인 (expiresIn > 0이고 미래에 만료되는 경우만 유효)
+      if (tokenInfo.expiresIn > 0 && expiresAt.isAfter(now)) {
         logger.i('토큰이 아직 유효합니다. 갱신 불필요');
         OAuthToken? token = await TokenManagerProvider.instance.manager.getToken();
         return {

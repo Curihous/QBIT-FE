@@ -35,7 +35,9 @@ class AppTheme {
     ),
     
     // Card Theme
-    cardTheme: CardTheme(
+    // NOTE: Flutter SDK 버전에 따라 CardTheme/CardThemeData 사용이 달라짐
+    // 이전 코드래빗 리뷰에서는 CardTheme을 사용했지만, 현재 빌드 환경에서는 CardThemeData가 필요
+    cardTheme: CardThemeData(
       color: AppColors.white,
       elevation: 4,
       shape: RoundedRectangleBorder(

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_web_auth/flutter_web_auth.dart';
 import 'package:logger/logger.dart';
 import '../api/auth_api_service.dart';
@@ -17,7 +18,7 @@ class AlpacaAuthService {
       // 2. flutter_web_auth로 인증 수행
       final result = await FlutterWebAuth.authenticate(
         url: authorizeUrl,
-        callbackUrlScheme: 'https',
+        callbackUrlScheme: 'qbit',
       );
 
       // 3. 콜백 URL 분석
@@ -84,39 +85,51 @@ class AlpacaAuthService {
         final tokenExpired = status['tokenExpired'] == true;
         final isConnected = connected; // connected 필드만 확인
         
-        // 상태 요약
+        // 상태 요약 (릴리스에서도 출력)
         logger.i('=== 알파카 상태 요약 ===');
         logger.i('연결 상태: $connectionStatus (connected: $connected)');
         logger.i('토큰 만료: $tokenExpired');
-        logger.i('카카오 토큰: ${kakaoTokenInfo?['isExpired'] == false ? '유효' : '만료'} (${kakaoTokenInfo?['expiresAt']})');
+        logger.i('카카오 토큰: ${kakaoTokenInfo?['isExpired'] == false ? '유효' : '만료'}');
         logger.i('백엔드 응답 키: ${status.keys.toList()}');
         logger.i('연결 상태만 확인하여 사용 가능');
         
-        // 토큰 시간 정보 상세 확인
-        logger.i('=== 토큰 시간 정보 상세 ===');
-        final now = DateTime.now();
-        logger.i('현재 시간: ${now.toIso8601String()}');
-        logger.i('현재 시간 (UTC): ${now.toUtc().toIso8601String()}');
-        
-        // 백엔드 응답에서 토큰 관련 시간 정보 찾기
-        status.forEach((key, value) {
-          if (key.toLowerCase().contains('time') || 
-              key.toLowerCase().contains('date') || 
-              key.toLowerCase().contains('expire') ||
-              key.toLowerCase().contains('created') ||
-              key.toLowerCase().contains('updated')) {
-            logger.i('$key: $value');
+        // 디버그 모드에서만 상세 정보 출력
+        if (kDebugMode) {
+          logger.i('=== 토큰 시간 정보 상세 (디버그 모드) ===');
+          final now = DateTime.now();
+          logger.i('현재 시간: ${now.toIso8601String()}');
+          logger.i('현재 시간 (UTC): ${now.toUtc().toIso8601String()}');
+          
+          // 카카오 토큰 만료 시간 상세
+          if (kakaoTokenInfo?['expiresAt'] != null) {
+            logger.i('카카오 토큰 만료 시간: ${kakaoTokenInfo!['expiresAt']}');
           }
-        });
-        
-        // 알파카 관련 키들도 확인
-        status.forEach((key, value) {
-          if (key.toLowerCase().contains('alpaca')) {
-            logger.i('$key: $value');
-          }
-        });
-        
-        logger.i('========================');
+          
+          // 백엔드 응답에서 토큰 관련 시간 정보 찾기
+          status.forEach((key, value) {
+            if (key.toLowerCase().contains('time') || 
+                key.toLowerCase().contains('date') || 
+                key.toLowerCase().contains('expire') ||
+                key.toLowerCase().contains('created') ||
+                key.toLowerCase().contains('updated')) {
+              logger.i('$key: $value');
+            }
+          });
+          
+          // 알파카 관련 키들도 확인
+          status.forEach((key, value) {
+            if (key.toLowerCase().contains('alpaca')) {
+              logger.i('$key: $value');
+            }
+          });
+          
+          logger.i('========================');
+        } else {
+          // 릴리스 모드에서는 민감한 정보 마스킹
+          logger.i('토큰 정보: **** (민감정보 마스킹)');
+          logger.i('상세 정보는 디버그 모드에서만 출력됩니다');
+          logger.i('========================');
+        }
         
         // 토큰이 만료되었다고 판단되면 경고만 표시 
         if (tokenExpired) {

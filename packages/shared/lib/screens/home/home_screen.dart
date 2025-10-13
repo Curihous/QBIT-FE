@@ -80,56 +80,23 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      body: Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // TODO: 홈 화면 UI 구현
-            // - PortfolioSummary 위젯 (포트폴리오 요약)
-            // - RecentTransactions 위젯 (최근 거래 내역)
-            // - MarketOverview 위젯 (시장 개요)
-            // - QuickActions 위젯 (빠른 액션 버튼들)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(32.0),
-              decoration: BoxDecoration(
-                color: AppColors.gray100,
-                borderRadius: BorderRadius.circular(12.0),
-                border: Border.all(color: AppColors.gray300),
+            Text(
+              '구현예정',
+              style: AppFonts.titleLarge.copyWith(
+                color: AppColors.gray500,
               ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.home_outlined,
-                    size: 64.0,
-                    color: AppColors.gray300,
-                  ),
-                  const SizedBox(height: 16.0),
-                  Text(
-                    '홈 화면',
-                    style: AppFonts.titleLarge.copyWith(
-                      color: AppColors.gray300,
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    'TODO: 홈 화면 UI 구현 예정',
-                    style: AppFonts.bodyMedium.copyWith(
-                      color: AppColors.gray300,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16.0),
-                  Text(
-                    '구현 예정 기능:\n• 포트폴리오 요약\n• 최근 거래 내역\n• 시장 개요\n• 빠른 액션',
-                    style: AppFonts.bodySmall.copyWith(
-                      color: AppColors.gray300,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+            ),
+            const SizedBox(height: 16.0),
+            Text(
+              'TODO: 포트폴리오 연동\n- 보유자산 조회 API 연동\n- 포트폴리오 차트 구현\n- 수익률 계산 및 표시',
+              style: AppFonts.bodyMedium.copyWith(
+                color: AppColors.gray400,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
@@ -137,64 +104,6 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBarWidget(
         currentIndex: _getCurrentIndex(),
         onTap: _onNavItemTap,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // TODO: 홈 화면 UI 구현
-            // - PortfolioSummary 위젯 (포트폴리오 요약)
-            // - RecentTransactions 위젯 (최근 거래 내역)
-            // - MarketOverview 위젯 (시장 개요)
-            // - QuickActions 위젯 (빠른 액션 버튼들)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(32.0),
-              decoration: BoxDecoration(
-                color: AppColors.gray100,
-                borderRadius: BorderRadius.circular(12.0),
-                border: Border.all(color: AppColors.gray300),
-              ),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.home_outlined,
-                    size: 64.0,
-                    color: AppColors.gray300,
-                  ),
-                  const SizedBox(height: 16.0),
-                  Text(
-                    '홈 화면',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.gray300,
-                    ),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    'TODO: 홈 화면 UI 구현 예정',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: AppColors.gray300,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16.0),
-                  Text(
-                    '구현 예정 기능:\n• 포트폴리오 요약\n• 최근 거래 내역\n• 시장 개요\n• 빠른 액션',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppColors.gray300,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

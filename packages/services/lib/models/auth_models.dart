@@ -27,7 +27,7 @@ class KakaoLoginResponse {
   final String? accessToken;
   final int? expiresIn;
   final bool? isNewUser;
-  final int? userId;
+  final String? userId;
   final String? email;
   final String? nickname;
 
@@ -45,7 +45,7 @@ class KakaoLoginResponse {
       accessToken: json['accessToken'],
       expiresIn: json['expiresIn'],
       isNewUser: json['isNewUser'],
-      userId: json['userId'],
+      userId: json['userId']?.toString(),
       email: json['email'],
       nickname: json['nickname'],
     );

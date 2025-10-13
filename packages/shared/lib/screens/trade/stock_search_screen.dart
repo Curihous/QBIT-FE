@@ -252,7 +252,6 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.center,
-                spacing: 9,
                 children: [
                   Container(
                     width: 40,
@@ -262,6 +261,7 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
                       shape: OvalBorder(),
                     ),
                   ),
+                  SizedBox(width: 9),
                   Text.rich(
                     TextSpan(
                       children: [

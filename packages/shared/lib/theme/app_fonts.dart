@@ -44,7 +44,7 @@ class AppFonts {
   
   static const TextStyle bodyMediumRegular = TextStyle(
     fontSize: 16,
-    height: 140/16, // line-height: 140px
+    height: 1.4, // line-height: 140% (1.4)
     fontWeight: FontWeight.w400, // Regular
     fontFamily: fontFamily,
   );

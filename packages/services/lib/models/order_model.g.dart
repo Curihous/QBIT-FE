@@ -7,20 +7,36 @@ part of 'order_model.dart';
 // **************************************************************************
 
 OrderModel _$OrderModelFromJson(Map<String, dynamic> json) => OrderModel(
-      symbol: json['symbol'] as String,
-      quantity: json['quantity'] as String,
-      side: $enumDecode(_$OrderSideEnumMap, json['side']),
-      type: $enumDecode(_$OrderTypeEnumMap, json['type']),
-      timeInForce: $enumDecode(_$TimeInForceEnumMap, json['timeInForce']),
-      limitPrice: json['limitPrice'] as String?,
-      stopPrice: json['stopPrice'] as String?,
-      orderId: json['orderId'] as String?,
-      status: $enumDecodeNullable(_$OrderStatusEnumMap, json['status']),
-      filledQuantity: json['filledQuantity'] as String?,
-      filledAvgPrice: json['filledAvgPrice'] as String?,
-      createdAt: json['createdAt'] as String?,
-      filledAt: json['filledAt'] as String?,
-    );
+  symbol: json['symbol'] as String,
+  quantity: json['quantity'] as String,
+  side: $enumDecode(
+    _$OrderSideEnumMap,
+    json['side'],
+    unknownValue: OrderSide.unknown,
+  ),
+  type: $enumDecode(
+    _$OrderTypeEnumMap,
+    json['type'],
+    unknownValue: OrderType.unknown,
+  ),
+  timeInForce: $enumDecode(
+    _$TimeInForceEnumMap,
+    json['timeInForce'],
+    unknownValue: TimeInForce.unknown,
+  ),
+  limitPrice: json['limitPrice'] as String?,
+  stopPrice: json['stopPrice'] as String?,
+  orderId: json['orderId'] as String?,
+  status: $enumDecodeNullable(
+    _$OrderStatusEnumMap,
+    json['status'],
+    unknownValue: OrderStatus.unknown,
+  ),
+  filledQuantity: json['filledQuantity'] as String?,
+  filledAvgPrice: json['filledAvgPrice'] as String?,
+  createdAt: json['createdAt'] as String?,
+  filledAt: json['filledAt'] as String?,
+);
 
 Map<String, dynamic> _$OrderModelToJson(OrderModel instance) =>
     <String, dynamic>{
@@ -42,11 +58,16 @@ Map<String, dynamic> _$OrderModelToJson(OrderModel instance) =>
 const _$OrderSideEnumMap = {
   OrderSide.buy: 'buy',
   OrderSide.sell: 'sell',
+  OrderSide.unknown: 'unknown',
 };
 
 const _$OrderTypeEnumMap = {
   OrderType.limit: 'limit',
   OrderType.market: 'market',
+  OrderType.stop: 'stop',
+  OrderType.stopLimit: 'stop_limit',
+  OrderType.trailingStop: 'trailing_stop',
+  OrderType.unknown: 'unknown',
 };
 
 const _$TimeInForceEnumMap = {
@@ -54,25 +75,53 @@ const _$TimeInForceEnumMap = {
   TimeInForce.gtc: 'gtc',
   TimeInForce.ioc: 'ioc',
   TimeInForce.fok: 'fok',
+  TimeInForce.gtx: 'gtx',
+  TimeInForce.gtd: 'gtd',
+  TimeInForce.unknown: 'unknown',
 };
 
 const _$OrderStatusEnumMap = {
-  OrderStatus.pending: 'pending',
+  OrderStatus.newOrder: 'new',
+  OrderStatus.pendingNew: 'pending_new',
+  OrderStatus.accepted: 'accepted',
+  OrderStatus.pendingCancel: 'pending_cancel',
+  OrderStatus.pendingReplace: 'pending_replace',
+  OrderStatus.partiallyFilled: 'partially_filled',
   OrderStatus.filled: 'filled',
-  OrderStatus.cancelled: 'cancelled',
+  OrderStatus.canceled: 'canceled',
   OrderStatus.rejected: 'rejected',
+  OrderStatus.expired: 'expired',
+  OrderStatus.doneForDay: 'done_for_day',
+  OrderStatus.suspended: 'suspended',
+  OrderStatus.unknown: 'unknown',
 };
 
 OrderRequest _$OrderRequestFromJson(Map<String, dynamic> json) => OrderRequest(
-      symbol: json['symbol'] as String,
-      quantity: json['quantity'] as String,
-      side: $enumDecode(_$OrderSideEnumMap, json['side']),
-      type: $enumDecode(_$OrderTypeEnumMap, json['type']),
-      status: $enumDecodeNullable(_$OrderStatusEnumMap, json['status']),
-      timeInForce: $enumDecode(_$TimeInForceEnumMap, json['timeInForce']),
-      limitPrice: json['limitPrice'] as String?,
-      stopPrice: json['stopPrice'] as String?,
-    );
+  symbol: json['symbol'] as String,
+  quantity: json['quantity'] as String,
+  side: $enumDecode(
+    _$OrderSideEnumMap,
+    json['side'],
+    unknownValue: OrderSide.unknown,
+  ),
+  type: $enumDecode(
+    _$OrderTypeEnumMap,
+    json['type'],
+    unknownValue: OrderType.unknown,
+  ),
+  status: $enumDecodeNullable(
+    _$OrderStatusEnumMap,
+    json['status'],
+    unknownValue: OrderStatus.unknown,
+  ),
+  timeInForce: $enumDecode(
+    _$TimeInForceEnumMap,
+    json['timeInForce'],
+    unknownValue: TimeInForce.unknown,
+  ),
+  limitPrice: json['limitPrice'] as String?,
+  stopPrice: json['stopPrice'] as String?,
+);
 
 Map<String, dynamic> _$OrderRequestToJson(OrderRequest instance) =>
     <String, dynamic>{
@@ -80,10 +129,10 @@ Map<String, dynamic> _$OrderRequestToJson(OrderRequest instance) =>
       'quantity': instance.quantity,
       'side': _$OrderSideEnumMap[instance.side]!,
       'type': _$OrderTypeEnumMap[instance.type]!,
-      'status': _$OrderStatusEnumMap[instance.status],
+      'status': ?_$OrderStatusEnumMap[instance.status],
       'timeInForce': _$TimeInForceEnumMap[instance.timeInForce]!,
-      'limitPrice': instance.limitPrice,
-      'stopPrice': instance.stopPrice,
+      'limitPrice': ?instance.limitPrice,
+      'stopPrice': ?instance.stopPrice,
     };
 
 OrderResponse _$OrderResponseFromJson(Map<String, dynamic> json) =>

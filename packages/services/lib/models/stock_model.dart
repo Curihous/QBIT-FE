@@ -120,6 +120,14 @@ class StockModel {
     return 'StockModel(symbol: $symbol, name: $name, currentPrice: $currentPrice, changeAmount: $changeAmount, changePercentage: $changePercentage, isPositive: $isPositive, exchange: $exchange, assetClass: $assetClass, status: $status, tradable: $tradable, fractionable: $fractionable, minOrderSize: $minOrderSize, minTradeIncrement: $minTradeIncrement, priceIncrement: $priceIncrement, logoUrl: $logoUrl)';
   }
 
+  /// Double 값 비교를 위한 epsilon 비교 헬퍼
+  static bool _doubleEquals(double? a, double? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    const double epsilon = 1e-9;
+    return (a - b).abs() < epsilon;
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -127,18 +135,18 @@ class StockModel {
     return other is StockModel &&
         other.symbol == symbol &&
         other.name == name &&
-        other.currentPrice == currentPrice &&
-        other.changeAmount == changeAmount &&
-        other.changePercentage == changePercentage &&
+        _doubleEquals(other.currentPrice, currentPrice) &&
+        _doubleEquals(other.changeAmount, changeAmount) &&
+        _doubleEquals(other.changePercentage, changePercentage) &&
         other.isPositive == isPositive &&
         other.exchange == exchange &&
         other.assetClass == assetClass &&
         other.status == status &&
         other.tradable == tradable &&
         other.fractionable == fractionable &&
-        other.minOrderSize == minOrderSize &&
-        other.minTradeIncrement == minTradeIncrement &&
-        other.priceIncrement == priceIncrement &&
+        _doubleEquals(other.minOrderSize, minOrderSize) &&
+        _doubleEquals(other.minTradeIncrement, minTradeIncrement) &&
+        _doubleEquals(other.priceIncrement, priceIncrement) &&
         other.logoUrl == logoUrl;
   }
 
