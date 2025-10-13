@@ -1,6 +1,7 @@
 name: qbit_core
-description: QBIT Core package - 공통 핵심 기능
+description: QBit Core - 핵심 설정 및 모델
 version: 1.0.0
+publish_to: none
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -8,10 +9,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  
+  # 환경 설정
   flutter_dotenv: ^6.0.0
+  
+  # 로깅
   logger: ^2.0.2
-  shared_preferences: ^2.5.3
-  flutter_secure_storage: ^9.2.2
+  
+  # JSON
   json_annotation: ^4.9.0
 
 dev_dependencies:

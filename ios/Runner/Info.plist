@@ -29,7 +29,8 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>kakao2fd4280cde76fda045bf055db5875e86</string>
+				<!-- 카카오 앱 키는 .env에서 관리, Dart에서 SDK 초기화 -->
+				<string>kakaoKAKAO_KEY_PLACEHOLDER</string>
 			</array>
 		</dict>
 		<dict>
