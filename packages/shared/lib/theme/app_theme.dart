@@ -13,7 +13,7 @@ class AppTheme {
       brightness: Brightness.light,
       primary: AppColors.primary,
       secondary: AppColors.primaryLight,
-      surface: AppColors.surface,
+      surface: AppColors.white,
       background: AppColors.background,
       error: AppColors.error,
     ),
@@ -36,12 +36,12 @@ class AppTheme {
     
     // Card Theme
     cardTheme: CardThemeData(
-      color: AppColors.surface,
+      color: AppColors.white,
       elevation: 4,
       shape: RoundedRectangleBorder(
         borderRadius: AppBorderRadius.medium,
       ),
-      shadowColor: AppColors.black.withOpacity(0.1),
+      shadowColor: AppColors.gray900.withOpacity(0.1),
     ),
     
     // 버튼 (계좌 연결, 리포트 확인 화면의 큰 검은색 버튼)
@@ -94,7 +94,7 @@ class AppTheme {
     // Input Decoration Theme
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surface,
+      fillColor: AppColors.white,
       border: OutlineInputBorder(
         borderRadius: AppBorderRadius.medium,
         borderSide: const BorderSide(color: AppColors.border),
@@ -122,7 +122,7 @@ class AppTheme {
     
     // Bottom Navigation Bar Theme
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.white,
       selectedItemColor: AppColors.gray900,
       unselectedItemColor: AppColors.gray300,
       type: BottomNavigationBarType.fixed,

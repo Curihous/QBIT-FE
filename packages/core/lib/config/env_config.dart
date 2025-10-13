@@ -12,7 +12,7 @@ class EnvConfig {
     if (_initialized) return;
     
     try {
-      await dotenv.load(fileName: ".env");
+      await dotenv.load(fileName: "assets/env/.env");
       _initialized = true;
       logger.i('환경 변수 로드 완료');
     } catch (e) {
@@ -27,20 +27,54 @@ class EnvConfig {
     }
   }
 
-  /// 환경 변수 값 가져오기 (기본값 없음)
+  /// 환경 변수 값 가져오기 (기본값 제공)
   static String getValue(String key) {
     if (!_initialized) {
-      logger.w('환경 변수가 초기화되지 않음: $key');
-      return '';
+      logger.w('환경 변수가 초기화되지 않음: $key, 기본값 사용');
+      return _getDefaultValue(key);
     }
-    
-    final value = dotenv.env[key];
-    if (value == null || value.isEmpty) {
-      logger.w('환경 변수 값이 없음: $key');
-      return '';
+
+    // flutter_dotenv가 실제로 초기화되지 않은 경우 안전 가드
+    if (!dotenv.isInitialized) {
+      logger.w('dotenv 미초기화 상태 감지: $key, 기본값 사용');
+      return _getDefaultValue(key);
     }
-    
-    return value;
+
+    try {
+      final value = dotenv.env[key];
+      if (value == null || value.isEmpty) {
+        logger.w('환경 변수 값이 없음: $key, 기본값 사용');
+        return _getDefaultValue(key);
+      }
+      return value;
+    } catch (e) {
+      logger.w('환경 변수 접근 실패: $key, 기본값 사용');
+      return _getDefaultValue(key);
+    }
+  }
+
+  /// 기본값 제공
+  static String _getDefaultValue(String key) {
+    switch (key) {
+      case 'KAKAO_NATIVE_APP_KEY':
+        return '2fd4280cde76fda045bf055db5875e86';
+      case 'BACKEND_URL':
+        return 'https://api.qbit.o-r.kr';
+      case 'APP_NAME':
+        return 'QBit';
+      case 'APP_DESCRIPTION':
+        return 'QBIT Mobile App - iOS/Android';
+      case 'BACKEND_API_VERSION':
+        return 'v1';
+      case 'DEBUG_MODE':
+        return 'true';
+      case 'ENVIRONMENT':
+        return 'development';
+      case 'LOG_LEVEL':
+        return 'info';
+      default:
+        return '';
+    }
   }
 
   /// 필수 환경 변수 값 가져오기 (값이 없으면 예외 발생)
@@ -48,7 +82,11 @@ class EnvConfig {
     if (!_initialized) {
       throw Exception('환경 변수가 초기화되지 않음: $key');
     }
-    
+
+    if (!dotenv.isInitialized) {
+      throw Exception('dotenv가 초기화되지 않음: $key');
+    }
+
     final value = dotenv.env[key];
     if (value == null || value.isEmpty) {
       throw Exception('필수 환경 변수가 설정되지 않음: $key');

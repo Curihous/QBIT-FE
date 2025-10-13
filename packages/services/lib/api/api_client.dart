@@ -160,6 +160,7 @@ class ApiClient {
       final refreshToken = await storage.read(key: 'refresh_token');
       final kakaoToken = await storage.read(key: 'kakao_access_token');
       
+      // 테스트단계에서만 쓸거니까 리뷰에서 제외
       logger.i('=== 토큰 상태 디버그 ===');
       logger.i('액세스 토큰: ${accessToken != null ? "존재 (길이: ${accessToken.length})" : "없음"}');
       logger.i('리프레시 토큰: ${refreshToken != null ? "존재 (길이: ${refreshToken.length})" : "없음"}');

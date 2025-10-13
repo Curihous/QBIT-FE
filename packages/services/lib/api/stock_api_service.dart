@@ -20,7 +20,7 @@ class StockApiService {
       
       if (response.statusCode == 200) {
         logger.i('주식 상세 정보 조회 성공: $symbol');
-        logger.i('응답 데이터: ${response.data}');
+        logger.d('응답 데이터: ${response.data}');
         final data = response.data;
         if (data is Map<String, dynamic>) {
           return StockModel.fromJson(data);
@@ -293,7 +293,7 @@ class StockApiService {
       
       if (response.statusCode == 200) {
         logger.i('Alpaca 계정 정보 조회 성공');
-        logger.i('응답 데이터: ${response.data}');
+        logger.d('응답 데이터: ${response.data}');
         
         if (response.data is Map<String, dynamic>) {
           return response.data as Map<String, dynamic>;
@@ -303,7 +303,7 @@ class StockApiService {
         }
       } else {
         logger.e('Alpaca 계정 정보 조회 실패: ${response.statusCode}');
-        logger.e('응답 데이터: ${response.data}');
+        logger.d('응답 데이터: ${response.data}');
         return null;
       }
     } catch (error) {
@@ -334,7 +334,7 @@ class StockApiService {
       
       if (response.statusCode == 200) {
         logger.i('종목 검색 성공');
-        logger.i('응답 데이터: ${response.data}');
+        logger.d('응답 데이터: ${response.data}');
         logger.i('응답 데이터 타입: ${response.data.runtimeType}');
         logger.i('응답 데이터 길이: ${response.data is List ? (response.data as List).length : 'N/A'}');
         

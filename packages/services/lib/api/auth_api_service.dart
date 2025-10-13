@@ -56,8 +56,8 @@ class AuthApiService {
       
       final response = await _dio.post('/auth/logout');
 
-      if (response.statusCode == 200) {
-        logger.i('로그아웃 API 성공');
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        logger.i('로그아웃 API 성공 (상태코드: ${response.statusCode})');
         return true;
       } else {
         logger.e('로그아웃 API 실패: ${response.statusCode}');
