@@ -12,6 +12,7 @@ import 'alpaca_auth_screen.dart';
 import 'stock_search_screen.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
 import 'package:qbit_services/auth/alpaca_auth_service.dart';
+import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/models/stock_model.dart';
 import 'package:qbit_services/models/asset_model.dart';
@@ -119,11 +120,11 @@ class _TradeScreenState extends State<TradeScreen> {
     }
   }
 
-  // 카카오 닉네임 가져오기
+  // 사용자 닉네임 가져오기 (백엔드 users/me 엔드포인트 사용)
   Future<void> _loadKakaoNickname() async {
     try {
-      // 카카오 SDK에서 사용자 정보 가져오기
-      final userInfo = await KakaoAuthService.getSimpleUserInfo();
+      // 백엔드에서 사용자 정보 가져오기
+      final userInfo = await AuthService.getCurrentUser();
       if (userInfo != null && userInfo['nickname'] != null) {
         setState(() {
           _userNickname = userInfo['nickname'] as String;
@@ -712,7 +713,7 @@ class _TradeScreenState extends State<TradeScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                       ),
                       child: Text(
-                        '+ ${_calculateReturnPercentage()}%',
+                        '${_calculateReturnPercentage()}%',
                                     style: AppFonts.captionSmallRegular.copyWith(color: AppColors.gray900),
                       ),
                     ),
@@ -788,7 +789,6 @@ class _TradeScreenState extends State<TradeScreen> {
                                   mainAxisSize: MainAxisSize.min,
                                   mainAxisAlignment: MainAxisAlignment.start,
                                   crossAxisAlignment: CrossAxisAlignment.start,
-                                  spacing: 2,
                                   children: [
                                     SizedBox(
                                       width: 172,

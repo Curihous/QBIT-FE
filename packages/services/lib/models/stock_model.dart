@@ -120,6 +120,23 @@ class StockModel {
     return 'StockModel(symbol: $symbol, name: $name, currentPrice: $currentPrice, changeAmount: $changeAmount, changePercentage: $changePercentage, isPositive: $isPositive, exchange: $exchange, assetClass: $assetClass, status: $status, tradable: $tradable, fractionable: $fractionable, minOrderSize: $minOrderSize, minTradeIncrement: $minTradeIncrement, priceIncrement: $priceIncrement, logoUrl: $logoUrl)';
   }
 
+  /// Double 값 비교를 위한 epsilon 비교 헬퍼
+  static bool _doubleEquals(double? a, double? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    const double epsilon = 1e-9;
+    return (a - b).abs() < epsilon;
+  }
+
+  /// Double 값을 정규화하여 hashCode 계산에 사용
+  static int _normalizedDoubleHashCode(double? value) {
+    if (value == null) return 0;
+    const double epsilon = 1e-9;
+    // epsilon 단위로 반올림하여 정규화
+    final normalized = (value / epsilon).round() * epsilon;
+    return normalized.hashCode;
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -127,18 +144,18 @@ class StockModel {
     return other is StockModel &&
         other.symbol == symbol &&
         other.name == name &&
-        other.currentPrice == currentPrice &&
-        other.changeAmount == changeAmount &&
-        other.changePercentage == changePercentage &&
+        _doubleEquals(other.currentPrice, currentPrice) &&
+        _doubleEquals(other.changeAmount, changeAmount) &&
+        _doubleEquals(other.changePercentage, changePercentage) &&
         other.isPositive == isPositive &&
         other.exchange == exchange &&
         other.assetClass == assetClass &&
         other.status == status &&
         other.tradable == tradable &&
         other.fractionable == fractionable &&
-        other.minOrderSize == minOrderSize &&
-        other.minTradeIncrement == minTradeIncrement &&
-        other.priceIncrement == priceIncrement &&
+        _doubleEquals(other.minOrderSize, minOrderSize) &&
+        _doubleEquals(other.minTradeIncrement, minTradeIncrement) &&
+        _doubleEquals(other.priceIncrement, priceIncrement) &&
         other.logoUrl == logoUrl;
   }
 
@@ -146,18 +163,18 @@ class StockModel {
   int get hashCode {
     return symbol.hashCode ^
         name.hashCode ^
-        currentPrice.hashCode ^
-        changeAmount.hashCode ^
-        changePercentage.hashCode ^
+        _normalizedDoubleHashCode(currentPrice) ^
+        _normalizedDoubleHashCode(changeAmount) ^
+        _normalizedDoubleHashCode(changePercentage) ^
         isPositive.hashCode ^
         exchange.hashCode ^
         assetClass.hashCode ^
         status.hashCode ^
         tradable.hashCode ^
         fractionable.hashCode ^
-        minOrderSize.hashCode ^
-        minTradeIncrement.hashCode ^
-        priceIncrement.hashCode ^
+        _normalizedDoubleHashCode(minOrderSize) ^
+        _normalizedDoubleHashCode(minTradeIncrement) ^
+        _normalizedDoubleHashCode(priceIncrement) ^
         logoUrl.hashCode;
   }
 }

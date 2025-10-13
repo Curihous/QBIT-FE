@@ -87,7 +87,8 @@ app.*.map.json
 **/linux/flutter/generated_plugins.cmake
 
 # Environment variables
-.env
+# NOTE: .env 파일은 공개 가능한 값들(KAKAO_NATIVE_APP_KEY, BACKEND_URL 등)만 포함하므로 저장소에 커밋
+# 실제 비밀값은 .env.local, .env.production 등 별도 파일로 관리
 .env.local
 .env.development
 .env.production

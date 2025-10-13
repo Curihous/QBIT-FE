@@ -286,11 +286,11 @@ class KakaoAuthService {
         }
         rethrow;
       }
-      
       final now = DateTime.now();
       final expiresAt = now.add(Duration(seconds: tokenInfo.expiresIn));
       
-      if (!expiresAt.isBefore(now)) {
+      // 토큰이 유효한지 확인 (expiresIn > 0이고 미래에 만료되는 경우만 유효)
+      if (tokenInfo.expiresIn > 0 && expiresAt.isAfter(now)) {
         logger.i('토큰이 아직 유효합니다. 갱신 불필요');
         OAuthToken? token = await TokenManagerProvider.instance.manager.getToken();
         return {
@@ -313,7 +313,6 @@ class KakaoAuthService {
       return {'success': false, 'error': error.toString()};
     }
   }
-
   /// 재로그인을 통한 토큰 갱신 헬퍼 메서드
   static Future<Map<String, dynamic>> _reloginAndBuildResult() async {
     final isInstalled = await isKakaoTalkInstalled();

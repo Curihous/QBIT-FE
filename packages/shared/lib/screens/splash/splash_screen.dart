@@ -23,22 +23,26 @@ class _SplashScreenState extends State<SplashScreen> {
   Future<void> _navigateToNextScreen() async {
     await Future.delayed(const Duration(seconds: 2));
     
-    if (mounted) {
-      try {
-        // 로그인 상태 확인
-        final isLoggedIn = await AuthService.isLoggedIn();
-        
-        if (isLoggedIn) {
-          // 로그인되어 있으면 홈 화면으로 이동
-          context.go('/home');
-        } else {
-          // 로그인되지 않았으면 로그인 화면으로 이동
-          context.go('/login');
-        }
-      } catch (e) {
-        // 오류 발생 시 로그인 화면으로 이동
+    if (!mounted) return;
+    
+    try {
+      // 로그인 상태 확인
+      final isLoggedIn = await AuthService.isLoggedIn();
+      
+      if (!mounted) return;
+      
+      if (isLoggedIn) {
+        // 로그인되어 있으면 홈 화면으로 이동
+        context.go('/home');
+      } else {
+        // 로그인되지 않았으면 로그인 화면으로 이동
         context.go('/login');
       }
+    } catch (e) {
+      if (!mounted) return;
+      
+      // 오류 발생 시 로그인 화면으로 이동
+      context.go('/login');
     }
   }
 

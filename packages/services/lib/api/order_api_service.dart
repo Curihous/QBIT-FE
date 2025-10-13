@@ -8,7 +8,7 @@ class OrderApiService {
   static final Logger logger = Logger();
 
   /// 주문 생성
-  static Future<Map<String, dynamic>?> createOrder(OrderModel order) async {
+  static Future<Map<String, dynamic>?> createOrder(OrderRequest order) async {
     try {
       logger.i('주문 생성 시작: ${order.symbol} ${order.side} ${order.quantity}주');
       logger.i('주문 데이터: ${order.toJson()}');

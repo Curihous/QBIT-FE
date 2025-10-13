@@ -44,6 +44,9 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
   // 환율 관련
   double? _exchangeRate;
   double? _tickSizeInKrw;
+  
+  // 주문 제출 상태
+  bool _isSubmittingOrder = false;
 
   @override
   void initState() {
@@ -112,6 +115,38 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
   }
 
   Future<void> _handleOrderSubmit() async {
+    // 입력 검증
+    if (_quantity <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('수량은 1주 이상이어야 합니다'),
+          backgroundColor: AppColors.loss,
+        ),
+      );
+      return;
+    }
+    
+    if (_price <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('가격을 입력해주세요'),
+          backgroundColor: AppColors.loss,
+        ),
+      );
+      return;
+    }
+    
+    // 환율 확인
+    if (_exchangeRate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('환율 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요'),
+          backgroundColor: AppColors.loss,
+        ),
+      );
+      return;
+    }
+
     try {
       // 주문 확인 다이얼로그
       final confirmed = await showDialog<bool>(
@@ -144,16 +179,21 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
 
       if (confirmed != true) return;
 
+      // 로딩 상태 시작
+      setState(() {
+        _isSubmittingOrder = true;
+      });
+
       // 주문 생성 (가격을 USD로 변환)
       final exchangeRate = _exchangeRate ?? 1300.0; // 기본 환율
       final priceInUsd = _price / exchangeRate;
       final limitPriceInUsd = priceInUsd.toStringAsFixed(2);
       
-      final order = OrderModel(
+      final order = OrderRequest(
         symbol: widget.symbol,
         quantity: _quantity.toString(),
         side: _selectedOrderTab == '매도' ? OrderSide.sell : OrderSide.buy,
-        type: OrderType.limit, // 지정가 주문
+        type: OrderType.limit,
         timeInForce: TimeInForce.day,
         limitPrice: limitPriceInUsd,
       );
@@ -198,17 +238,59 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
           backgroundColor: AppColors.loss,
         ),
       );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingOrder = false;
+        });
+      }
     }
   }
 
-  void _setMaxQuantity() {
-    // TODO: 실제 buying_power를 가져와서 최대 수량 계산
-    // 현재는 임시로 100주로 설정
-    final maxQuantity = 100;
-    setState(() {
-      _quantity = maxQuantity;
-      _quantityController.text = maxQuantity.toString();
-    });
+  Future<void> _setMaxQuantity() async {
+    try {
+      // Alpaca 계정 정보에서 매수 가능 금액 가져오기
+      final accountInfo = await StockApiService.getAlpacaAccount();
+      
+      if (accountInfo == null || _exchangeRate == null || _price <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('매수 가능 금액을 확인할 수 없습니다'),
+            backgroundColor: AppColors.loss,
+          ),
+        );
+        return;
+      }
+      
+      // 매수 가능 금액을 원화로 환산
+      final buyingPowerUsd = double.tryParse(accountInfo['buyingPower']?.toString() ?? '0') ?? 0;
+      final buyingPowerKrw = buyingPowerUsd * _exchangeRate!;
+      
+      // 최대 매수 가능 수량 계산
+      final maxQuantity = (buyingPowerKrw / _price).floor();
+      
+      if (maxQuantity <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('매수 가능 금액이 부족합니다'),
+            backgroundColor: AppColors.loss,
+          ),
+        );
+        return;
+      }
+      
+      setState(() {
+        _quantity = maxQuantity;
+        _quantityController.text = maxQuantity.toString();
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('최대 수량 계산 중 오류가 발생했습니다'),
+          backgroundColor: AppColors.loss,
+        ),
+      );
+    }
   }
 
   @override

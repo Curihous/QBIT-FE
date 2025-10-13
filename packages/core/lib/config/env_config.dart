@@ -12,9 +12,10 @@ class EnvConfig {
     if (_initialized) return;
     
     try {
-      await dotenv.load(fileName: ".env");
+      // Flutter 앱은 assets/env/ 디렉터리에서 .env 파일을 로드
+      await dotenv.load(fileName: "assets/env/.env");
       _initialized = true;
-      logger.i('환경 변수 로드 완료');
+      logger.i('환경 변수 로드 완료: assets/env/.env');
     } catch (e) {
       logger.e('환경 변수 로드 실패: $e');
       // 개발 환경에서는 기본값 사용, 릴리스에서는 예외 발생
@@ -69,13 +70,13 @@ class EnvConfig {
     }
   }
 
-  /// 기본값 제공 (보안상 민감한 정보는 제외)
+  /// 기본값 제공 (공개 가능한 값들)
   static String _getDefaultValue(String key) {
     switch (key) {
       case 'KAKAO_NATIVE_APP_KEY':
-        return ''; // 보안상 하드코딩 제거 - .env 파일에서만 로드
+        return '2fd4280cde76fda045bf055db5875e86';
       case 'BACKEND_URL':
-        return ''; // 프로덕션 URL 하드코딩 제거 - .env 파일에서만 로드
+        return 'https://api.qbit.o-r.kr';
       case 'APP_NAME':
         return 'QBit';
       case 'APP_DESCRIPTION':

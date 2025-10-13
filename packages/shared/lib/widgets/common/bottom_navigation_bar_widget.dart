@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:qbit_shared/router/app_router.dart';
 
 // 수정 필요
 
@@ -74,6 +75,13 @@ class NavigationHelper {
         // 분석 탭
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('분석 화면 준비 중')),
+        );
+        break;
+      default:
+        // 예상치 못한 인덱스 값 처리
+        debugPrint('NavigationHelper: 예상치 못한 탭 인덱스: $index');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('알 수 없는 탭 인덱스: $index')),
         );
         break;
     }
