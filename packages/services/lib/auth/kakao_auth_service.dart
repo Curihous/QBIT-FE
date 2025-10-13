@@ -258,8 +258,72 @@ class KakaoAuthService {
         'hasSignedUp': user.hasSignedUp,
       };
     } catch (error) {
-      logger.e('ㄴ간단한 사용자 정보 조회 실패: $error');
+      logger.e('간단한 사용자 정보 조회 실패: $error');
       return null;
+    }
+  }
+
+  /// 카카오 액세스 토큰 갱신
+  static Future<Map<String, dynamic>?> refreshAccessToken() async {
+    try {
+      logger.i('카카오 액세스 토큰 갱신 시작');
+      
+      // 기존 토큰 확인
+      if (!await AuthApi.instance.hasToken()) {
+        logger.e('갱신할 토큰이 없습니다');
+        return {'success': false, 'error': '갱신할 토큰이 없습니다'};
+      }
+
+      // 토큰 정보 확인
+      AccessTokenInfo tokenInfo = await UserApi.instance.accessTokenInfo();
+      final now = DateTime.now();
+      final expiresAt = now.add(Duration(seconds: tokenInfo.expiresIn));
+      
+      if (!expiresAt.isBefore(now)) {
+        logger.i('토큰이 아직 유효합니다. 갱신 불필요');
+        OAuthToken? token = await TokenManagerProvider.instance.manager.getToken();
+        return {
+          'success': true,
+          'accessToken': token?.accessToken,
+          'userId': tokenInfo.id.toString(),
+          'refreshed': false,
+        };
+      }
+
+      // 토큰 갱신 시도
+      try {
+        // 카카오톡 설치 여부 확인
+        bool isInstalled = await isKakaoTalkInstalled();
+        
+        OAuthToken newToken;
+        if (isInstalled) {
+          // 카카오톡으로 갱신 시도
+          newToken = await UserApi.instance.loginWithKakaoTalk();
+        } else {
+          // 카카오계정으로 갱신 시도
+          newToken = await UserApi.instance.loginWithKakaoAccount();
+        }
+        
+        logger.i('카카오 토큰 갱신 성공: accessToken=${newToken.accessToken}');
+        
+        // 사용자 정보 조회
+        User user = await UserApi.instance.me();
+        
+        return {
+          'success': true,
+          'accessToken': newToken.accessToken,
+          'userId': user.id.toString(),
+          'nickname': user.kakaoAccount?.profile?.nickname,
+          'email': user.kakaoAccount?.email,
+          'refreshed': true,
+        };
+      } catch (refreshError) {
+        logger.e('카카오 토큰 갱신 실패: $refreshError');
+        return {'success': false, 'error': '토큰 갱신 실패: $refreshError'};
+      }
+    } catch (error) {
+      logger.e('카카오 토큰 갱신 중 예외 발생: $error');
+      return {'success': false, 'error': error.toString()};
     }
   }
 }
