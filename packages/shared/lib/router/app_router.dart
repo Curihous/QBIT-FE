@@ -7,7 +7,9 @@ import 'package:qbit_shared/screens/home/home_screen.dart';
 import 'package:qbit_shared/screens/trade/trade_screen.dart';
 import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
 import 'package:qbit_shared/screens/trade/stock_search_screen.dart';
+import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_services/auth/auth_service.dart';
+import 'package:qbit_services/api/api_client.dart';
 
 class AppRouter {
   static const String _isFirstLaunchKey = 'is_first_launch';
@@ -91,6 +93,17 @@ class _RootScreenState extends State<_RootScreen> {
   void initState() {
     super.initState();
     _checkFirstLaunch();
+    _setupTokenExpiredListener();
+  }
+
+  void _setupTokenExpiredListener() {
+    // 토큰 만료 이벤트 리스너 설정
+    ApiClient.onTokenExpired.listen((_) {
+      if (mounted) {
+        // 토큰 만료 시 로그인 화면으로 이동
+        context.go('/login');
+      }
+    });
   }
 
   Future<void> _checkFirstLaunch() async {

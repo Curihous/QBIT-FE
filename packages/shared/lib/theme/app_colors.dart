@@ -30,6 +30,7 @@ class AppColors {
   static const Color info = Color(0xFF2196F3);
   
   // Secondary Colors
+  
   static const Color secondaryMain = Color(0xFFFFE19C); // Secondary main
   static const Color secondarySoft = Color(0xFFFFF0CD); // Secondary soft
   
