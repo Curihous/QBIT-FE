@@ -131,6 +131,9 @@ class EnvConfig {
   /// 환경 변수 초기화 상태 확인
   static bool get isInitialized => _initialized;
 
+  /// 테스트용 카카오 액세스 토큰
+  static String get kakaoTestAccessToken => getValue('KAKAO_TEST_ACCESS_TOKEN');
+
   /// 모든 환경 변수 출력 (디버그용)
   static void printAllEnvVars() {
     if (!_initialized) {
@@ -141,8 +144,10 @@ class EnvConfig {
     logger.i('=== 환경 변수 목록 ===');
     dotenv.env.forEach((key, value) {
       // 민감한 정보는 마스킹
-      if (key.toLowerCase().contains('key') || key.toLowerCase().contains('secret')) {
-        logger.i('$key: ${value.substring(0, 8)}...');
+      if (key.toLowerCase().contains('key') || 
+          key.toLowerCase().contains('secret') || 
+          key.toLowerCase().contains('token')) {
+        logger.i('$key: ${value.length > 8 ? value.substring(0, 8) : value}...');
       } else {
         logger.i('$key: $value');
       }

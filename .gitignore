@@ -87,12 +87,16 @@ app.*.map.json
 **/linux/flutter/generated_plugins.cmake
 
 # Environment variables
-# NOTE: .env 파일은 공개 가능한 값들(KAKAO_NATIVE_APP_KEY, BACKEND_URL 등)만 포함하므로 저장소에 커밋
-# 실제 비밀값은 .env.local, .env.production 등 별도 파일로 관리
+# .env 파일에는 민감한 정보(API 키, 토큰 등)가 포함되므로 저장소에 커밋하지 않음
+.env
 .env.local
 .env.development
 .env.production
+.env.staging
 !.env.example
+assets/env/.env
+assets/env/.env.*
+!assets/env/.env.example
 
 # IDE files
 *.swp
@@ -108,3 +112,17 @@ $RECYCLE.BIN/
 # Temporary files
 *.tmp
 *.temp
+
+# Android local properties
+android/local.properties
+**/android/local.properties
+
+# iOS specific
+ios/Podfile.lock
+**/ios/Pods/
+**/ios/.symlinks/
+
+# Gradle files
+.gradle/
+gradle-wrapper.jar
+*.gradle.backup

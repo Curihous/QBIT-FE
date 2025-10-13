@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_web_auth/flutter_web_auth.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:logger/logger.dart';
 import '../api/auth_api_service.dart';
 import 'kakao_auth_service.dart';
@@ -15,52 +15,33 @@ class AlpacaAuthService {
       if (authorizeUrl == null) {
         return {'success': false, 'error': '인증 URL을 가져올 수 없습니다'};
       }
-      // 2. flutter_web_auth로 인증 수행
-      final result = await FlutterWebAuth.authenticate(
-        url: authorizeUrl,
-        callbackUrlScheme: 'qbit',
-      );
-
-      // 3. 콜백 URL 분석
-      final uri = Uri.parse(result);
-      // 콜백이 성공적으로 받아졌다면 성공으로 처리
-      if (uri.host == 'auth' && uri.path.contains('/alpaca/callback')) {
-        // 콜백 URL에 성공/실패 정보가 있는지 확인
-        final success = uri.queryParameters['success'];
-        final error = uri.queryParameters['error'];
-        
-        if (success == 'true' || uri.queryParameters.isEmpty) {
-          // 성공 또는 쿼리 파라미터가 없으면 성공으로 간주
-          logger.i('Alpaca 인증 성공으로 간주');
-          
-          // 백엔드에서 상태 확인
-          logger.i('=== 백엔드 상태 확인 시작 ===');
-          final statusResult = await _checkAlpacaStatus();
-          logger.i('상태 확인 결과: $statusResult');
-          logger.i('성공 여부: ${statusResult?['success']}');
-          logger.i('========================');
-          
-          if (statusResult?['success'] == true) {
-            return {'success': true, 'message': 'Alpaca 연동이 완료되었습니다!'};
-          } else {
-            final errorMsg = statusResult?['error'] ?? '연동 상태 확인 실패';
-            logger.e('상태 확인 실패: $errorMsg');
-            return {'success': false, 'error': errorMsg};
-          }
-        } else {
-          // 실패 케이스
-          logger.e('Alpaca 인증 실패: $error');
-          return {'success': false, 'error': error ?? '인증에 실패했습니다'};
-        }
+      
+      // 2. url_launcher로 브라우저 열기
+      final uri = Uri.parse(authorizeUrl);
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        return {'success': false, 'error': '브라우저를 열 수 없습니다'};
+      }
+      
+      // 3. 사용자가 브라우저에서 인증 완료 (백엔드로 자동 콜백)
+      logger.i('Alpaca 인증 URL 열림, 사용자 인증 대기 중...');
+      
+      // 브라우저에서 인증이 완료되면 백엔드가 자동으로 처리
+      // 앱으로 돌아온 후 상태 확인
+      await Future.delayed(const Duration(seconds: 2));
+      
+      // 4. 백엔드에서 상태 확인
+      logger.i('=== 백엔드 상태 확인 시작 ===');
+      final statusResult = await _checkAlpacaStatus();
+      logger.i('상태 확인 결과: $statusResult');
+      logger.i('성공 여부: ${statusResult?['success']}');
+      logger.i('========================');
+      
+      if (statusResult?['success'] == true) {
+        return {'success': true, 'message': 'Alpaca 연동이 완료되었습니다!'};
       } else {
-        logger.e('=== 콜백 URL 매칭 실패 ===');
-        logger.e('예상 호스트: auth');
-        logger.e('실제 호스트: ${uri.host}');
-        logger.e('예상 경로: /alpaca/callback 포함');
-        logger.e('실제 경로: ${uri.path}');
-        logger.e('전체 URL: $result');
-        logger.e('========================');
-        return {'success': false, 'error': '예상하지 못한 콜백 URL: ${uri.host}${uri.path}'};
+        final errorMsg = statusResult?['error'] ?? '연동 상태 확인 실패';
+        logger.e('상태 확인 실패: $errorMsg');
+        return {'success': false, 'error': errorMsg};
       }
     } catch (error) {
       logger.e('Alpaca 인증 시작 실패: $error');

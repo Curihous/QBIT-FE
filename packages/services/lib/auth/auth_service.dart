@@ -1,4 +1,5 @@
 import 'package:logger/logger.dart';
+import 'package:qbit_core/config/env_config.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
 import 'package:qbit_services/auth/alpaca_auth_service.dart';
 import 'package:qbit_services/api/auth_api_service.dart';
@@ -108,7 +109,7 @@ class AuthService {
       } else {
         // 백엔드 토큰이 없으면 카카오 SDK로만 사용자 정보 조회
         logger.i('백엔드 토큰 없음, 카카오 SDK로 사용자 정보 조회');
-        return await KakaoAuthService.getSimpleUserInfo();
+      return await KakaoAuthService.getSimpleUserInfo();
       }
     } catch (error) {
       logger.e('사용자 정보 조회 실패: $error');
@@ -175,7 +176,7 @@ class AuthService {
         };
       } else {
         // 카카오 SDK 토큰 정보 반환
-        return await KakaoAuthService.getTokenInfo();
+      return await KakaoAuthService.getTokenInfo();
       }
     } catch (error) {
       logger.e('토큰 정보 조회 실패: $error');
@@ -335,6 +336,64 @@ class AuthService {
       logger.i('Alpaca 리스너 정리 완료');
     } catch (error) {
       logger.e('Alpaca 리스너 정리 실패: $error');
+    }
+  }
+
+  // .env 파일의 카카오 액세스 토큰으로 직접 로그인
+  // TODO: 추후 제거
+  static Future<Map<String, dynamic>> loginWithTestToken() async {
+    try {
+      logger.i('테스트 토큰으로 로그인 시작');
+      final kakaoAccessToken = EnvConfig.kakaoTestAccessToken;
+      
+      if (kakaoAccessToken.isEmpty) {
+        logger.e('.env 파일에 KAKAO_TEST_ACCESS_TOKEN이 설정되지 않음');
+        return {
+          'success': false, 
+          'error': '.env 파일에 KAKAO_TEST_ACCESS_TOKEN을 설정해주세요'
+        };
+      }
+      
+      logger.i('테스트 토큰 길이: ${kakaoAccessToken.length}');
+      
+      // 백엔드로 카카오 액세스 토큰 직접 전송
+      final backendResult = await AuthApiService.kakaoLogin(
+        kakaoAccessToken: kakaoAccessToken,
+        userId: 'test_user', // 테스트용 임시 userId
+        nickname: 'Test User',
+        email: 'test@example.com',
+      );
+      
+      if (backendResult == null) {
+        logger.e('백엔드 로그인 API 호출 실패');
+        return {'success': false, 'error': '백엔드 로그인 API 호출 실패'};
+      }
+      
+      // 백엔드에서 받은 JWT 토큰 및 사용자 정보 저장
+      final response = KakaoLoginResponse.fromJson(backendResult);
+      
+      if (response.accessToken == null) {
+        logger.e('백엔드 로그인 실패: 액세스 토큰 없음');
+        return {'success': false, 'error': '백엔드 로그인 실패: 액세스 토큰 없음'};
+      }
+      
+      await TokenService.saveAccessToken(response.accessToken!);
+      await TokenService.saveKakaoAccessToken(kakaoAccessToken);
+      
+      logger.i('테스트 로그인 성공: userId=${response.userId}, isNewUser=${response.isNewUser}');
+      
+      return {
+        'success': true,
+        'userId': response.userId?.toString() ?? 'test_user',
+        'nickname': response.nickname ?? 'Test User',
+        'email': response.email ?? 'test@example.com',
+        'accessToken': response.accessToken,
+        'isNewUser': response.isNewUser,
+        'expiresIn': response.expiresIn,
+      };
+    } catch (e, stack) {
+      logger.e('테스트 로그인 중 예외 발생: $e\n$stack');
+      return {'success': false, 'error': '로그인 중 오류가 발생했습니다'};
     }
   }
 }
