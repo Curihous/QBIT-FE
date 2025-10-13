@@ -142,9 +142,9 @@ class _RootScreenState extends State<_RootScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       backgroundColor: AppColors.background, // 소프트 배경
-      body: Center(
+      body: const Center(
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary), // 메인 민트색
         ),
