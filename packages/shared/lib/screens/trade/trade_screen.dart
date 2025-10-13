@@ -8,6 +8,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_fonts.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common/common_widgets.dart';
+import '../../widgets/common/header_basic.dart';
 import 'alpaca_auth_screen.dart';
 import 'stock_search_screen.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
@@ -28,16 +29,6 @@ class TradeScreen extends StatefulWidget {
 }
 
 class _TradeScreenState extends State<TradeScreen> {
-  // Derive the selected tab index from the current GoRouter location
-  int _getCurrentIndex() {
-    final location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/home')) return 0;
-    if (location.startsWith('/learning')) return 1;
-    if (location.startsWith('/record')) return 2;
-    if (location.startsWith('/trade')) return 3;
-    if (location.startsWith('/analysis')) return 4;
-    return 0;
-  }
   bool _isAlpacaConnected = false; // Alpaca 연동 상태 - 강제로 false로 설정
   
   String _userNickname = ''; // 카카오 닉네임
@@ -357,31 +348,6 @@ class _TradeScreenState extends State<TradeScreen> {
     });
   }
 
-
-  // 하단 네비
-  void _onNavItemTap(int index) {
-    switch (index) {
-      case 0:
-        // 홈
-        context.go('/home');
-        break;
-      case 1:
-        // 학습
-        context.go('/learning');
-        break;
-      case 2:
-        // 기록
-        context.go('/record');
-        break;
-      case 3:
-        // 거래 (현재)
-        break;
-      case 4:
-        // 분석
-        context.go('/analysis');
-        break;
-    }
-  }
 
   // 계좌 연결하기 버튼 클릭
   void _onConnectAccount() {
@@ -1316,46 +1282,14 @@ class _TradeScreenState extends State<TradeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        titleSpacing: 0, // AppBar의 기본 좌측 패딩 제거
-        title: Container(
-          width: double.infinity, 
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-          clipBehavior: Clip.antiAlias,
-          decoration: const BoxDecoration(),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-              Text(
-                '모의투자',
-                style: AppFonts.titleLarge.copyWith(color: AppColors.gray900),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {
-                // 알림 기능
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: () {
-                // 설정 기능
-              },
-            ),
-          ],
-              ),
-            ],
-          ),
-        ),
+      appBar: HeaderBasic(
+        title: '모의투자',
+        onAlarmPressed: () {
+          // 알림 기능
+        },
+        onSettingPressed: () {
+          // 설정 기능
+        },
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -1376,10 +1310,6 @@ class _TradeScreenState extends State<TradeScreen> {
             
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBarWidget(
-        currentIndex: _getCurrentIndex(),
-        onTap: _onNavItemTap,
       ),
     );
   }

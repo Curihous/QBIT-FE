@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
-import 'package:qbit_shared/widgets/common/header_home.dart';
+import 'package:qbit_shared/widgets/common/header_basic.dart';
 
 class StudyScreen extends StatelessWidget {
   const StudyScreen({super.key});
@@ -10,7 +10,11 @@ class StudyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const TopAppBar(),
+      appBar: const HeaderBasic(
+        title: '이론학습',
+        onAlarmPressed: null,
+        onSettingPressed: null,
+      ),
       body: const Center(
         child: Text(
           '학습 화면',

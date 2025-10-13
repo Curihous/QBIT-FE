@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
-import 'package:qbit_shared/widgets/common/header_home.dart';
+import 'package:qbit_shared/widgets/common/header_basic.dart';
 
 class MyScreen extends StatelessWidget {
   const MyScreen({super.key});
@@ -10,7 +10,11 @@ class MyScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const TopAppBar(),
+      appBar: const HeaderBasic(
+        title: '마이페이지',
+        onAlarmPressed: null,
+        onSettingPressed: null,
+      ),
       body: const Center(
         child: Text(
           'MY 화면',

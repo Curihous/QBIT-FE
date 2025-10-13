@@ -4,86 +4,91 @@ import 'package:flutter/material.dart';
 class AppTypography {
   static const String fontFamily = 'Pretendard';
   
-  // Heading Styles
-  static const TextStyle headingLarge = TextStyle(
+  // Title Styles
+  static const TextStyle titleLarge = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 32,
-    fontWeight: FontWeight.bold,
-    height: 1.2,
+    fontSize: 22,
+    fontWeight: FontWeight.w700,
+    height: 26 / 22, // line-height: 26
   );
   
-  static const TextStyle headingMedium = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 24,
-    fontWeight: FontWeight.bold,
-    height: 1.3,
-  );
-  
-  static const TextStyle headingSmall = TextStyle(
+  static const TextStyle titleMedium = TextStyle(
     fontFamily: fontFamily,
     fontSize: 20,
-    fontWeight: FontWeight.w600,
-    height: 1.3,
+    fontWeight: FontWeight.w700,
+    height: 24 / 20, // line-height: 24
+  );
+  
+  static const TextStyle titleSmall = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    height: 24 / 20, // line-height: 24
   );
   
   // Body Styles
-  static const TextStyle bodyLarge = TextStyle(
+  static const TextStyle bodyLargeSemiBold = TextStyle(
     fontFamily: fontFamily,
     fontSize: 16,
-    fontWeight: FontWeight.normal,
-    height: 1.5,
+    fontWeight: FontWeight.w600, // Semi-Bold
+    height: 24 / 16, // line-height: 24
   );
   
-  static const TextStyle bodyMedium = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 14,
-    fontWeight: FontWeight.normal,
-    height: 1.5,
-  );
-  
-  static const TextStyle bodySmall = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 12,
-    fontWeight: FontWeight.normal,
-    height: 1.4,
-  );
-  
-  // Button Styles
-  static const TextStyle buttonLarge = TextStyle(
+  static const TextStyle bodyLargeBold = TextStyle(
     fontFamily: fontFamily,
     fontSize: 16,
-    fontWeight: FontWeight.w600,
-    height: 1.2,
+    fontWeight: FontWeight.w700, // Bold
+    height: 24 / 16, // line-height: 24
   );
   
-  static const TextStyle buttonMedium = TextStyle(
+  static const TextStyle bodyMediumRegular = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    height: 1.2,
-  );
-  
-  static const TextStyle buttonSmall = TextStyle(
-    fontFamily: fontFamily,
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
-    height: 1.2,
+    fontSize: 16,
+    fontWeight: FontWeight.w400, // Regular
+    height: 140 / 16, // line-height: 140 (디자인 스펙에 따라)
   );
   
   // Caption Styles
-  static const TextStyle caption = TextStyle(
+  static const TextStyle captionLargeSemiBold = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 10,
-    fontWeight: FontWeight.normal,
-    height: 1.3,
+    fontSize: 14,
+    fontWeight: FontWeight.w600, // Semi-Bold
+    height: 24 / 14, // line-height: 24
   );
   
-  // Overline Styles
-  static const TextStyle overline = TextStyle(
+  static const TextStyle captionLargeRegular = TextStyle(
     fontFamily: fontFamily,
-    fontSize: 10,
-    fontWeight: FontWeight.w500,
-    height: 1.3,
-    letterSpacing: 1.5,
+    fontSize: 14,
+    fontWeight: FontWeight.w400, // Regular
+    height: 24 / 14, // line-height: 24
+  );
+  
+  static const TextStyle captionLargeMedium = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 13,
+    fontWeight: FontWeight.w500, // Medium
+    height: 24 / 13, // line-height: 24
+  );
+  
+  static const TextStyle captionSmallRegular = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 11,
+    fontWeight: FontWeight.w400, // Regular
+    height: 24 / 11, // line-height: 24
+  );
+  
+  // Button Styles
+  static const TextStyle btn1 = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 20,
+    fontWeight: FontWeight.w400,
+    height: 24 / 20, // line-height: 24
+  );
+  
+  static const TextStyle btn2 = TextStyle(
+    fontFamily: fontFamily,
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    height: 24 / 14, // line-height: 24
   );
 }
