@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/common/common_widgets.dart';
+import '../../widgets/common/header_back.dart';
+import '../../widgets/common/button_big_black.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_fonts.dart';
 import 'package:qbit_services/auth/alpaca_auth_service.dart';
@@ -16,6 +18,9 @@ class AlpacaAuthScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: HeaderBack(
+        title: '계좌 연결하기',
+      ),
       body: Container(
         width: double.infinity,
         height: double.infinity,
@@ -24,48 +29,10 @@ class AlpacaAuthScreen extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // 헤더
-            Positioned(
-              left: 0,
-              right: 0,
-              top: 59,
-              child: Container(
-                width: double.infinity,
-                height: 44,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    GestureDetector(
-                      onTap: () => context.pop(),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        child: Icon(
-                          Icons.arrow_back_ios,
-                          size: 20,
-                          color: AppColors.gray900,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '계좌 연결하기',
-                      style: AppFonts.t1Bold.copyWith(color: AppColors.gray900),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            
             // 제목
             Positioned(
               left: 22,
-              top: 200,
+              top: 120,
               child: Text(
                 '계좌 연결 후 모의투자 바로 시작',
                 style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
@@ -75,78 +42,42 @@ class AlpacaAuthScreen extends StatelessWidget {
             // 설명 텍스트
             Positioned(
               left: 22,
-              top: 233,
+              top: 160,
               child: SizedBox(
                 width: 342,
                 height: 67,
                 child: Text(
                   '모의투자를 위해서는 Alpaca 계좌가 필요해요.\n회원가입 후 \'Allow\'를 눌러 연동을 마쳐주세요.',
-                  style: AppFonts.b1Semibold.copyWith(color: AppColors.gray900),
+                  style: AppFonts.b1Regular.copyWith(
+                    color: AppColors.gray900,
+                    height: 1.6, // lineheight 조정
+                  ),
+                  textAlign: TextAlign.left,
                 ),
               ),
             ),
             
             // 올빼미 캐릭터
             Positioned(
-              left: 56.5,
-              top: 350,
+              left: 91,
+              top: 330,
               child: SvgPicture.asset(
-                'assets/images/characters/alpaca_connect.svg',
-                width: 280,
-                height: 280,
-              ),
-            ),
-            
-            // 버블 효과
-            Positioned(
-              left: 229,
-              top: 454,
-              child: Container(
-                width: 12,
-                height: 12,
-                decoration: ShapeDecoration(
-                  color: AppColors.info.withOpacity(0.1),
-                  shape: OvalBorder(),
-                ),
-              ),
-            ),
-            Positioned(
-              left: 238,
-              top: 427,
-              child: Container(
-                width: 17,
-                height: 17,
-                decoration: ShapeDecoration(
-                  color: AppColors.info.withOpacity(0.1),
-                  shape: OvalBorder(),
-                ),
+                'assets/images/characters/owl-sleeping.svg',
+                width: 240,
+                height: 240,
               ),
             ),
             
             // Alpaca 계좌 연결 버튼
             Positioned(
               left: 16,
-              top: 725,
-              child: Container(
-                width: 361,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: () {
-                    _handleAlpacaAuth(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.gray900,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: EdgeInsets.zero,
-                  ),
-                  child: Text(
-                    'Alpaca 계좌 연결',
-                    style: AppFonts.t2Bold.copyWith(color: AppColors.white),
-                  ),
-                ),
+              right: 16,
+              top: 580,
+              child: ButtonBigBlack(
+                text: 'Alpaca 계좌 연결',
+                onPressed: () {
+                  _handleAlpacaAuth(context);
+                },
               ),
             ),
           ],
