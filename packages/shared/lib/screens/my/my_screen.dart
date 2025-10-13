@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/widgets/common/header_basic.dart';
+import 'package:qbit_shared/widgets/common/padded_scaffold.dart';
 
 class MyScreen extends StatelessWidget {
   const MyScreen({super.key});
@@ -8,8 +9,7 @@ class MyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return PaddedScaffold(
       appBar: const HeaderBasic(
         title: '마이페이지',
         onAlarmPressed: null,

@@ -125,6 +125,17 @@ class AppTheme {
     // Text Theme
     textTheme: const TextTheme(),
     
+    // Page Transitions Theme
+    pageTransitionsTheme: const PageTransitionsTheme(
+      builders: {
+        TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+        TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+      },
+    ),
+    
+    // 기본 패딩 설정
+    visualDensity: VisualDensity.adaptivePlatformDensity,
+    
     // Bottom Navigation Bar Theme
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: AppColors.white,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/widgets/common/header_basic.dart';
+import 'package:qbit_shared/widgets/common/padded_scaffold.dart';
 
 class RecordScreen extends StatelessWidget {
   const RecordScreen({super.key});
@@ -8,8 +9,7 @@ class RecordScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return PaddedScaffold(
       appBar: const HeaderBasic(
         title: '기록',
         onAlarmPressed: null,
