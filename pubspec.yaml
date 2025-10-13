@@ -1,7 +1,6 @@
 name: qbit_mobile
 description: QBIT Mobile App - iOS/Android
 version: 1.0.0+1
-publish_to: none
 
 environment:
   sdk: ">=3.6.0 <4.0.0"
@@ -10,21 +9,51 @@ dependencies:
   flutter:
     sdk: flutter
   
-  # 로컬 패키지
+  # 공통 패키지
   qbit_shared:
     path: packages/shared
   
-  # UI 관련
   cupertino_icons: ^1.0.8
+  kakao_flutter_sdk: ^1.9.5 
+  flutter_svg: ^2.0.10+1
+  google_fonts: ^6.2.1  
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  build_runner: ^2.7.1
+  riverpod_generator: ^3.0.1
+  riverpod_lint: ^3.0.1
+  custom_lint: ^0.8.0
+  json_serializable: ^6.8.0
 
 flutter:
   uses-material-design: true
   
   assets:
     - assets/images/
-    - .env
+    - assets/images/characters/
+    - assets/env/
+  
+  fonts:
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/Pretendard-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/Pretendard-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Pretendard-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Pretendard-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Pretendard-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Pretendard-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Pretendard-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Pretendard-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Pretendard-Black.ttf
+          weight: 900

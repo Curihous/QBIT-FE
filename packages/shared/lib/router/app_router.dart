@@ -1,9 +1,16 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:qbit_shared/screens/auth/login_screen.dart';
+import 'package:qbit_shared/screens/splash/splash_screen.dart';
+import 'package:qbit_shared/screens/splash/login_screen.dart';
 import 'package:qbit_shared/screens/home/home_screen.dart';
+import 'package:qbit_shared/screens/trade/trade_screen.dart';
+import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
+import 'package:qbit_shared/screens/trade/stock_search_screen.dart';
+import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_services/auth/auth_service.dart';
+import 'package:qbit_services/api/api_client.dart';
 
 class AppRouter {
   static const String _isFirstLaunchKey = 'is_first_launch';
@@ -18,6 +25,11 @@ class AppRouter {
         builder: (context, state) => const _RootScreen(),
       ),
       GoRoute(
+        path: '/splash',
+        name: 'splash',
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
         path: '/login',
         name: 'login',
         builder: (context, state) => const LoginScreen(),
@@ -26,6 +38,45 @@ class AppRouter {
         path: '/home',
         name: 'home',
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: '/trade',
+        name: 'trade',
+        builder: (context, state) => const TradeScreen(),
+      ),
+      GoRoute(
+        path: '/alpaca-auth',
+        name: 'alpaca-auth',
+        builder: (context, state) => const AlpacaAuthScreen(),
+      ),
+      GoRoute(
+        path: '/stock/:symbol',
+        name: 'stock-search',
+        builder: (context, state) {
+          final symbol = state.pathParameters['symbol'] ?? '';
+          return StockSearchScreen(symbol: symbol.isEmpty ? null : symbol);
+        },
+      ),
+      GoRoute(
+        path: '/learning',
+        name: 'learning',
+        builder: (context, state) => const Scaffold(
+          body: Center(child: Text('학습 페이지')),
+        ),
+      ),
+      GoRoute(
+        path: '/record',
+        name: 'record',
+        builder: (context, state) => const Scaffold(
+          body: Center(child: Text('기록 페이지')),
+        ),
+      ),
+      GoRoute(
+        path: '/analysis',
+        name: 'analysis',
+        builder: (context, state) => const Scaffold(
+          body: Center(child: Text('분석 페이지')),
+        ),
       ),
     ],
   );
@@ -39,10 +90,29 @@ class _RootScreen extends StatefulWidget {
 }
 
 class _RootScreenState extends State<_RootScreen> {
+  StreamSubscription<void>? _tokenExpiredSub;
+
   @override
   void initState() {
     super.initState();
     _checkFirstLaunch();
+    _setupTokenExpiredListener();
+  }
+
+  @override
+  void dispose() {
+    _tokenExpiredSub?.cancel();
+    super.dispose();
+  }
+
+  void _setupTokenExpiredListener() {
+    // 토큰 만료 이벤트 리스너 설정
+    _tokenExpiredSub = ApiClient.onTokenExpired.listen((_) {
+      if (mounted) {
+        // 토큰 만료 시 로그인 화면으로 이동
+        context.go('/login');
+      }
+    });
   }
 
   Future<void> _checkFirstLaunch() async {
@@ -52,40 +122,29 @@ class _RootScreenState extends State<_RootScreen> {
       final isFirstLaunch = await storage.read(key: AppRouter._isFirstLaunchKey);
       
       if (isFirstLaunch == null) {
-        // 최초 실행 - 로그인 화면으로 이동하고 플래그 설정
+        // 최초 실행 - 스플래시 화면으로 이동하고 플래그 설정
         await storage.write(key: AppRouter._isFirstLaunchKey, value: 'false');
-        if (mounted) {
-          context.go('/login');
-        }
-      } else {
-        // 재실행 - 로그인 상태 확인 후 적절한 화면으로 이동
-        final isLoggedIn = await AuthService.isLoggedIn();
-          
-        if (mounted) {
-          if (isLoggedIn) {
-            // 로그인되어 있으면 홈 화면으로
-            context.go('/home');
-          } else {
-            // 로그인되지 않았으면 로그인 화면으로
-            context.go('/login');
-          }
-        }
+      }
+      
+      // 항상 스플래시 화면으로 먼저 이동
+      if (mounted) {
+        context.go('/splash');
       }
     } catch (e) {
-      // 오류 발생 시 로그인 화면으로 이동
+      // 오류 발생 시 스플래시 화면으로 이동
       if (mounted) {
-        context.go('/login');
+        context.go('/splash');
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFE6F4F1), // 소프트 배경
-      body: Center(
+    return Scaffold(
+      backgroundColor: AppColors.background, // 소프트 배경
+      body: const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF00C9A7)), // 메인 민트색
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary), // 메인 민트색
         ),
       ),
     );

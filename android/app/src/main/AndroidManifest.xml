@@ -45,6 +45,31 @@
                 <data android:scheme="qbit" android:host="oauth"/>
             </intent-filter>
             
+            <!-- Universal Links / App Links for https://api.qbit.o-r.kr -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="api.qbit.o-r.kr" />
+            </intent-filter>
+            <!-- Universal Links / App Links for https://qbit.o-r.kr -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="qbit.o-r.kr" />
+            </intent-filter>
+            
+        </activity>
+        
+        <!-- flutter_web_auth callback activity -->
+        <activity android:name="com.linusu.flutter_web_auth.CallbackActivity" android:exported="true">
+            <intent-filter android:label="flutter_web_auth">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="qbit" />
+            </intent-filter>
         </activity>
         
         <!-- 카카오 로그인 커스텀 URL 스킴 처리용 액티비티 -->

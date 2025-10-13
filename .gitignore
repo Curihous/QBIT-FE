@@ -51,7 +51,6 @@ migrate_working_dir/
 **/AssetManifest.json
 **/FontManifest.json
 **/NOTICES
-**/packages/
 **/shaders/
 
 # Flutter generated files
@@ -92,6 +91,7 @@ app.*.map.json
 .env.local
 .env.development
 .env.production
+!.env.example
 
 # IDE files
 *.swp

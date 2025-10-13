@@ -4,18 +4,26 @@ import 'package:flutter/material.dart';
 class AppColors {
   // Primary Colors
   static const Color primary = Color(0xFF00C9A7); // 메인 민트색
-  static const Color primaryDark = Color(0xFF00A085);
-  static const Color primaryLight = Color(0xFF4DD4B8);
+  static const Color primaryDark = Color(0xFF05B99B); // 폰트 민트색 
+  static const Color primaryLight = Color(0xFF4DD4B8); // 소프트 민트색
+  
+  // Gray Scale
+  static const Color gray900 = Color(0xFF323232); // Font Black
+  static const Color gray600 = Color(0xFF7F7F7F); 
+  static const Color gray500 = Color(0xFF9E9E9E);
+  static const Color gray400 = Color(0xFFBDBDBD);
+  static const Color gray300 = Color(0xFFBFBFBF);
+  static const Color gray200 = Color(0xFFD5D5D5);
+  static const Color gray100 = Color(0xFFE8EAED);
+  static const Color gray50 = Color(0xFFF3F4F6);
+  static const Color gray30 = Color(0xFFF7F8FB);
+  static const Color white = Color(0xFFFFFFFF); // White
   
   // Background Colors
   static const Color background = Color(0xFFE6F4F1); // 소프트 배경
-  static const Color surface = Colors.white;
-  static const Color surfaceVariant = Color(0xFFF5F5F5);
+  static const Color surface = white; // White
+  static const Color surfaceVariant = gray50;
   
-  // Text Colors
-  static const Color textPrimary = Color(0xFF323232); // 폰트 블랙
-  static const Color textSecondary = Color(0xFF7F7F7F); // 그레이 600
-  static const Color textTertiary = Color(0xFFB0B0B0);
   
   // Status Colors
   static const Color success = Color(0xFF4CAF50);
@@ -23,100 +31,25 @@ class AppColors {
   static const Color error = Color(0xFFF44336);
   static const Color info = Color(0xFF2196F3);
   
-  // Investment Colors
-  static const Color profit = Color(0xFFE53E3E); // 빨간색 (상승)
-  static const Color loss = Color(0xFF38A169); // 초록색 (하락)
+  // Secondary Colors
   
-  // Social Login Colors
-  static const Color kakaoYellow = Color(0xFFFEE500);
-  static const Color kakaoBrown = Color(0xFF3C1E1E);
+  static const Color secondaryMain = Color(0xFFFFE19C); // Secondary main
+  static const Color secondarySoft = Color(0xFFFFF0CD); // Secondary soft
+  
+  // Trade Colors
+  static const Color profit = Color(0xFFE74C3C); // 빨간색 (상승) 
+  static const Color loss = Color(0xFF178EDE); // 파란색 (하락) 
+  
   
   // Neutral Colors
-  static const Color white = Colors.white;
-  static const Color black = Colors.black;
+  static const Color black = gray900;
   static const Color transparent = Colors.transparent;
   
   // Border Colors
-  static const Color border = Color(0xFFE0E0E0);
-  static const Color borderLight = Color(0xFFF0F0F0);
+  static const Color border = gray200;
+  static const Color borderLight = gray100;
 }
 
-/// 앱 타이포그래피 정의
-class AppTypography {
-  static const String fontFamily = 'Pretendard';
-  
-  // Headings
-  static const TextStyle headingLarge = TextStyle(
-    fontSize: 36,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-    letterSpacing: 2,
-    fontStyle: FontStyle.italic,
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle headingMedium = TextStyle(
-    fontSize: 28,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle headingSmall = TextStyle(
-    fontSize: 20,
-    fontWeight: FontWeight.bold,
-    color: AppColors.textPrimary,
-    fontFamily: fontFamily,
-  );
-  
-  // Body Text
-  static const TextStyle bodyLarge = TextStyle(
-    fontSize: 16,
-    color: AppColors.textSecondary,
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle bodyMedium = TextStyle(
-    fontSize: 14,
-    color: AppColors.textPrimary,
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle bodySmall = TextStyle(
-    fontSize: 12,
-    color: AppColors.textSecondary,
-    fontFamily: fontFamily,
-  );
-  
-  // Caption
-  static const TextStyle caption = TextStyle(
-    fontSize: 10,
-    color: AppColors.textTertiary,
-    fontFamily: fontFamily,
-  );
-  
-  // Button Text
-  static const TextStyle buttonLarge = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
-    color: AppColors.white,
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle buttonMedium = TextStyle(
-    fontSize: 14,
-    fontWeight: FontWeight.w600,
-    color: AppColors.white,
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle buttonSmall = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
-    color: AppColors.white,
-    fontFamily: fontFamily,
-  );
-}
 
 /// 앱 간격 정의
 class AppSpacing {
