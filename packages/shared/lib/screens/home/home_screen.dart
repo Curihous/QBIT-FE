@@ -103,20 +103,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   Icon(
                     Icons.home_outlined,
                     size: 64.0,
-                    color: AppColors.gray400,
+                    color: AppColors.gray300,
                   ),
                   const SizedBox(height: 16.0),
                   Text(
                     '홈 화면',
                     style: AppFonts.titleLarge.copyWith(
-                      color: AppColors.gray600,
+                      color: AppColors.gray300,
                     ),
                   ),
                   const SizedBox(height: 8.0),
                   Text(
                     'TODO: 홈 화면 UI 구현 예정',
                     style: AppFonts.bodyMedium.copyWith(
-                      color: AppColors.gray500,
+                      color: AppColors.gray300,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -124,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     '구현 예정 기능:\n• 포트폴리오 요약\n• 최근 거래 내역\n• 시장 개요\n• 빠른 액션',
                     style: AppFonts.bodySmall.copyWith(
-                      color: AppColors.gray500,
+                      color: AppColors.gray300,
                     ),
                     textAlign: TextAlign.center,
                   ),
