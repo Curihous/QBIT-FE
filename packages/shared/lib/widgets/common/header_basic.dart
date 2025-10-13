@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
-import 'package:qbit_shared/theme/app_typography.dart';
+import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_util.dart';
 
 class HeaderBasic extends StatelessWidget implements PreferredSizeWidget {
@@ -39,7 +39,7 @@ class HeaderBasic extends StatelessWidget implements PreferredSizeWidget {
           children: [
             Text(
               title,
-              style: AppTypography.titleLarge,
+              style: AppFonts.t1Bold,
             ),
             Row(
               mainAxisSize: MainAxisSize.min,

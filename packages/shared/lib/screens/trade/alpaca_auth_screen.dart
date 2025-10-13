@@ -55,7 +55,7 @@ class AlpacaAuthScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       '계좌 연결하기',
-                      style: AppFonts.titleLarge.copyWith(color: AppColors.gray900),
+                      style: AppFonts.t1Bold.copyWith(color: AppColors.gray900),
                     ),
                   ],
                 ),
@@ -68,7 +68,7 @@ class AlpacaAuthScreen extends StatelessWidget {
               top: 200,
               child: Text(
                 '계좌 연결 후 모의투자 바로 시작',
-                style: AppFonts.titleMedium.copyWith(color: AppColors.gray900),
+                style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
               ),
             ),
             
@@ -81,7 +81,7 @@ class AlpacaAuthScreen extends StatelessWidget {
                 height: 67,
                 child: Text(
                   '모의투자를 위해서는 Alpaca 계좌가 필요해요.\n회원가입 후 \'Allow\'를 눌러 연동을 마쳐주세요.',
-                  style: AppFonts.bodyLarge.copyWith(color: AppColors.gray900),
+                  style: AppFonts.b1Semibold.copyWith(color: AppColors.gray900),
                 ),
               ),
             ),
@@ -144,7 +144,7 @@ class AlpacaAuthScreen extends StatelessWidget {
                   ),
                   child: Text(
                     'Alpaca 계좌 연결',
-                    style: AppFonts.titleMedium.copyWith(color: AppColors.white),
+                    style: AppFonts.t2Bold.copyWith(color: AppColors.white),
                   ),
                 ),
               ),

@@ -56,14 +56,14 @@ class HomeContentScreen extends StatelessWidget {
           children: [
             Text(
               '구현예정',
-              style: AppFonts.titleLarge.copyWith(
+              style: AppFonts.t1Bold.copyWith(
                 color: AppColors.gray500,
               ),
             ),
             const SizedBox(height: 16.0),
             Text(
               'TODO: 포트폴리오 연동\n- 보유자산 조회 API 연동\n- 포트폴리오 차트 구현\n- 수익률 계산 및 표시',
-              style: AppFonts.bodyMedium.copyWith(
+              style: AppFonts.b1Regular.copyWith(
                 color: AppColors.gray400,
               ),
               textAlign: TextAlign.center,
