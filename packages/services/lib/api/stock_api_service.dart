@@ -20,7 +20,6 @@ class StockApiService {
       
       if (response.statusCode == 200) {
         logger.i('주식 상세 정보 조회 성공: $symbol');
-        logger.d('응답 데이터: ${response.data}');
         final data = response.data;
         if (data is Map<String, dynamic>) {
           return StockModel.fromJson(data);
@@ -30,13 +29,12 @@ class StockApiService {
         }
       } else {
         logger.e('주식 상세 정보 조회 실패: ${response.statusCode}');
-        logger.e('응답 데이터: ${response.data}');
         return null;
       }
     } catch (error) {
       logger.e('주식 상세 정보 조회 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
         logger.e('Dio 에러 상태코드: ${error.response?.statusCode}');
         if (error.response?.statusCode == 404) {
           logger.e('❌ 종목을 찾을 수 없습니다: $symbol');
@@ -70,7 +68,7 @@ class StockApiService {
     } catch (error) {
       logger.e('주식 목록 조회 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
       }
       return null;
     }
@@ -99,7 +97,7 @@ class StockApiService {
     } catch (error) {
       logger.e('해외 주요 지수 조회 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
       }
       return null;
     }
@@ -129,7 +127,7 @@ class StockApiService {
     } catch (error) {
       logger.e('지수 상세 조회 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
         if (error.response?.statusCode == 404) {
           logger.e('지수를 찾을 수 없습니다: $symbol');
         }
@@ -169,7 +167,7 @@ class StockApiService {
     } catch (error) {
       logger.e('지수 과거 데이터 조회 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
         if (error.response?.statusCode == 404) {
           logger.e('지수를 찾을 수 없습니다: $symbol');
         }
@@ -205,7 +203,7 @@ class StockApiService {
     } catch (error) {
       logger.e('보유자산 조회 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
       }
       return null;
     }
@@ -239,7 +237,7 @@ class StockApiService {
     } catch (error) {
       logger.e('해외 종목 순위 조회 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
         
         // 공개 API가 없거나 인증이 필요한 경우 인증 API 시도
         if (error.response?.statusCode == 404 || error.response?.statusCode == 401) {
@@ -278,7 +276,7 @@ class StockApiService {
     } catch (error) {
       logger.e('해외 종목 순위 조회 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
       }
       return null;
     }
@@ -293,7 +291,6 @@ class StockApiService {
       
       if (response.statusCode == 200) {
         logger.i('Alpaca 계정 정보 조회 성공');
-        logger.d('응답 데이터: ${response.data}');
         
         if (response.data is Map<String, dynamic>) {
           return response.data as Map<String, dynamic>;
@@ -303,13 +300,12 @@ class StockApiService {
         }
       } else {
         logger.e('Alpaca 계정 정보 조회 실패: ${response.statusCode}');
-        logger.d('응답 데이터: ${response.data}');
         return null;
       }
     } catch (error) {
       logger.e('Alpaca 계정 정보 조회 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
         logger.e('Dio 에러 상태코드: ${error.response?.statusCode}');
         
         if (error.response?.statusCode == 401) {
@@ -334,7 +330,6 @@ class StockApiService {
       
       if (response.statusCode == 200) {
         logger.i('종목 검색 성공');
-        logger.d('응답 데이터: ${response.data}');
         logger.i('응답 데이터 타입: ${response.data.runtimeType}');
         logger.i('응답 데이터 길이: ${response.data is List ? (response.data as List).length : 'N/A'}');
         
@@ -355,13 +350,12 @@ class StockApiService {
         }
       } else {
         logger.e('종목 검색 실패: ${response.statusCode}');
-        logger.e('응답 데이터: ${response.data}');
         return null;
       }
     } catch (error) {
       logger.e('종목 검색 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
         logger.e('Dio 에러 상태코드: ${error.response?.statusCode}');
         
         if (error.response?.statusCode == 401) {
