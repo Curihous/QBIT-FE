@@ -49,7 +49,13 @@ class OrderModel {
   double get stopPriceAsDouble => double.tryParse(stopPrice ?? '0') ?? 0.0;
   
   // 사이드 표시명
-  String get sideDisplayName => side == OrderSide.buy ? '매수' : '매도';
+  String get sideDisplayName {
+    switch (side) {
+      case OrderSide.buy: return '매수';
+      case OrderSide.sell: return '매도';
+      case OrderSide.unknown: return '알 수 없음';
+    }
+  }
   
   // 타입 표시명
   String get typeDisplayName {
@@ -65,9 +71,11 @@ class OrderModel {
     switch (timeInForce) {
       case TimeInForce.day: return '당일';
       case TimeInForce.gtc: return '지정일까지';
+      case TimeInForce.opg: return '시가';
+      case TimeInForce.cls: return '종가';
       case TimeInForce.ioc: return '즉시체결';
       case TimeInForce.fok: return '전량체결';
-      default: return timeInForce.name;
+      case TimeInForce.unknown: return '알 수 없음';
     }
   }
 
@@ -161,16 +169,16 @@ enum OrderStatus {
   partiallyFilled,
   @JsonValue('filled')
   filled,
-  @JsonValue('canceled')
-  canceled,
-  @JsonValue('rejected')
-  rejected,
-  @JsonValue('expired')
-  expired,
   @JsonValue('done_for_day')
   doneForDay,
-  @JsonValue('suspended')
-  suspended,
+  @JsonValue('canceled')
+  canceled,
+  @JsonValue('expired')
+  expired,
+  @JsonValue('replaced')
+  replaced,
+  @JsonValue('pending_review')
+  pendingReview,
   unknown,
 }
 
@@ -180,13 +188,13 @@ enum TimeInForce {
   day,
   @JsonValue('gtc')
   gtc,
+  @JsonValue('opg')
+  opg,
+  @JsonValue('cls')
+  cls,
   @JsonValue('ioc')
   ioc,
   @JsonValue('fok')
   fok,
-  @JsonValue('gtx')
-  gtx,
-  @JsonValue('gtd')
-  gtd,
   unknown,
 }

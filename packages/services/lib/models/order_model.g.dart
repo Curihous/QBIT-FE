@@ -73,10 +73,10 @@ const _$OrderTypeEnumMap = {
 const _$TimeInForceEnumMap = {
   TimeInForce.day: 'day',
   TimeInForce.gtc: 'gtc',
+  TimeInForce.opg: 'opg',
+  TimeInForce.cls: 'cls',
   TimeInForce.ioc: 'ioc',
   TimeInForce.fok: 'fok',
-  TimeInForce.gtx: 'gtx',
-  TimeInForce.gtd: 'gtd',
   TimeInForce.unknown: 'unknown',
 };
 
@@ -88,11 +88,11 @@ const _$OrderStatusEnumMap = {
   OrderStatus.pendingReplace: 'pending_replace',
   OrderStatus.partiallyFilled: 'partially_filled',
   OrderStatus.filled: 'filled',
-  OrderStatus.canceled: 'canceled',
-  OrderStatus.rejected: 'rejected',
-  OrderStatus.expired: 'expired',
   OrderStatus.doneForDay: 'done_for_day',
-  OrderStatus.suspended: 'suspended',
+  OrderStatus.canceled: 'canceled',
+  OrderStatus.expired: 'expired',
+  OrderStatus.replaced: 'replaced',
+  OrderStatus.pendingReview: 'pending_review',
   OrderStatus.unknown: 'unknown',
 };
 
