@@ -73,11 +73,15 @@ class _TradeScreenState extends State<TradeScreen> {
 
   // 사용자 데이터 로드
   Future<void> _loadUserData() async {
-    await _loadKakaoNickname();
-    await _loadOverseasIndices();
-    await _checkAlpacaConnectionStatus();
-    await _loadUserAssets();
-    await _loadStockRanking(); 
+    try {
+      await _loadKakaoNickname();
+      await _loadOverseasIndices();
+      await _checkAlpacaConnectionStatus();
+      await _loadUserAssets();
+      await _loadStockRanking();
+    } catch (e) {
+      print('투자 화면 데이터 로드 중 에러: $e');
+    }
   }
 
   // Alpaca 연결 상태 확인
@@ -113,9 +117,26 @@ class _TradeScreenState extends State<TradeScreen> {
   }
 
   // 토큰 만료 처리
-  void _handleTokenExpired() {
+  void _handleTokenExpired() async {
+    print('⚠️ 토큰 만료 이벤트 발생 - 토큰 갱신 시도');
+    
+    // 먼저 토큰 갱신 시도
+    try {
+      final refreshed = await AuthService.refreshAccessToken();
+      if (refreshed) {
+        print('✅ 토큰 갱신 성공 - 데이터 다시 로드');
+        if (mounted) {
+          _loadUserData();
+        }
+        return;
+      }
+    } catch (e) {
+      print('❌ 토큰 갱신 실패: $e');
+    }
+    
+    // 토큰 갱신 실패 시에만 로그인 페이지로 이동
     if (mounted) {
-      // 로그인 페이지로 이동
+      print('🔄 로그인 페이지로 이동');
       context.go('/login');
     }
   }

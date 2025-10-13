@@ -104,9 +104,20 @@ class _RootScreenState extends State<_RootScreen> {
 
   void _setupTokenExpiredListener() {
     // 토큰 만료 이벤트 리스너 설정
-    _tokenExpiredSub = ApiClient.onTokenExpired.listen((_) {
+    _tokenExpiredSub = ApiClient.onTokenExpired.listen((_) async {
       if (mounted) {
-        // 토큰 만료 시 로그인 화면으로 이동
+        
+        // 먼저 토큰 갱신 시도
+        try {
+          final refreshed = await AuthService.refreshAccessToken();
+          if (refreshed) {
+            return; // 갱신 성공하면 로그인 화면으로 이동하지 않음
+          }
+        } catch (e) {
+        }
+        
+        // 토큰 갱신 실패 시에만 로그인 화면으로 이동
+        print('[AppRouter] 로그인 화면으로 이동');
         context.go('/login');
       }
     });
