@@ -5,6 +5,9 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:qbit_shared/screens/splash/splash_screen.dart';
 import 'package:qbit_shared/screens/splash/login_screen.dart';
 import 'package:qbit_shared/screens/home/home_screen.dart';
+import 'package:qbit_shared/screens/study/study_screen.dart';
+import 'package:qbit_shared/screens/record/record_screen.dart';
+import 'package:qbit_shared/screens/my/my_screen.dart';
 import 'package:qbit_shared/screens/trade/trade_screen.dart';
 import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
 import 'package:qbit_shared/screens/trade/stock_search_screen.dart';
@@ -40,9 +43,24 @@ class AppRouter {
         builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
+        path: '/study',
+        name: 'study',
+        builder: (context, state) => const StudyScreen(),
+      ),
+      GoRoute(
+        path: '/record',
+        name: 'record',
+        builder: (context, state) => const RecordScreen(),
+      ),
+      GoRoute(
         path: '/trade',
         name: 'trade',
         builder: (context, state) => const TradeScreen(),
+      ),
+      GoRoute(
+        path: '/my',
+        name: 'my',
+        builder: (context, state) => const MyScreen(),
       ),
       GoRoute(
         path: '/alpaca-auth',
@@ -56,27 +74,6 @@ class AppRouter {
           final symbol = state.pathParameters['symbol'] ?? '';
           return StockSearchScreen(symbol: symbol.isEmpty ? null : symbol);
         },
-      ),
-      GoRoute(
-        path: '/learning',
-        name: 'learning',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('학습 페이지')),
-        ),
-      ),
-      GoRoute(
-        path: '/record',
-        name: 'record',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('기록 페이지')),
-        ),
-      ),
-      GoRoute(
-        path: '/analysis',
-        name: 'analysis',
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('분석 페이지')),
-        ),
       ),
     ],
   );
