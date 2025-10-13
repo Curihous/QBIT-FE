@@ -25,9 +25,9 @@ class AssetModel {
   /// JSON에서 AssetModel 객체 생성 (snake_case/camelCase 모두 지원)
   factory AssetModel.fromJson(Map<String, dynamic> json) {
     return AssetModel(
-      accountNumber: json['accountNumber'] as String? ?? json['account_number'] as String? ?? '',
-      status: json['status'] as String? ?? '',
-      currency: json['currency'] as String? ?? 'USD',
+      accountNumber: json['accountNumber'] != null ? json['accountNumber'].toString() : json['account_number'] != null ? json['account_number'].toString() : '',
+      status: json['status'] != null ? json['status'].toString() : '',
+      currency: json['currency'] != null ? json['currency'].toString() : 'USD',
       buyingPower: double.tryParse(json['buyingPower']?.toString() ?? json['buying_power']?.toString() ?? '0') ?? 0.0,
       cash: double.tryParse(json['cash']?.toString() ?? '0') ?? 0.0,
       portfolioValue: double.tryParse(json['portfolioValue']?.toString() ?? json['portfolio_value']?.toString() ?? '0') ?? 0.0,

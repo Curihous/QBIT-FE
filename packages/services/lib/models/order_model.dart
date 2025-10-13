@@ -78,7 +78,7 @@ class OrderModel {
 }
 
 // Order Request Model
-@JsonSerializable(includeIfNull: false)
+@JsonSerializable()
 class OrderRequest {
   final String symbol;
   final String quantity;
@@ -86,8 +86,6 @@ class OrderRequest {
   final OrderSide side;
   @JsonKey(unknownEnumValue: OrderType.unknown)
   final OrderType type;
-  @JsonKey(unknownEnumValue: OrderStatus.unknown)
-  final OrderStatus? status;
   @JsonKey(unknownEnumValue: TimeInForce.unknown)
   final TimeInForce timeInForce;
   final String? limitPrice;
@@ -98,7 +96,6 @@ class OrderRequest {
     required this.quantity,
     required this.side,
     required this.type,
-    this.status,
     required this.timeInForce,
     this.limitPrice,
     this.stopPrice,

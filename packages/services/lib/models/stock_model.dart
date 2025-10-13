@@ -128,6 +128,15 @@ class StockModel {
     return (a - b).abs() < epsilon;
   }
 
+  /// Double 값을 정규화하여 hashCode 계산에 사용
+  static int _normalizedDoubleHashCode(double? value) {
+    if (value == null) return 0;
+    const double epsilon = 1e-9;
+    // epsilon 단위로 반올림하여 정규화
+    final normalized = (value / epsilon).round() * epsilon;
+    return normalized.hashCode;
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
@@ -154,18 +163,18 @@ class StockModel {
   int get hashCode {
     return symbol.hashCode ^
         name.hashCode ^
-        currentPrice.hashCode ^
-        changeAmount.hashCode ^
-        changePercentage.hashCode ^
+        _normalizedDoubleHashCode(currentPrice) ^
+        _normalizedDoubleHashCode(changeAmount) ^
+        _normalizedDoubleHashCode(changePercentage) ^
         isPositive.hashCode ^
         exchange.hashCode ^
         assetClass.hashCode ^
         status.hashCode ^
         tradable.hashCode ^
         fractionable.hashCode ^
-        minOrderSize.hashCode ^
-        minTradeIncrement.hashCode ^
-        priceIncrement.hashCode ^
+        _normalizedDoubleHashCode(minOrderSize) ^
+        _normalizedDoubleHashCode(minTradeIncrement) ^
+        _normalizedDoubleHashCode(priceIncrement) ^
         logoUrl.hashCode;
   }
 }
