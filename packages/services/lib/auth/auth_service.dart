@@ -186,6 +186,43 @@ class AuthService {
   /// 토큰 갱신
   static Future<bool> refreshAccessToken() async {
     try {
+      logger.i('토큰 갱신 시작');
+      
+      // 1. 카카오 토큰 상태 확인 및 갱신
+      final kakaoTokenInfo = await KakaoAuthService.getTokenInfo();
+      if (kakaoTokenInfo?['isExpired'] == true) {
+        logger.i('카카오 토큰 만료, 자동 갱신 시도');
+        // 카카오 SDK가 자동으로 갱신 시도
+      }
+      
+      final kakaoAccessToken = await TokenService.getKakaoAccessToken();
+      if (kakaoAccessToken != null) {
+        logger.i('카카오 토큰으로 백엔드 토큰 재발급 시도');
+        
+        // 2. 카카오 토큰으로 백엔드 토큰 재발급
+        final userId = await TokenService.getKakaoUserId();
+        final result = await AuthApiService.kakaoLogin(
+          kakaoAccessToken: kakaoAccessToken,
+          userId: userId ?? '',
+          nickname: '', // 필요시 저장된 값 사용
+          email: '',
+        );
+        
+        if (result != null) {
+          final response = KakaoLoginResponse.fromJson(result);
+          if (response.accessToken != null) {
+            await TokenService.saveAccessToken(response.accessToken!);
+            logger.i('카카오 토큰 기반 백엔드 토큰 재발급 성공');
+            return true;
+          }
+        }
+        
+        logger.w('카카오 토큰 기반 백엔드 토큰 재발급 실패, 백엔드 리프레시 토큰으로 폴백');
+      } else {
+        logger.w('카카오 액세스 토큰이 없습니다, 백엔드 리프레시 토큰으로 폴백');
+      }
+      
+      // 3. 백엔드 리프레시 토큰으로 폴백
       final refreshToken = await TokenService.getRefreshToken();
       if (refreshToken == null) {
         logger.e('리프레시 토큰이 없습니다');
@@ -205,14 +242,14 @@ class AuthService {
             await TokenService.saveRefreshToken(response.refreshToken!);
           }
           
-          logger.i('토큰 갱신 성공');
+          logger.i('백엔드 리프레시 토큰으로 토큰 갱신 성공');
           return true;
         } else {
-          logger.e('토큰 갱신 실패: ${response.message}');
+          logger.e('백엔드 리프레시 토큰 갱신 실패: ${response.message}');
           return false;
         }
       } else {
-        logger.e('토큰 갱신 API 호출 실패');
+        logger.e('백엔드 리프레시 토큰 갱신 API 호출 실패');
         return false;
       }
     } catch (error) {

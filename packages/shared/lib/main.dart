@@ -17,27 +17,39 @@ void runQbitApp() async {
   // 환경 변수 초기화
   try {
     await EnvConfig.initialize();
-  } catch (e) {
+  } catch (e, stackTrace) {
     if (kDebugMode) {
-      debugPrint('환경 변수 초기화 실패: $e');
+      debugPrint('EnvConfig.initialize failed: $e');
+      debugPrint('Stack trace: $stackTrace');
+    } else {
+      debugPrint('EnvConfig.initialize failed: $e');
+      // 프로덕션에서는 앱을 계속 실행하되 로그만 남김
     }
   }
   
   // 카카오 SDK 초기화
   try {
     KakaoSdk.init(nativeAppKey: AppConfig.kakaoNativeAppKey);
-  } catch (e) {
+  } catch (e, stackTrace) {
     if (kDebugMode) {
-      debugPrint('카카오 SDK 초기화 실패: $e');
+      debugPrint('KakaoSdk.init failed: $e');
+      debugPrint('Stack trace: $stackTrace');
+    } else {
+      debugPrint('KakaoSdk.init failed: $e');
+      // 프로덕션에서는 앱을 계속 실행하되 로그만 남김
     }
   }
   
   // API 클라이언트 초기화
   try {
     ApiClient.initialize();
-  } catch (e) {
+  } catch (e, stackTrace) {
     if (kDebugMode) {
-      debugPrint('API 클라이언트 초기화 실패: $e');
+      debugPrint('ApiClient.initialize failed: $e');
+      debugPrint('Stack trace: $stackTrace');
+    } else {
+      debugPrint('ApiClient.initialize failed: $e');
+      // 프로덕션에서는 앱을 계속 실행하되 로그만 남김
     }
   }
   
