@@ -137,11 +137,16 @@ class AuthService {
   /// 로그인 상태 확인
   static Future<bool> isLoggedIn() async {
     try {
-      // 백엔드 토큰과 카카오 토큰 모두 확인
-      final backendLoggedIn = await TokenService.isLoggedIn();
+      // 카카오 토큰이 있으면 로그인 상태로 간주 (백엔드 연결 실패 시에도 카카오 로그인만으로 사용 가능)
       final kakaoLoggedIn = await KakaoAuthService.hasToken();
       
-      return backendLoggedIn && kakaoLoggedIn;
+      if (kakaoLoggedIn) {
+        // 카카오 토큰이 있으면 로그인 상태
+        return true;
+      } else {
+        // 카카오 토큰이 없으면 백엔드 토큰만으로도 확인
+        return await TokenService.isLoggedIn();
+      }
     } catch (e) {
       logger.e('로그인 상태 확인 실패: $e');
       return false;

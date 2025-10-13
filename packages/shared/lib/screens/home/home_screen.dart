@@ -15,10 +15,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
-  void _navigateToTrade() {
-    context.go('/trade');
-  }
-
   void _onNavItemTap(int index) {
     setState(() {
       _currentIndex = index;

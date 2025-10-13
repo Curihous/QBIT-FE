@@ -51,7 +51,7 @@ class AppRouter {
         name: 'stock-search',
         builder: (context, state) {
           final symbol = state.pathParameters['symbol'] ?? '';
-          return const StockSearchScreen();
+          return StockSearchScreen(symbol: symbol.isEmpty ? null : symbol);
         },
       ),
       GoRoute(
