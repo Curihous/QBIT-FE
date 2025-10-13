@@ -76,13 +76,17 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
 
       // 환율 로드
       _exchangeRate = await ExchangeRateApiService.getUsdToKrwRate();
+      if (!mounted) return;
+      
       _tickSizeInKrw = await ExchangeRateApiService.getTickSizeInKrw();
+      if (!mounted) return;
       
       print('환율 로드: $_exchangeRate KRW/USD');
       print('틱 사이즈: $_tickSizeInKrw KRW');
 
       // 주식 상세 정보 로드
       final stockDetail = await StockApiService.getStockDetail(widget.symbol);
+      if (!mounted) return;
       
       if (stockDetail != null) {
         setState(() {
@@ -99,6 +103,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
         });
       }
     } catch (error) {
+      if (!mounted) return;
       setState(() {
         _error = '오류가 발생했습니다: $error';
         _isLoading = false;
@@ -147,9 +152,9 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
       final order = OrderModel(
         symbol: widget.symbol,
         quantity: _quantity.toString(),
-        side: _selectedOrderTab == '매도' ? 'sell' : 'buy',
-        type: 'limit', // 지정가 주문
-        timeInForce: 'day',
+        side: _selectedOrderTab == '매도' ? OrderSide.sell : OrderSide.buy,
+        type: OrderType.limit, // 지정가 주문
+        timeInForce: TimeInForce.day,
         limitPrice: limitPriceInUsd,
       );
 
@@ -157,13 +162,13 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
       
       if (result != null) {
         // 주문 성공
-        print('주문 접수 성공! 주문 ID: ${result['id']}');
+        print('주문 접수 성공! 주문 ID: ${result['orderId']}');
         print('주문 상태: ${result['status']}');
         print('전체 응답: $result');
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('주문이 접수되었습니다\n주문 ID: ${result['id'] ?? 'N/A'}'),
+            content: Text('주문이 접수되었습니다\n주문 ID: ${result['orderId'] ?? 'N/A'}'),
             backgroundColor: AppColors.profit,
             duration: Duration(seconds: 5),
           ),
@@ -495,9 +500,10 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
             ],
           )
         : Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               // 미국 주식: 주문 폼만 전체 너비로 표시
-              Expanded(
+              Flexible(
                 child: _buildOrderForm(),
               ),
             ],
@@ -526,9 +532,11 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
     
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 16, 8, 16), 
-      child: Column(
-        crossAxisAlignment: isCrypto ? CrossAxisAlignment.end : CrossAxisAlignment.center,
-        children: [
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: isCrypto ? CrossAxisAlignment.end : CrossAxisAlignment.center,
+          children: [
           // 매수/매도/내역 탭
           Column(
             children: [
@@ -818,7 +826,8 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -140,15 +140,14 @@ class TokenService {
     }
   }
 
-  /// 카카오 전용 세션인지 확인 (백엔드 토큰 없고 카카오 토큰만 있는 경우)
+  /// 카카오 전용 세션인지 확인 (백엔드 액세스 토큰 없고 카카오 토큰만 있는 경우)
   static Future<bool> isKakaoOnlySession() async {
     try {
       final hasBackendAccess = await hasBackendToken();
-      final hasBackendRefresh = await getRefreshToken() != null;
       final hasKakaoToken = await getKakaoAccessToken() != null;
       
-      // 백엔드 토큰이 없고 카카오 토큰만 있으면 카카오 전용 세션
-      return !hasBackendAccess && !hasBackendRefresh && hasKakaoToken;
+      // 백엔드 액세스 토큰이 없고 카카오 토큰만 있으면 카카오 전용 세션
+      return !hasBackendAccess && hasKakaoToken;
     } catch (error) {
       logger.e('카카오 전용 세션 확인 실패: $error');
       return false;

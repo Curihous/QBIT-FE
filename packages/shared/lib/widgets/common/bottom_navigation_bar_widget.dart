@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 // 수정 필요
 
 class BottomNavigationBarWidget extends StatelessWidget {
-  final int selectedIndex;
-  final Function(int) onTap;
+  final int currentIndex;
+  final ValueChanged<int> onTap;
 
   const BottomNavigationBarWidget({
     super.key,
-    required this.selectedIndex,
+    required this.currentIndex,
     required this.onTap,
   });
 
@@ -17,7 +17,7 @@ class BottomNavigationBarWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return BottomNavigationBar(
       type: BottomNavigationBarType.fixed,
-      currentIndex: selectedIndex,
+      currentIndex: currentIndex,
       onTap: onTap,
       selectedItemColor: const Color(0xFF00C9A7),
       unselectedItemColor: Colors.grey,
@@ -65,13 +65,10 @@ class NavigationHelper {
         );
         break;
       case 2:
-        context.go('/trade');
+        context.go('/record');
         break;
       case 3:
-        // 기록 탭
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('기록 화면 준비 중')),
-        );
+        context.go('/trade');
         break;
       case 4:
         // 분석 탭
