@@ -27,8 +27,7 @@ class KakaoAuthService {
           AccessTokenInfo tokenInfo = await UserApi.instance.accessTokenInfo();
           OAuthToken? token = await TokenManagerProvider.instance.manager.getToken();
           
-          // 테스트단계에서만 쓸거니까 리뷰에서 제외
-          logger.i('기존 토큰 유효: userId=${tokenInfo.id}, accessToken=${token?.accessToken}');
+          logger.i('기존 토큰 유효: userId=${tokenInfo.id}');
           
           User user = await UserApi.instance.me();
           logger.i('자동 로그인 성공: 닉네임=${user.kakaoAccount?.profile?.nickname}');
@@ -59,8 +58,7 @@ class KakaoAuthService {
         try {
           // 카카오톡으로 로그인 시도
           OAuthToken token = await UserApi.instance.loginWithKakaoTalk();
-          // 테스트단계에서만 쓸거니까 리뷰에서 제외
-          logger.i('카카오톡 로그인 성공: accessToken=${token.accessToken}');
+          logger.i('카카오톡 로그인 성공');
           
           User user = await UserApi.instance.me();
           logger.i('사용자 정보: userId=${user.id}, 닉네임=${user.kakaoAccount?.profile?.nickname}');
@@ -81,8 +79,7 @@ class KakaoAuthService {
           // 카카오톡 로그인 실패 시 카카오계정 로그인으로
           try {
             OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
-            // 테스트단계에서만 쓸거니까 리뷰에서 제외
-            logger.i('카카오계정 로그인 성공: accessToken=${token.accessToken}');
+            logger.i('카카오계정 로그인 성공');
             
             User user = await UserApi.instance.me();
             logger.i('사용자 정보: userId=${user.id}, 닉네임=${user.kakaoAccount?.profile?.nickname}');
@@ -103,8 +100,7 @@ class KakaoAuthService {
         // 카카오톡이 설치되지 않은 경우 카카오계정으로 로그인
         try {
           OAuthToken token = await UserApi.instance.loginWithKakaoAccount();
-          // 테스트단계에서만 쓸거니까 리뷰에서 제외
-          logger.i('카카오계정 로그인 성공: accessToken=${token.accessToken}');
+          logger.i('카카오계정 로그인 성공');
           
           User user = await UserApi.instance.me();
           logger.i('사용자 정보: userId=${user.id}, 닉네임=${user.kakaoAccount?.profile?.nickname}');
@@ -317,15 +313,13 @@ class KakaoAuthService {
     }
   }
   /// 재로그인을 통한 토큰 갱신 헬퍼 메서드
-  /// TODO: 테스트 단계에서만 토큰 로깅 허용 - 운영환경에서는 제거 필요
   static Future<Map<String, dynamic>> _reloginAndBuildResult() async {
     final isInstalled = await isKakaoTalkInstalled();
     final newToken = isInstalled
         ? await UserApi.instance.loginWithKakaoTalk()
         : await UserApi.instance.loginWithKakaoAccount();
 
-    // 테스트단계에서만 쓸거니까 리뷰에서 제외
-    logger.i('카카오 토큰 갱신 성공: accessToken=${newToken.accessToken}');
+    logger.i('카카오 토큰 갱신 성공');
     
     final user = await UserApi.instance.me();
     return {

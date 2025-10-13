@@ -160,6 +160,8 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
 
       final result = await OrderApiService.createOrder(order);
       
+      if (!mounted) return;
+      
       if (result != null) {
         // 주문 성공
         print('주문 접수 성공! 주문 ID: ${result['orderId']}');
@@ -188,6 +190,8 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('오류가 발생했습니다: $e'),
