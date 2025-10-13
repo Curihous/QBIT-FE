@@ -26,15 +26,15 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
       titleSpacing: 0,
       title: Container(
         width: context.screenWidth,
-        height: context.h(22),
-        padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+        height: context.h(28),
+        padding: EdgeInsets.symmetric(horizontal: context.w(24)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SvgPicture.asset(
               'assets/icons/navigation/top-nav-QBIT-text-logo.svg',
-              height: context.h(22),
+              height: context.h(28),
               fit: BoxFit.contain,
             ),
             Row(
@@ -43,18 +43,18 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
                 IconButton(
                   icon: SvgPicture.asset(
                     'assets/icons/navigation/top-nav-alarm.svg',
-                    height: context.h(22),
+                    height: context.h(26),
                     fit: BoxFit.contain,
                   ),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   onPressed: onAlarmPressed ?? () {},
                 ),
-                SizedBox(width: context.w(16)),
+                SizedBox(width: context.w(0)),
                 IconButton(
                   icon: SvgPicture.asset(
                     'assets/icons/navigation/top-nav-setting.svg',
-                    height: context.h(22),
+                    height: context.h(26),
                     fit: BoxFit.contain,
                   ),
                   padding: EdgeInsets.zero,
