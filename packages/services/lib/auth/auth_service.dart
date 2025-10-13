@@ -97,10 +97,17 @@ class AuthService {
     try {
       // 백엔드 토큰이 있으면 백엔드에서 사용자 정보 조회
       if (await TokenService.isLoggedIn()) {
-        // TODO: 백엔드 API로 사용자 정보 조회 구현
-        return await KakaoAuthService.getSimpleUserInfo();
+        final backendUserInfo = await AuthApiService.getCurrentUser();
+        if (backendUserInfo != null) {
+          logger.i('백엔드에서 사용자 정보 조회 성공');
+          return backendUserInfo;
+        } else {
+          logger.w('백엔드 사용자 정보 조회 실패, 카카오 SDK로 폴백');
+          return await KakaoAuthService.getSimpleUserInfo();
+        }
       } else {
-        // 카카오 SDK로만 사용자 정보 조회
+        // 백엔드 토큰이 없으면 카카오 SDK로만 사용자 정보 조회
+        logger.i('백엔드 토큰 없음, 카카오 SDK로 사용자 정보 조회');
         return await KakaoAuthService.getSimpleUserInfo();
       }
     } catch (error) {

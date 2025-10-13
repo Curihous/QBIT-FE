@@ -291,11 +291,9 @@ class BottomNavigationBarWidget extends StatelessWidget {
           Flexible(
             child: Text(
               label,
-              style: TextStyle(
-                fontFamily: 'Pretendard',
+              style: AppFonts.navLabel.copyWith(
                 fontSize: fontSize,
                 color: isSelected ? AppColors.gray900 : AppColors.gray300,
-                fontWeight: FontWeight.bold,
               ),
               overflow: TextOverflow.ellipsis,
               maxLines: 1,
