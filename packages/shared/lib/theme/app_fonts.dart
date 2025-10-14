@@ -6,137 +6,90 @@ class AppFonts {
   static const String fontFamily = 'Pretendard';
   
   // Title Styles
-  static const TextStyle titleLarge = TextStyle(
-    fontSize: 22,
-    height: 26/22, // line-height: 26px
-    fontWeight: FontWeight.w600,
+  static const TextStyle t1Bold = TextStyle(
+    fontSize: 20,
+    height: 23/20, // line-height: 23px
+    fontWeight: FontWeight.w700, // Bold
     fontFamily: fontFamily,
   );
   
-  static const TextStyle titleMedium = TextStyle(
-    fontSize: 20,
-    height: 24/20, // line-height: 24px
-    fontWeight: FontWeight.w600,
+  static const TextStyle t2Bold = TextStyle(
+    fontSize: 18,
+    height: 21/18, // line-height: 21px
+    fontWeight: FontWeight.w700, // Bold
     fontFamily: fontFamily,
   );
   
-  static const TextStyle titleSmall = TextStyle(
-    fontSize: 20,
-    height: 24/20, // line-height: 24px
-    fontWeight: FontWeight.w600,
+  static const TextStyle t2Semibold = TextStyle(
+    fontSize: 18,
+    height: 21/18, // line-height: 21px
+    fontWeight: FontWeight.w600, // SemiBold
     fontFamily: fontFamily,
   );
   
   // Body Styles
-  static const TextStyle bodyLargeSemiBold = TextStyle(
+  static const TextStyle b1Bold = TextStyle(
     fontSize: 16,
-    height: 24/16, // line-height: 24px
-    fontWeight: FontWeight.w600, // SemiBold
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle bodyLargeBold = TextStyle(
-    fontSize: 16,
-    height: 24/16, // line-height: 24px
+    height: 20/16, // line-height: 20px
     fontWeight: FontWeight.w700, // Bold
     fontFamily: fontFamily,
   );
   
-  static const TextStyle bodyMediumRegular = TextStyle(
+  static const TextStyle b1Semibold = TextStyle(
     fontSize: 16,
-    height: 1.4, // line-height: 140% (1.4)
+    height: 20/16, // line-height: 20px
+    fontWeight: FontWeight.w600, // SemiBold
+    fontFamily: fontFamily,
+  );
+  
+  static const TextStyle b1Regular = TextStyle(
+    fontSize: 16,
+    height: 20/16, // line-height: 20px
     fontWeight: FontWeight.w400, // Regular
     fontFamily: fontFamily,
   );
   
-  // 추가 폰트 스타일 (기존 코드 호환성)
-  static const TextStyle bodyMedium = TextStyle(
+  static const TextStyle b2Semibold = TextStyle(
     fontSize: 14,
-    fontWeight: FontWeight.w500,
+    height: 17/14, // line-height: 17px
+    fontWeight: FontWeight.w600, // SemiBold
     fontFamily: fontFamily,
   );
   
-  static const TextStyle bodyLarge = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w400,
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle bodySmall = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w400,
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle bodySmallSemiBold = TextStyle(
-    fontSize: 12,
-    fontWeight: FontWeight.w600,
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle headingSmall = TextStyle(
-    fontSize: 16,
-    fontWeight: FontWeight.w600,
+  static const TextStyle b2Regular = TextStyle(
+    fontSize: 14,
+    height: 17/14, // line-height: 17px
+    fontWeight: FontWeight.w400, // Regular
     fontFamily: fontFamily,
   );
   
   // Caption Styles
-  static const TextStyle captionLargeSemiBold = TextStyle(
-    fontSize: 14,
-    height: 24/14, // line-height: 24px
+  static const TextStyle c1 = TextStyle(
+    fontSize: 13,
+    height: 16/13, // line-height: 16px
+    fontWeight: FontWeight.w400, // Regular
+    fontFamily: fontFamily,
+  );
+  
+  static const TextStyle c2 = TextStyle(
+    fontSize: 11,
+    height: 14/11, // line-height: 14px
+    fontWeight: FontWeight.w400, // Regular
+    fontFamily: fontFamily,
+  );
+  
+  // Button Styles
+  static const TextStyle btn1 = TextStyle(
+    fontSize: 20,
+    height: 23/20, // line-height: 23px
     fontWeight: FontWeight.w600, // SemiBold
     fontFamily: fontFamily,
   );
   
-  // Button Styles
   static const TextStyle btn2 = TextStyle(
     fontSize: 14,
-    height: 20/14, // line-height: 20px
-    fontWeight: FontWeight.w500, // Medium
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle captionLargeRegular = TextStyle(
-    fontSize: 14,
-    height: 24/14, // line-height: 24px
-    fontWeight: FontWeight.w400, // Regular
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle captionLargeMedium = TextStyle(
-    fontSize: 13,
-    height: 24/13, // line-height: 24px
-    fontWeight: FontWeight.w500, // Medium
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle captionSmallRegular = TextStyle(
-    fontSize: 11,
-    height: 24/11, // line-height: 24px
-    fontWeight: FontWeight.w400, // Regular
-    fontFamily: fontFamily,
-  );
-  
-  // Button Styles
-  static const TextStyle button1 = TextStyle(
-    fontSize: 20,
-    height: 24/20, // line-height: 24px
-    fontWeight: FontWeight.w600,
-    fontFamily: fontFamily,
-  );
-  
-  static const TextStyle button2 = TextStyle(
-    fontSize: 14,
-    height: 24/14, // line-height: 24px
-    fontWeight: FontWeight.w600,
-    fontFamily: fontFamily,
-  );
-  
-  // Navigation Styles
-  static const TextStyle navLabel = TextStyle(
-    fontSize: 12,
-    height: 16/12, // line-height: 16px
-    fontWeight: FontWeight.w700, // Bold
+    height: 17/14, // line-height: 17px
+    fontWeight: FontWeight.w600, // SemiBold
     fontFamily: fontFamily,
   );
   

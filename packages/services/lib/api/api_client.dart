@@ -89,59 +89,115 @@ class ApiClient {
       onError: (error, handler) async {
         // 401 에러 시 카카오 토큰 기반 백엔드 토큰 재발급 시도
         if (error.response?.statusCode == 401) {
-          logger.w('401 에러 발생 - 카카오 토큰 기반 백엔드 토큰 재발급 시도');
+          logger.w('401 에러 발생 - 토큰 재발급 시도');
           
           try {
-            // 1. 카카오 토큰 상태 확인
-            final hasKakaoToken = await KakaoAuthService.hasToken();
-            if (hasKakaoToken) {
-              final tokenInfo = await KakaoAuthService.getTokenInfo();
-              if (tokenInfo != null && !tokenInfo['isExpired']) {
-                logger.i('카카오 토큰 유효 - 백엔드 토큰 재발급 시도');
+            // 환경변수로 개발/프로덕션 플로우 구분
+            final useDevLogin = EnvConfig.useDevLogin;
+            
+            if (useDevLogin) {
+              // ========== 개발 모드: TokenService에 저장된 .env 토큰 사용 ==========
+              logger.i('개발 모드: TokenService 토큰 사용');
+              
+              final kakaoAccessToken = await TokenService.getKakaoAccessToken();
+              final kakaoUserId = await TokenService.getKakaoUserId();
+              
+              if (kakaoAccessToken != null && kakaoUserId != null) {
+                logger.i('TokenService에서 카카오 토큰 발견 - 백엔드 토큰 재발급 시도');
                 
-                // 2. 카카오 사용자 정보 조회
-                final kakaoUser = await KakaoAuthService.getCurrentUser();
-                if (kakaoUser != null) {
-                  final kakaoAccessToken = await TokenService.getKakaoAccessToken();
-                  if (kakaoAccessToken != null) {
-                    // 3. 카카오 사용자 정보로 백엔드 토큰 재발급
-                    final backendResult = await AuthApiService.kakaoLogin(
-                      kakaoAccessToken: kakaoAccessToken,
-                      userId: kakaoUser['id'].toString(),
-                      nickname: kakaoUser['nickname'] ?? '',
-                      email: kakaoUser['email'] ?? '',
-                    );
+                final backendResult = await AuthApiService.kakaoLogin(
+                  kakaoAccessToken: kakaoAccessToken,
+                  userId: kakaoUserId,
+                  nickname: '',
+                  email: '',
+                );
+                
+                if (backendResult != null) {
+                  final response = KakaoLoginResponse.fromJson(backendResult);
+                  if (response.accessToken != null) {
+                    await TokenService.saveAccessToken(response.accessToken!);
                     
-                    if (backendResult != null) {
-                      final response = KakaoLoginResponse.fromJson(backendResult);
-                      if (response.accessToken != null) {
-                        // 4. 새 백엔드 토큰 저장 후 요청 재시도
-                        await TokenService.saveAccessToken(response.accessToken!);
-                        
-                        logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
-                        final newToken = await _getAccessToken();
-                        if (newToken != null) {
-                          error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-                          final response = await _dio.fetch(error.requestOptions);
-                          handler.resolve(response);
-                          return;
-                        }
+                    logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
+                    final newToken = await _getAccessToken();
+                    if (newToken != null) {
+                      error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                      final response = await _dio.fetch(error.requestOptions);
+                      handler.resolve(response);
+                      return;
+                    }
+                  }
+                }
+              }
+              
+              // 개발 모드에서 토큰이 없으면 재로그인 필요
+              logger.w('개발 모드: 토큰 없음 - 재로그인 필요');
+              _tokenExpiredController.add(null);
+              handler.next(error);
+              return;
+              
+            } else {
+              // ========== 프로덕션 모드: Kakao SDK 사용 ==========
+              logger.i('프로덕션 모드: Kakao SDK 사용');
+              
+              final hasKakaoToken = await KakaoAuthService.hasToken();
+              if (!hasKakaoToken) {
+                logger.w('Kakao SDK 토큰 없음 - 재로그인 필요');
+                _tokenExpiredController.add(null);
+                handler.next(error);
+                return;
+              }
+              
+              final tokenInfo = await KakaoAuthService.getTokenInfo();
+              if (tokenInfo == null) {
+                logger.w('Kakao SDK 토큰 정보 조회 실패 - 재로그인 필요');
+                _tokenExpiredController.add(null);
+                handler.next(error);
+                return;
+              }
+              
+              if (tokenInfo['isExpired']) {
+                logger.w('Kakao SDK 토큰 만료 - 재로그인 필요');
+                _tokenExpiredController.add(null);
+                handler.next(error);
+                return;
+              }
+              
+              // Kakao SDK 토큰이 유효하면 백엔드 토큰 재발급
+              logger.i('Kakao SDK 토큰 유효 - 백엔드 토큰 재발급 시도');
+              
+              final kakaoUser = await KakaoAuthService.getCurrentUser();
+              if (kakaoUser != null) {
+                final kakaoAccessToken = await TokenService.getKakaoAccessToken();
+                if (kakaoAccessToken != null) {
+                  final backendResult = await AuthApiService.kakaoLogin(
+                    kakaoAccessToken: kakaoAccessToken,
+                    userId: kakaoUser['id'].toString(),
+                    nickname: kakaoUser['nickname'] ?? '',
+                    email: kakaoUser['email'] ?? '',
+                  );
+                  
+                  if (backendResult != null) {
+                    final response = KakaoLoginResponse.fromJson(backendResult);
+                    if (response.accessToken != null) {
+                      await TokenService.saveAccessToken(response.accessToken!);
+                      
+                      logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
+                      final newToken = await _getAccessToken();
+                      if (newToken != null) {
+                        error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                        final response = await _dio.fetch(error.requestOptions);
+                        handler.resolve(response);
+                        return;
                       }
                     }
                   }
                 }
-              } else {
-                logger.w('카카오 토큰 만료 - 재로그인 필요');
               }
-            } else {
-              logger.w('카카오 토큰 없음 - 재로그인 필요');
+              
+              logger.w('프로덕션 모드: 백엔드 토큰 재발급 실패');
             }
-            
-            // 5. 실패 시 로그인 화면으로 이동
-            _tokenExpiredController.add(null);
           } catch (e) {
             logger.e('토큰 갱신 중 오류: $e');
-            _tokenExpiredController.add(null);
           }
         }
         handler.next(error);
@@ -178,9 +234,12 @@ class ApiClient {
   // 토큰 관리 메서드들
   static Future<String?> _getAccessToken() async {
     try {
-      // 백엔드 토큰으로 복구
-      const storage = FlutterSecureStorage();
-      final token = await storage.read(key: 'access_token');
+      // 개발 모드일 때는 TokenService 사용 (동일한 Storage 인스턴스)
+      // 프로덕션일 때는 직접 FlutterSecureStorage 사용
+      final token = EnvConfig.useDevLogin 
+          ? await TokenService.getAccessToken()
+          : await const FlutterSecureStorage().read(key: 'access_token');
+          
       logger.i('액세스 토큰 조회: ${token != null ? "존재" : "없음"}');
       if (token != null) {
         logger.i('토큰 길이: ${token.length}');
@@ -204,19 +263,11 @@ class ApiClient {
               final now = DateTime.now();
               final timeLeft = expDate.difference(now);
               
-              logger.i('토큰 만료 시간: ${expDate.toIso8601String()}');
-              logger.i('현재 시간: ${now.toIso8601String()}');
-              logger.i('남은 시간: ${timeLeft.inMinutes}분 ${timeLeft.inSeconds % 60}초');
-              logger.i('토큰 만료 여부: ${timeLeft.isNegative ? "만료됨" : "유효함"}');
-              
               if (timeLeft.isNegative) {
-                logger.w('⚠️ 토큰이 만료되었습니다! 재로그인이 필요합니다.');
-                return null; // 만료된 토큰은 null 반환
+                logger.w('⚠️ 토큰이 만료되었습니다');
               } else {
-                logger.i('✅ 토큰이 유효합니다. ${timeLeft.inMinutes}분 남음');
+                logger.i('✅ 토큰 유효: ${timeLeft.inMinutes}분 남음');
               }
-            } else {
-              logger.i('토큰에 만료 시간 정보가 없습니다');
             }
           }
         } catch (e) {

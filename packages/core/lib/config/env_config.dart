@@ -70,11 +70,9 @@ class EnvConfig {
     }
   }
 
-  /// 기본값 제공 (공개 가능한 값들)
+  /// 기본값 제공 (공개 가능한 값들만)
   static String _getDefaultValue(String key) {
     switch (key) {
-      case 'KAKAO_NATIVE_APP_KEY':
-        return '2fd4280cde76fda045bf055db5875e86';
       case 'BACKEND_URL':
         return 'https://api.qbit.o-r.kr';
       case 'APP_NAME':
@@ -89,6 +87,8 @@ class EnvConfig {
         return 'development';
       case 'LOG_LEVEL':
         return 'info';
+      case 'USE_DEV_LOGIN':
+        return 'false';
       default:
         return '';
     }
@@ -131,6 +131,18 @@ class EnvConfig {
   /// 환경 변수 초기화 상태 확인
   static bool get isInitialized => _initialized;
 
+  /// 테스트용 카카오 액세스 토큰
+  static String get kakaoTestAccessToken => getValue('KAKAO_TEST_ACCESS_TOKEN');
+  
+  /// 테스트용 백엔드 JWT 액세스 토큰
+  static String get backendTestAccessToken => getValue('BACKEND_TEST_ACCESS_TOKEN');
+  
+  /// 개발 로그인 모드 사용 여부 (true = .env 토큰 사용, false = 정상 카카오 로그인)
+  static bool get useDevLogin {
+    final value = getValue('USE_DEV_LOGIN').toLowerCase();
+    return value == 'true' || value == '1' || value == 'yes';
+  }
+
   /// 모든 환경 변수 출력 (디버그용)
   static void printAllEnvVars() {
     if (!_initialized) {
@@ -141,8 +153,10 @@ class EnvConfig {
     logger.i('=== 환경 변수 목록 ===');
     dotenv.env.forEach((key, value) {
       // 민감한 정보는 마스킹
-      if (key.toLowerCase().contains('key') || key.toLowerCase().contains('secret')) {
-        logger.i('$key: ${value.substring(0, 8)}...');
+      if (key.toLowerCase().contains('key') || 
+          key.toLowerCase().contains('secret') || 
+          key.toLowerCase().contains('token')) {
+        logger.i('$key: ${value.length > 8 ? value.substring(0, 8) : value}...');
       } else {
         logger.i('$key: $value');
       }

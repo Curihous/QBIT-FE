@@ -34,6 +34,9 @@ flutter:
   assets:
     - assets/images/
     - assets/images/characters/
+    - assets/icons/
+    - assets/icons/navigation/
+    - assets/icons/stock_search_screen/
     - assets/env/
   
   fonts:

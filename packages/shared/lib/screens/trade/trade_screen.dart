@@ -8,6 +8,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_fonts.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common/common_widgets.dart';
+import '../../widgets/common/header_basic.dart';
 import 'alpaca_auth_screen.dart';
 import 'stock_search_screen.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
@@ -28,16 +29,6 @@ class TradeScreen extends StatefulWidget {
 }
 
 class _TradeScreenState extends State<TradeScreen> {
-  // Derive the selected tab index from the current GoRouter location
-  int _getCurrentIndex() {
-    final location = GoRouterState.of(context).uri.path;
-    if (location.startsWith('/home')) return 0;
-    if (location.startsWith('/learning')) return 1;
-    if (location.startsWith('/record')) return 2;
-    if (location.startsWith('/trade')) return 3;
-    if (location.startsWith('/analysis')) return 4;
-    return 0;
-  }
   bool _isAlpacaConnected = false; // Alpaca 연동 상태 - 강제로 false로 설정
   
   String _userNickname = ''; // 카카오 닉네임
@@ -73,11 +64,15 @@ class _TradeScreenState extends State<TradeScreen> {
 
   // 사용자 데이터 로드
   Future<void> _loadUserData() async {
-    await _loadKakaoNickname();
-    await _loadOverseasIndices();
-    await _checkAlpacaConnectionStatus();
-    await _loadUserAssets();
-    await _loadStockRanking(); 
+    try {
+      await _loadKakaoNickname();
+      await _loadOverseasIndices();
+      await _checkAlpacaConnectionStatus();
+      await _loadUserAssets();
+      await _loadStockRanking();
+    } catch (e) {
+      print('투자 화면 데이터 로드 중 에러: $e');
+    }
   }
 
   // Alpaca 연결 상태 확인
@@ -113,9 +108,26 @@ class _TradeScreenState extends State<TradeScreen> {
   }
 
   // 토큰 만료 처리
-  void _handleTokenExpired() {
+  void _handleTokenExpired() async {
+    print('⚠️ 토큰 만료 이벤트 발생 - 토큰 갱신 시도');
+    
+    // 먼저 토큰 갱신 시도
+    try {
+      final refreshed = await AuthService.refreshAccessToken();
+      if (refreshed) {
+        print('✅ 토큰 갱신 성공 - 데이터 다시 로드');
+        if (mounted) {
+          _loadUserData();
+        }
+        return;
+      }
+    } catch (e) {
+      print('❌ 토큰 갱신 실패: $e');
+    }
+    
+    // 토큰 갱신 실패 시에만 로그인 페이지로 이동
     if (mounted) {
-      // 로그인 페이지로 이동
+      print('🔄 로그인 페이지로 이동');
       context.go('/login');
     }
   }
@@ -337,31 +349,6 @@ class _TradeScreenState extends State<TradeScreen> {
   }
 
 
-  // 하단 네비
-  void _onNavItemTap(int index) {
-    switch (index) {
-      case 0:
-        // 홈
-        context.go('/home');
-        break;
-      case 1:
-        // 학습
-        context.go('/learning');
-        break;
-      case 2:
-        // 기록
-        context.go('/record');
-        break;
-      case 3:
-        // 거래 (현재)
-        break;
-      case 4:
-        // 분석
-        context.go('/analysis');
-        break;
-    }
-  }
-
   // 계좌 연결하기 버튼 클릭
   void _onConnectAccount() {
     // 연동 성공 콜백 설정
@@ -400,14 +387,14 @@ class _TradeScreenState extends State<TradeScreen> {
                         if (_userNickname.isNotEmpty) ...[
                           TextSpan(
                             text: _userNickname,
-                            style: AppFonts.bodyLarge.copyWith(
+                            style: AppFonts.b1Semibold.copyWith(
                               color: AppColors.primary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           TextSpan(
                             text: '님의 보유자산',
-                            style: AppFonts.bodyLarge.copyWith(
+                            style: AppFonts.b1Semibold.copyWith(
                               color: AppColors.gray900,
                               fontWeight: FontWeight.w500,
                             ),
@@ -415,7 +402,7 @@ class _TradeScreenState extends State<TradeScreen> {
                         ] else ...[
                           TextSpan(
                             text: '보유자산',
-                        style: AppFonts.bodyLarge.copyWith(
+                        style: AppFonts.b1Semibold.copyWith(
                               color: AppColors.gray900,
                               fontWeight: FontWeight.w500,
                         ),
@@ -430,7 +417,7 @@ class _TradeScreenState extends State<TradeScreen> {
                     },
                     child: Text(
                       '상세보기',
-                      style: AppFonts.captionLargeRegular.copyWith(color: AppColors.gray600),
+                      style: AppFonts.b2Regular.copyWith(color: AppColors.gray600),
                     ),
                   ),
                 ],
@@ -439,7 +426,7 @@ class _TradeScreenState extends State<TradeScreen> {
               // 실제 보유자산 금액 (API 연동 후 실제 데이터로 교체)
               Text(
                 '\$ 50,400,500',
-                style: AppFonts.titleLarge.copyWith(
+                style: AppFonts.t1Bold.copyWith(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   color: AppColors.gray900,
@@ -483,7 +470,7 @@ class _TradeScreenState extends State<TradeScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'Alpaca 계좌를 연동해주세요',
-                          style: AppFonts.titleMedium.copyWith(
+                          style: AppFonts.t2Bold.copyWith(
                             color: AppColors.gray900,
                             fontWeight: FontWeight.w600,
                           ),
@@ -491,7 +478,7 @@ class _TradeScreenState extends State<TradeScreen> {
                         const SizedBox(height: 8),
                         Text(
                           '실시간 거래 정보를 확인하세요',
-                          style: AppFonts.bodyMedium.copyWith(
+                          style: AppFonts.b1Regular.copyWith(
                             color: AppColors.gray600,
                           ),
                         ),
@@ -508,7 +495,7 @@ class _TradeScreenState extends State<TradeScreen> {
                           ),
                           child: Text(
                             '계좌 연동하기',
-                            style: AppFonts.titleMedium.copyWith(
+                            style: AppFonts.t2Bold.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                             ),
@@ -540,15 +527,15 @@ class _TradeScreenState extends State<TradeScreen> {
           );
         },
         child: Container(
-          width: 361,
+          width: double.infinity, // 좌우 여백 끝까지 채움
           height: 48,
           padding: const EdgeInsets.all(2),
           decoration: ShapeDecoration(
-            color: Colors.white,
+            color: Colors.white, 
             shape: RoundedRectangleBorder(
               side: BorderSide(
                 width: 1,
-                color: AppColors.gray300, // Gray-300
+                color: AppColors.gray300, 
               ),
               borderRadius: BorderRadius.circular(999),
             ),
@@ -559,22 +546,20 @@ class _TradeScreenState extends State<TradeScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: 36,
-                height: 36,
-                padding: const EdgeInsets.all(8),
+                width: 34,
+                height: 34,
+                margin: const EdgeInsets.only(left: 12, right: 4),
                 child: Icon(
                   Icons.search,
-                  color: AppColors.gray600, // Gray-600
+                  color: AppColors.gray600,
                   size: 20,
                 ),
               ),
-              SizedBox(
-                width: 224,
+              Expanded(
                 child: Text(
                   '종목을 입력하세요',
-                  style: AppFonts.bodyLarge.copyWith(
-                    color: AppColors.gray600, // Gray-600
-                    height: 1.40,
+                  style: AppFonts.b1Regular.copyWith(
+                    color: AppColors.gray600, 
                   ),
                 ),
               ),
@@ -631,11 +616,11 @@ class _TradeScreenState extends State<TradeScreen> {
                                       children: [
                                         TextSpan(
                                           text: _userNickname.isNotEmpty ? _userNickname : '큐빗',
-                                          style: AppFonts.bodyLargeBold.copyWith(color: AppColors.primary),
+                                          style: AppFonts.b1Bold.copyWith(color: AppColors.primary),
                                         ),
                                         TextSpan(
                                           text: '님의 보유자산',
-                                          style: AppFonts.bodyLargeSemiBold.copyWith(color: AppColors.gray900),
+                                          style: AppFonts.b1Semibold.copyWith(color: AppColors.gray900),
                                         ),
                                       ],
                                     ),
@@ -645,7 +630,7 @@ class _TradeScreenState extends State<TradeScreen> {
                                   width: 172,
                                   child: Text(
                                     '\$ ${(_userAssets?.portfolioValue ?? 100500).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
-                                    style: AppFonts.titleMedium.copyWith(color: AppColors.gray900),
+                                    style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
                                   ),
                                 ),
                               ],
@@ -658,7 +643,7 @@ class _TradeScreenState extends State<TradeScreen> {
                           child: Text(
                             '상세보기',
                             textAlign: TextAlign.center,
-                            style: AppFonts.captionLargeSemiBold.copyWith(color: AppColors.gray600),
+                            style: AppFonts.b2Semibold.copyWith(color: AppColors.gray600),
                           ),
                         ),
                       ],
@@ -714,7 +699,7 @@ class _TradeScreenState extends State<TradeScreen> {
                       ),
                       child: Text(
                         '${_calculateReturnPercentage()}%',
-                                    style: AppFonts.captionSmallRegular.copyWith(color: AppColors.gray900),
+                                    style: AppFonts.c2.copyWith(color: AppColors.gray900),
                       ),
                     ),
                   ),
@@ -724,7 +709,7 @@ class _TradeScreenState extends State<TradeScreen> {
                     bottom: 16,
                     child: Text(
                       'Today',
-                                    style: AppFonts.captionSmallRegular.copyWith(color: AppColors.gray900),
+                                    style: AppFonts.c2.copyWith(color: AppColors.gray900),
                     ),
                   ),
                   // 원형 마커 (카드 내부)
@@ -794,14 +779,14 @@ class _TradeScreenState extends State<TradeScreen> {
                                       width: 172,
                                       child: Text(
                                         '보유자산',
-                                        style: AppFonts.bodyLargeSemiBold.copyWith(color: AppColors.gray900),
+                                        style: AppFonts.b1Semibold.copyWith(color: AppColors.gray900),
                                       ),
                                     ),
                                     SizedBox(
                                       width: 172,
                                       child: Text(
                                         '\$ --,---,---',
-                                        style: AppFonts.titleMedium.copyWith(color: AppColors.gray600),
+                                        style: AppFonts.t2Bold.copyWith(color: AppColors.gray600),
                                       ),
                                     ),
                                   ],
@@ -814,7 +799,7 @@ class _TradeScreenState extends State<TradeScreen> {
                               child: Text(
                                 '상세보기',
                                 textAlign: TextAlign.center,
-                              style: AppFonts.captionLargeSemiBold.copyWith(
+                              style: AppFonts.b2Semibold.copyWith(
                                   color: AppColors.gray600, /* Gray-600 */
                                   height: 1.71,
                        ),
@@ -855,7 +840,7 @@ class _TradeScreenState extends State<TradeScreen> {
                           child: Center(
                             child: Text(
                               '차트 영역',
-                              style: AppFonts.captionLargeRegular.copyWith(color: AppColors.gray300),
+                              style: AppFonts.b2Regular.copyWith(color: AppColors.gray300),
                             ),
                           ),
                         ),
@@ -872,7 +857,7 @@ class _TradeScreenState extends State<TradeScreen> {
                           ),
                           child: Text(
                             '--%',
-                            style: AppFonts.captionSmallRegular.copyWith(color: AppColors.gray300),
+                            style: AppFonts.c2.copyWith(color: AppColors.gray300),
                           ),
                         ),
                       ),
@@ -882,7 +867,7 @@ class _TradeScreenState extends State<TradeScreen> {
                         bottom: 16,
                         child: Text(
                           '--/--',
-                          style: AppFonts.captionSmallRegular.copyWith(color: AppColors.gray300),
+                          style: AppFonts.c2.copyWith(color: AppColors.gray300),
                         ),
                       ),
                       // 원형 마커 플레이스홀더
@@ -941,7 +926,7 @@ class _TradeScreenState extends State<TradeScreen> {
                               child: Text(
                               '계좌 연결하기',
                                 textAlign: TextAlign.center,
-                                style: AppFonts.captionLargeSemiBold.copyWith(color: AppColors.white),
+                                style: AppFonts.b2Semibold.copyWith(color: AppColors.white),
               ),
             ),
           ],
@@ -970,7 +955,7 @@ class _TradeScreenState extends State<TradeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
             child:             Text(
               '해외 종목 순위',
-              style: AppFonts.titleMedium.copyWith(color: AppColors.gray900),
+              style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
             ),
           ),
           // 정렬 버튼들
@@ -1037,7 +1022,7 @@ class _TradeScreenState extends State<TradeScreen> {
         child: Center(
           child: Text(
             text,
-            style: AppFonts.captionLargeRegular.copyWith(
+            style: AppFonts.b2Regular.copyWith(
               color: isSelected ? AppColors.white : AppColors.gray600,
             ),
           ),
@@ -1083,7 +1068,7 @@ class _TradeScreenState extends State<TradeScreen> {
                 child: Text(
                   stock.rank.toString(),
                   textAlign: TextAlign.center,
-                  style: AppFonts.captionLargeRegular.copyWith(color: AppColors.primary),
+                  style: AppFonts.b2Regular.copyWith(color: AppColors.primary),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1092,7 +1077,7 @@ class _TradeScreenState extends State<TradeScreen> {
                 flex: 2,
                 child: Text(
                   stock.name,
-                  style: AppFonts.bodyLarge.copyWith(color: AppColors.gray900),
+                  style: AppFonts.b1Semibold.copyWith(color: AppColors.gray900),
                 ),
               ),
               // 가격
@@ -1101,7 +1086,7 @@ class _TradeScreenState extends State<TradeScreen> {
                 child: Text(
                   '가격',
                   textAlign: TextAlign.center,
-                  style: AppFonts.captionLargeRegular.copyWith(color: AppColors.gray900),
+                  style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
                 ),
               ),
               // 변동률
@@ -1110,7 +1095,7 @@ class _TradeScreenState extends State<TradeScreen> {
                 child: Text(
                   '수익률',
                   textAlign: TextAlign.center,
-                  style: AppFonts.captionLargeRegular.copyWith(color: AppColors.profit),
+                  style: AppFonts.b2Regular.copyWith(color: AppColors.profit),
                 ),
               ),
             ],
@@ -1140,7 +1125,7 @@ class _TradeScreenState extends State<TradeScreen> {
             alignment: Alignment.centerLeft,
             child:             Text(
               '해외 주요 지수',
-              style: AppFonts.titleMedium.copyWith(color: AppColors.gray900),
+              style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
             ),
           ),
           const SizedBox(height: 8),
@@ -1255,7 +1240,7 @@ class _TradeScreenState extends State<TradeScreen> {
               Expanded(
                 child: Text(
                   _getDisplayName(name),
-                                  style: AppFonts.captionLargeRegular.copyWith(color: AppColors.gray900),
+                                  style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
                 ),
               ),
             ],
@@ -1263,7 +1248,7 @@ class _TradeScreenState extends State<TradeScreen> {
           const SizedBox(height: 8), // gap: 0.625rem
           Text(
             value,
-            style: AppFonts.titleMedium.copyWith(
+            style: AppFonts.t2Bold.copyWith(
               color: AppColors.gray900,
               fontWeight: FontWeight.w700,
               height: 1.20,
@@ -1279,7 +1264,7 @@ class _TradeScreenState extends State<TradeScreen> {
               ),
               Text(
                 change,
-                style: AppFonts.captionLargeRegular.copyWith(
+                style: AppFonts.b2Regular.copyWith(
                   color: isPositive ? AppColors.profit : AppColors.loss, // Chart-Red : Blue
                   height: 1.71,
                 ),
@@ -1295,46 +1280,14 @@ class _TradeScreenState extends State<TradeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        titleSpacing: 0, // AppBar의 기본 좌측 패딩 제거
-        title: Container(
-          width: double.infinity, 
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-          clipBehavior: Clip.antiAlias,
-          decoration: const BoxDecoration(),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-              Text(
-                '모의투자',
-                style: AppFonts.titleLarge.copyWith(color: AppColors.gray900),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined),
-              onPressed: () {
-                // 알림 기능
-              },
-            ),
-            IconButton(
-              icon: const Icon(Icons.settings_outlined),
-              onPressed: () {
-                // 설정 기능
-              },
-            ),
-          ],
-              ),
-            ],
-          ),
-        ),
+      appBar: HeaderBasic(
+        title: '모의투자',
+        onAlarmPressed: () {
+          // 알림 기능
+        },
+        onSettingPressed: () {
+          // 설정 기능
+        },
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -1355,10 +1308,6 @@ class _TradeScreenState extends State<TradeScreen> {
             
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBarWidget(
-        currentIndex: _getCurrentIndex(),
-        onTap: _onNavItemTap,
       ),
     );
   }

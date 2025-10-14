@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/models/stock_model.dart';
-import 'package:qbit_shared/screens/trade/stock_detail_screen.dart';
+import 'package:qbit_shared/widgets/stock_search_screen/stock_search_item.dart';
+import 'package:qbit_shared/widgets/common/header_back.dart';
 
 // 종목 검색 화면
 class StockSearchScreen extends StatefulWidget {
@@ -73,18 +75,8 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: AppColors.gray900,
-        elevation: 0,
-        title: Text(
-          '종목 검색',
-          style: AppFonts.titleLarge.copyWith(color: AppColors.gray900),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+      appBar: HeaderBack(
+        title: '종목 검색',
       ),
       body: Column(
         children: [
@@ -92,16 +84,12 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: Container(
-            width: 361,
+            width: double.infinity, // 좌우 여백 끝까지 채움
             height: 48,
             padding: const EdgeInsets.all(2),
             decoration: ShapeDecoration(
-              color: Colors.white,
+              color: AppColors.gray50, 
               shape: RoundedRectangleBorder(
-                side: BorderSide(
-                  width: 1,
-                  color: AppColors.gray300, // Gray-300
-                ),
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
@@ -111,30 +99,39 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 36,
-                  height: 36,
-                  padding: const EdgeInsets.all(8),
+                  width: 34,
+                  height: 34,
+                  margin: const EdgeInsets.only(left: 12, right: 4),
                   child: Icon(
                     Icons.search,
-                    color: AppColors.gray600, // Gray-600
-                    size: 20,
+                    color: AppColors.gray600,
+                    size: 24,
                   ),
                 ),
                 Expanded(
                   child: TextField(
                     controller: _searchController,
+                    style: AppFonts.b1Regular.copyWith(
+                      color: AppColors.gray900, 
+                      height: 1.40,
+                      backgroundColor: Colors.transparent, 
+                    ),
                     decoration: InputDecoration(
                       hintText: '종목을 입력하세요',
-                      hintStyle: AppFonts.bodyLarge.copyWith(
-                        color: AppColors.gray600, // Gray-600
-                        height: 1.40,
+                      hintStyle: AppFonts.b1Regular.copyWith(
+                        color: AppColors.gray600
                       ),
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      focusedErrorBorder: InputBorder.none,
+                      filled: true,
+                      fillColor: Colors.transparent,
+                      isDense: true,
+                      isCollapsed: true,
                       contentPadding: EdgeInsets.zero,
-                    ),
-                    style: AppFonts.bodyLarge.copyWith(
-                      color: AppColors.gray900, // Gray-900
-                      height: 1.40,
                     ),
                     onChanged: (value) {
                       setState(() {});
@@ -151,22 +148,24 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
                 ),
                 if (_searchController.text.isNotEmpty)
                   Container(
-                    width: 36,
-                    height: 36,
-                    padding: const EdgeInsets.symmetric(horizontal: 7),
-                    child: IconButton(
-                      icon: Icon(
-                        Icons.clear,
-                        color: AppColors.gray600, // Gray-600
-                        size: 24,
-                      ),
-                      onPressed: () {
+                    width: 44,
+                    height: 44,
+                    margin: const EdgeInsets.only(left: 4, right: 12),
+                    padding: const EdgeInsets.all(5),
+                    child: GestureDetector(
+                      onTap: () {
                         _searchController.clear();
                         setState(() {
                           _searchResults = [];
                           _error = null;
                         });
                       },
+                      child: SvgPicture.asset(
+                        'assets/icons/stock_search_screen/search-cancel.svg',
+                        width: 30,
+                        height: 30,
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
               ],
@@ -210,7 +209,7 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
           _searchController.text.isEmpty 
               ? '종목명 또는 종목코드를 입력해주세요'
               : '검색 결과가 없습니다',
-          style: AppFonts.bodyMedium.copyWith(color: AppColors.gray600),
+          style: AppFonts.b1Regular.copyWith(color: AppColors.gray600),
         ),
       );
     }
@@ -226,82 +225,9 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
   }
 
   Widget _buildStockItem(StockModel stock) {
-    return Container(
-      width: double.infinity,
-      height: 58,
-      margin: const EdgeInsets.only(bottom: 8),
-      child: GestureDetector(
-        onTap: () {
-          print('종목 탭됨: ${stock.symbol} - ${stock.name}');
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => StockDetailScreen(
-                symbol: stock.symbol,
-                name: stock.name,
-              ),
-            ),
-          );
-        },
-        child: Stack(
-          children: [
-            Positioned(
-              left: 16,
-              top: 6,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: ShapeDecoration(
-                      color: AppColors.warning.withOpacity(0.1), // Secondary-soft
-                      shape: OvalBorder(),
-                    ),
-                  ),
-                  SizedBox(width: 9),
-                  Text.rich(
-                    TextSpan(
-                      children: [
-                        TextSpan(
-                          text: stock.name.contains('Apple') ? 'Apple' : stock.name.split(' ').first,
-                          style: AppFonts.bodyLarge.copyWith(
-                            color: AppColors.primaryDark, // Primary-Font
-                            height: 1.40,
-                          ),
-                        ),
-                        TextSpan(
-                          text: stock.name.contains('Apple') 
-                              ? ' Inc. Common Stock' 
-                              : stock.name.substring(stock.name.contains('Apple') ? 5 : stock.name.split(' ').first.length),
-                          style: AppFonts.bodyLarge.copyWith(
-                            color: AppColors.gray900, // Gray-900(Font-Black)
-                            height: 1.40,
-                          ),
-                        ),
-                      ],
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  Text(
-                    stock.symbol,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.gray600, // Gray-600
-                      fontSize: 14,
-                      fontFamily: 'Pretendard',
-                      fontWeight: FontWeight.w400,
-                      height: 1.71,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+    return StockSearchItem(
+      stock: stock,
+      searchQuery: _searchController.text,
     );
   }
 

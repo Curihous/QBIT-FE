@@ -32,7 +32,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!mounted) return;
       
       if (isLoggedIn) {
-        // 로그인되어 있으면 홈 화면으로 이동
+        // 로그인되어 있으면 메인 화면으로 이동
         context.go('/home');
       } else {
         // 로그인되지 않았으면 로그인 화면으로 이동

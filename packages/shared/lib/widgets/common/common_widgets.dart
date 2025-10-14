@@ -35,7 +35,7 @@ class LoadingWidget extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               message!,
-              style: AppFonts.bodyMedium,
+              style: AppFonts.b1Regular,
               textAlign: TextAlign.center,
             ),
           ],
@@ -74,7 +74,7 @@ class ErrorWidget extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
-              style: AppFonts.bodyLarge,
+              style: AppFonts.b1Semibold,
               textAlign: TextAlign.center,
             ),
             if (onRetry != null) ...[
@@ -120,7 +120,7 @@ class EmptyWidget extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             Text(
               message,
-              style: AppFonts.bodyLarge,
+              style: AppFonts.b1Semibold,
               textAlign: TextAlign.center,
             ),
             if (action != null) ...[
@@ -291,7 +291,7 @@ class BottomNavigationBarWidget extends StatelessWidget {
           Flexible(
             child: Text(
               label,
-              style: AppFonts.navLabel.copyWith(
+              style: AppFonts.c2.copyWith(
                 fontSize: fontSize,
                 color: isSelected ? AppColors.gray900 : AppColors.gray300,
               ),

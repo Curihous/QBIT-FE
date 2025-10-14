@@ -308,7 +308,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
           children: [
             Text(
               widget.symbol,
-              style: AppFonts.titleMedium.copyWith(
+              style: AppFonts.t2Bold.copyWith(
                 color: AppColors.gray900,
                 fontWeight: FontWeight.w600,
               ),
@@ -320,14 +320,14 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                   children: [
                     Text(
                       '체결가',
-                      style: AppFonts.captionLargeSemiBold.copyWith(
+                      style: AppFonts.b2Semibold.copyWith(
                         color: AppColors.gray900,
                         height: 1.71,
                       ),
                     ),
                     Text(
                       '등락률',
-                      style: AppFonts.captionLargeSemiBold.copyWith(
+                      style: AppFonts.b2Semibold.copyWith(
                         color: AppColors.profit,
                         height: 1.71,
                       ),
@@ -359,7 +359,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                       const SizedBox(height: 16),
                       Text(
                         _error!,
-                        style: AppFonts.bodyLarge.copyWith(color: AppColors.error),
+                        style: AppFonts.b1Semibold.copyWith(color: AppColors.error),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
@@ -443,7 +443,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                     Expanded(
                       child: Text(
                         stock.name,
-                        style: AppFonts.titleMedium.copyWith(
+                        style: AppFonts.t2Bold.copyWith(
                           color: AppColors.gray900,
                           fontWeight: FontWeight.w700,
                           height: 1.20,
@@ -603,7 +603,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
       child: Center(
         child: Text(
           '호가창',
-          style: AppFonts.bodyLarge.copyWith(
+          style: AppFonts.b1Semibold.copyWith(
             color: Colors.grey[600],
             fontWeight: FontWeight.w500,
           ),
@@ -664,7 +664,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
             child: Text(
               '지정가 ▾',
               textAlign: isCrypto ? TextAlign.right : TextAlign.center,
-              style: AppFonts.bodySmallSemiBold.copyWith(
+              style: AppFonts.b2Semibold.copyWith(
                 color: AppColors.gray900,
               ),
             ),
@@ -696,7 +696,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                 children: [
                       Text(
                         '수량',
-                        style: AppFonts.bodySmall.copyWith(
+                        style: AppFonts.b2Regular.copyWith(
                           color: AppColors.gray900,
                         ),
                       ),
@@ -710,7 +710,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                               child: TextField(
                                 controller: _quantityController,
                                 keyboardType: TextInputType.number,
-                                style: AppFonts.bodyMedium.copyWith(
+                                style: AppFonts.b1Regular.copyWith(
                                   color: AppColors.gray900,
                                   fontWeight: FontWeight.w600,
                                   height: 1.50,
@@ -733,7 +733,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                             ),
                             Text(
                               '주',
-                              style: AppFonts.bodyMedium.copyWith(
+                              style: AppFonts.b1Regular.copyWith(
                                 color: AppColors.gray900,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -745,7 +745,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                         onTap: _setMaxQuantity,
                         child: Text(
                           '최대 ▾',
-                          style: AppFonts.bodySmallSemiBold.copyWith(
+                          style: AppFonts.b2Semibold.copyWith(
                             color: AppColors.gray600,
                           ),
                         ),
@@ -773,7 +773,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                 children: [
                   Text(
                     '가격',
-                    style: AppFonts.bodySmall.copyWith(
+                    style: AppFonts.b2Regular.copyWith(
                       color: AppColors.gray900,
                     ),
                   ),
@@ -787,7 +787,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                               child: TextField(
                                 controller: _priceController,
                                 keyboardType: TextInputType.number,
-                                style: AppFonts.bodyMedium.copyWith(
+                                style: AppFonts.b1Regular.copyWith(
                                   color: AppColors.gray900,
                                   fontWeight: FontWeight.w600,
                                   height: 1.50,
@@ -810,7 +810,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                             ),
                             Text(
                               '원',
-                              style: AppFonts.bodyMedium.copyWith(
+                              style: AppFonts.b1Regular.copyWith(
                                 color: AppColors.gray900,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -830,7 +830,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                             },
                             child: Text(
                               '−',
-                              style: AppFonts.bodySmallSemiBold.copyWith(
+                              style: AppFonts.b2Semibold.copyWith(
                                 color: AppColors.gray600,
                               ),
                             ),
@@ -846,7 +846,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                             },
                             child: Text(
                               '+',
-                              style: AppFonts.bodySmallSemiBold.copyWith(
+                              style: AppFonts.b2Semibold.copyWith(
                                 color: AppColors.gray600,
                               ),
                             ),
@@ -869,14 +869,14 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
               children: [
                 Text(
                   '총액',
-                  style: AppFonts.bodySmall.copyWith(
+                  style: AppFonts.b2Regular.copyWith(
                     color: AppColors.gray900,
                   ),
                 ),
                 const SizedBox(height: 8), // 간격을 늘림
                 Text(
                   '${(_quantity * _price).toStringAsFixed(0)}원',
-                  style: AppFonts.titleLarge.copyWith(
+                  style: AppFonts.t1Bold.copyWith(
                     color: AppColors.gray900,
                     fontWeight: FontWeight.w600,
                     height: 1.20,
@@ -903,7 +903,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
               child: Center(
                 child: Text(
                   _selectedOrderTab == '매도' ? '매도' : '매수',
-                  style: AppFonts.titleLarge.copyWith(
+                  style: AppFonts.t1Bold.copyWith(
                     color: AppColors.white,
                     fontWeight: FontWeight.w600,
                     height: 1.20,
@@ -950,7 +950,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
       children: [
         Text(
           label,
-          style: AppFonts.bodySmall.copyWith(
+          style: AppFonts.b2Regular.copyWith(
             color: Colors.grey[600],
           ),
         ),
@@ -976,7 +976,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                     ),
                     child: Text(
                       prefix,
-                      style: AppFonts.bodySmall.copyWith(
+                      style: AppFonts.b2Regular.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -987,7 +987,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
               Expanded(
                 child: Text(
                   value,
-                  style: AppFonts.bodySmall.copyWith(
+                  style: AppFonts.b2Regular.copyWith(
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -999,7 +999,7 @@ class _StockDetailScreenState extends State<StockDetailScreen> {
                   },
                   child: Text(
                     suffix,
-                    style: AppFonts.bodySmall.copyWith(
+                    style: AppFonts.b2Regular.copyWith(
                       color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
