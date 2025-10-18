@@ -102,13 +102,21 @@ class GoogleAuthService {
   // 현재 사용자 정보 조회
   static Future<Map<String, dynamic>?> getCurrentUser() async {
     try {
-      final GoogleSignInAccount? currentUser = _googleSignIn.currentUser;
+      // 1. 현재 사용자 확인
+      GoogleSignInAccount? currentUser = _googleSignIn.currentUser;
+      
+      // 2. 없으면 자동 로그인 시도
+      if (currentUser == null) {
+        logger.i('현재 사용자 없음, 자동 로그인 시도');
+        currentUser = await _googleSignIn.signInSilently();
+      }
       
       if (currentUser == null) {
-        logger.w('로그인된 구글 사용자가 없습니다');
+        logger.w('구글 사용자를 찾을 수 없습니다');
         return null;
       }
 
+      // 3. 인증 정보 가져오기
       final GoogleSignInAuthentication auth = await currentUser.authentication;
 
       logger.i('구글 사용자 정보 조회 성공: ${currentUser.email}');
@@ -130,10 +138,17 @@ class GoogleAuthService {
   // 간단한 사용자 정보 조회 (기본 정보만)
   static Future<Map<String, dynamic>?> getSimpleUserInfo() async {
     try {
-      final GoogleSignInAccount? currentUser = _googleSignIn.currentUser;
+      // 1. 현재 사용자 확인
+      GoogleSignInAccount? currentUser = _googleSignIn.currentUser;
+      
+      // 2. 없으면 자동 로그인 시도
+      if (currentUser == null) {
+        logger.i('현재 사용자 없음, 자동 로그인 시도');
+        currentUser = await _googleSignIn.signInSilently();
+      }
       
       if (currentUser == null) {
-        logger.w('로그인된 구글 사용자가 없습니다');
+        logger.w('구글 사용자를 찾을 수 없습니다');
         return null;
       }
 
