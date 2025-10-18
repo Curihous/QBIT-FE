@@ -1,6 +1,5 @@
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:qbit_core/config/env_config.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
 import 'package:qbit_services/auth/google_auth_service.dart';
@@ -229,16 +228,9 @@ class ApiClient {
   // 디버깅용 토큰 상태 확인
   static Future<void> debugTokenStatus() async {
     try {
-      const storage = FlutterSecureStorage();
-      final accessToken = await storage.read(key: 'access_token');
-      final refreshToken = await storage.read(key: 'refresh_token');
-      final kakaoToken = await storage.read(key: 'kakao_access_token');
-      
-      // 테스트단계에서만 쓸거니까 리뷰에서 제외
-      logger.i('=== 토큰 상태 디버그 ===');
-      logger.i('액세스 토큰: ${accessToken != null ? "존재 (길이: ${accessToken.length})" : "없음"}');
-      logger.i('리프레시 토큰: ${refreshToken != null ? "존재 (길이: ${refreshToken.length})" : "없음"}');
-      logger.i('카카오 토큰: ${kakaoToken != null ? "존재 (길이: ${kakaoToken.length})" : "없음"}');
+      final accessToken = await TokenService.getAccessToken();
+      final refreshToken = await TokenService.getRefreshToken();
+      final kakaoToken = await TokenService.getKakaoAccessToken();
       
       if (accessToken != null) {
         logger.i('액세스 토큰 시작: ${accessToken.substring(0, accessToken.length > 30 ? 30 : accessToken.length)}...');
@@ -252,11 +244,8 @@ class ApiClient {
   // 토큰 관리 메서드들
   static Future<String?> _getAccessToken() async {
     try {
-      // 개발 모드일 때는 TokenService 사용 (동일한 Storage 인스턴스)
-      // 프로덕션일 때는 직접 FlutterSecureStorage 사용
-      final token = EnvConfig.useDevLogin 
-          ? await TokenService.getAccessToken()
-          : await const FlutterSecureStorage().read(key: 'access_token');
+      // TokenService 사용
+      final token = await TokenService.getAccessToken();
           
       logger.i('액세스 토큰 조회: ${token != null ? "존재" : "없음"}');
       if (token != null) {
