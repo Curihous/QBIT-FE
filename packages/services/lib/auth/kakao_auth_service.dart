@@ -264,7 +264,9 @@ class KakaoAuthService {
   }
 
   /// 카카오 액세스 토큰 상태 확인 (갱신은 카카오 SDK가 자동 처리)
-  static Future<Map<String, dynamic>?> refreshAccessToken() async {
+  static Future<Map<String, dynamic>?> checkOrValidateAccessToken() async {
+    const int GRACE_SECONDS = 30; // 만료 30초 전부터 만료로 처리
+    
     try {
       logger.i('카카오 토큰 상태 확인 시작');
       
@@ -280,9 +282,11 @@ class KakaoAuthService {
         final now = DateTime.now();
         final expiresAt = now.add(Duration(seconds: tokenInfo.expiresIn));
         
-        // 토큰이 유효한지 확인
-        if (tokenInfo.expiresIn > 0 && expiresAt.isAfter(now)) {
-          logger.i('카카오 토큰 유효함');
+        // 그레이스 윈도우 적용: 만료 30초 전부터 만료로 처리
+        final isExpired = tokenInfo.expiresIn <= GRACE_SECONDS;
+        
+        if (!isExpired && tokenInfo.expiresIn > 0 && expiresAt.isAfter(now)) {
+          logger.i('카카오 토큰 유효함 (${tokenInfo.expiresIn}초 남음)');
           final token = await TokenManagerProvider.instance.manager.getToken();
           return {
             'success': true,
@@ -290,7 +294,7 @@ class KakaoAuthService {
             'userId': tokenInfo.id.toString(),
           };
         } else {
-          logger.e('카카오 토큰 만료됨. 재로그인 필요.');
+          logger.w('카카오 토큰 만료됨 (${tokenInfo.expiresIn}초 남음, 그레이스 윈도우 적용). 재로그인 필요.');
           return {'success': false, 'error': '재로그인이 필요합니다'};
         }
       } on KakaoException catch (e) {

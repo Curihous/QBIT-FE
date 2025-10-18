@@ -125,7 +125,9 @@ class EnvConfig {
   static String get kakaoNativeAppKey => getValue('KAKAO_NATIVE_APP_KEY');
   
   /// 구글 로그인 설정 (웹 클라이언트 ID)
-  static String get googleWebClientId => getValue('GOOGLE_WEB_CLIENT_ID');
+  static String? get googleWebClientId => kIsWeb 
+      ? getRequiredValue('GOOGLE_WEB_CLIENT_ID')
+      : getValue('GOOGLE_WEB_CLIENT_ID');
 
   /// 앱 설정
   static String get appName => getValue('APP_NAME');
@@ -158,7 +160,8 @@ class EnvConfig {
       // 민감한 정보는 마스킹
       if (key.toLowerCase().contains('key') || 
           key.toLowerCase().contains('secret') || 
-          key.toLowerCase().contains('token')) {
+          key.toLowerCase().contains('token') ||
+          key.toLowerCase().contains('client_id')) {
         logger.i('$key: ${value.length > 8 ? value.substring(0, 8) : value}...');
       } else {
         logger.i('$key: $value');

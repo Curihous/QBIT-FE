@@ -176,25 +176,21 @@ class ApiClient {
                     if (response.accessToken != null) {
                       await TokenService.saveAccessToken(response.accessToken!);
                       
-                      logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
+                      logger.i('카카오 백엔드 토큰 재발급 성공 - 요청 재시도');
                       final newToken = await _getAccessToken();
                       if (newToken != null) {
                         logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                         final response = await _dio.fetch(error.requestOptions);
                         handler.resolve(response);
-                        // return 제거 - finally 블록이 실행되도록 함
+                        return; // 성공 시에만 return
                       } else {
                         logger.e('새 토큰을 가져올 수 없음');
                       }
                     }
                   }
-                } else {
-                  logger.w('카카오 토큰으로 백엔드 토큰 재발급 실패');
-                  _tokenExpiredController.add(null);
-                  handler.next(error);
-                  return;
                 }
+                logger.w('카카오 토큰으로 백엔드 토큰 재발급 실패 - 구글 로그인 시도');
               }
               
               // 구글 로그인인 경우
@@ -213,28 +209,25 @@ class ApiClient {
                     if (response.accessToken != null) {
                       await TokenService.saveAccessToken(response.accessToken!);
                       
-                      logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
+                      logger.i('구글 백엔드 토큰 재발급 성공 - 요청 재시도');
                       final newToken = await _getAccessToken();
                       if (newToken != null) {
                         logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                         final response = await _dio.fetch(error.requestOptions);
                         handler.resolve(response);
-                        // return 제거 - finally 블록이 실행되도록 함
+                        return; // 성공 시에만 return
                       } else {
                         logger.e('새 토큰을 가져올 수 없음');
                       }
                     }
                   }
-                } else {
-                  logger.w('구글 토큰으로 백엔드 토큰 재발급 실패');
-                  _tokenExpiredController.add(null);
-                  handler.next(error);
-                  return;
                 }
+                logger.w('구글 토큰으로 백엔드 토큰 재발급 실패');
               }
               
-              logger.w('프로덕션 모드: 소셜 로그인 토큰 없음 - 재로그인 필요');
+              logger.w('프로덕션 모드: 모든 소셜 로그인 토큰 재발급 실패 - 재로그인 필요');
+              _tokenExpiredController.add(null);
             }
           } catch (e) {
             logger.e('토큰 갱신 중 오류: $e');
