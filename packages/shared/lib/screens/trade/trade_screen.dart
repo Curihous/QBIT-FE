@@ -38,17 +38,10 @@ class _TradeScreenState extends State<TradeScreen> {
   String _selectedSortBy = 'volume'; // 선택된 정렬 기준
   int? _selectedStockIndex; // 선택된 종목 인덱스
   
-  StreamSubscription<void>? _tokenExpiredSubscription;
-
   @override
   void initState() {
     super.initState();
     _loadUserData();
-    
-    // 토큰 만료 이벤트 구독
-    _tokenExpiredSubscription = ApiClient.onTokenExpired.listen((_) {
-      _handleTokenExpired();
-    });
     
     // Alpaca 연동 성공 콜백 설정
     AlpacaAuthScreen.onSuccess = () async {
@@ -104,31 +97,6 @@ class _TradeScreenState extends State<TradeScreen> {
           _isAlpacaConnected = false;
         });
       }
-    }
-  }
-
-  // 토큰 만료 처리
-  void _handleTokenExpired() async {
-    print('⚠️ 토큰 만료 이벤트 발생 - 토큰 갱신 시도');
-    
-    // 먼저 토큰 갱신 시도
-    try {
-      final refreshed = await AuthService.refreshAccessToken();
-      if (refreshed) {
-        print('✅ 토큰 갱신 성공 - 데이터 다시 로드');
-        if (mounted) {
-          _loadUserData();
-        }
-        return;
-      }
-    } catch (e) {
-      print('❌ 토큰 갱신 실패: $e');
-    }
-    
-    // 토큰 갱신 실패 시에만 로그인 페이지로 이동
-    if (mounted) {
-      print('🔄 로그인 페이지로 이동');
-      context.go('/login');
     }
   }
 
@@ -1314,7 +1282,6 @@ class _TradeScreenState extends State<TradeScreen> {
 
   @override
   void dispose() {
-    _tokenExpiredSubscription?.cancel();
     super.dispose();
   }
 }
