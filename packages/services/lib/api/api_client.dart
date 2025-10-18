@@ -15,6 +15,9 @@ final logger = Logger();
 class ApiClient {
   static late Dio _dio;
   static final StreamController<void> _tokenExpiredController = StreamController<void>.broadcast();
+  static bool _isRefreshingToken = false; // 토큰 재발급 중인지 확인하는 플래그
+  static int _refreshAttemptCount = 0; // 토큰 재발급 시도 횟수
+  static const int _maxRefreshAttempts = 3; // 최대 재발급 시도 횟수
   
   static String get baseUrl {
     try {
@@ -89,7 +92,20 @@ class ApiClient {
       onError: (error, handler) async {
         // 401 에러 시 카카오 토큰 기반 백엔드 토큰 재발급 시도
         if (error.response?.statusCode == 401) {
-          logger.w('401 에러 발생 - 토큰 재발급 시도');
+          // 이미 토큰 재발급 중이거나 토큰 재발급 엔드포인트라면 무한 루프 방지
+          final isTokenRefreshEndpoint = error.requestOptions.path.contains('/auth/kakao/login') ||
+                                        error.requestOptions.path.contains('/auth/refresh') ||
+                                        error.requestOptions.path.contains('/auth/google/login');
+
+          if (_isRefreshingToken || isTokenRefreshEndpoint || _refreshAttemptCount >= _maxRefreshAttempts) {
+            logger.w('토큰 재발급 중이거나 재발급 엔드포인트 또는 최대 시도 횟수 초과 - 무한 루프 방지');
+            handler.next(error);
+            return;
+          }
+
+          logger.w('401 에러 발생 - 토큰 재발급 시도 (${_refreshAttemptCount + 1}/$_maxRefreshAttempts)');
+          _isRefreshingToken = true; // 토큰 재발급 시작
+          _refreshAttemptCount++; // 시도 횟수 증가
           
           try {
             // 환경변수로 개발/프로덕션 플로우 구분
@@ -123,7 +139,7 @@ class ApiClient {
                       error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                       final response = await _dio.fetch(error.requestOptions);
                       handler.resolve(response);
-                      return;
+                      // return 제거 - finally 블록이 실행되도록 함
                     }
                   }
                 }
@@ -132,8 +148,6 @@ class ApiClient {
               // 개발 모드에서 토큰이 없으면 재로그인 필요
               logger.w('개발 모드: 토큰 없음 - 재로그인 필요');
               _tokenExpiredController.add(null);
-              handler.next(error);
-              return;
               
             } else {
               // ========== 프로덕션 모드: 소셜 로그인(카카오/구글) 사용 ==========
@@ -165,7 +179,7 @@ class ApiClient {
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                         final response = await _dio.fetch(error.requestOptions);
                         handler.resolve(response);
-                        return;
+                        // return 제거 - finally 블록이 실행되도록 함
                       }
                     }
                   }
@@ -199,7 +213,7 @@ class ApiClient {
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                         final response = await _dio.fetch(error.requestOptions);
                         handler.resolve(response);
-                        return;
+                        // return 제거 - finally 블록이 실행되도록 함
                       }
                     }
                   }
@@ -215,6 +229,9 @@ class ApiClient {
             }
           } catch (e) {
             logger.e('토큰 갱신 중 오류: $e');
+          } finally {
+            _isRefreshingToken = false; // 토큰 재발급 완료/실패 시 플래그 리셋
+            _refreshAttemptCount = 0; // 시도 횟수도 리셋
           }
         }
         handler.next(error);
