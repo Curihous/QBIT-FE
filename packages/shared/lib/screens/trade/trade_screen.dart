@@ -9,6 +9,7 @@ import '../../theme/app_fonts.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/common/common_widgets.dart';
 import '../../widgets/common/header_basic.dart';
+import '../../widgets/common/filter_button.dart';
 import 'alpaca_auth_screen.dart';
 import 'stock_search_screen.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
@@ -37,7 +38,7 @@ class _TradeScreenState extends State<TradeScreen> {
   List<StockRankingModel> _stockRanking = []; // 해외 종목 순위 데이터
   String _selectedSortBy = 'volume'; // 선택된 정렬 기준
   int? _selectedStockIndex; // 선택된 종목 인덱스
-  
+
   @override
   void initState() {
     super.initState();
@@ -927,22 +928,17 @@ class _TradeScreenState extends State<TradeScreen> {
             ),
           ),
           // 정렬 버튼들
-          Container(
-            padding: const EdgeInsets.only(top: 1, left: 16, right: 16, bottom: 9),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildSortButton('상승률순', 'gain', _selectedSortBy == 'gain'),
-                  const SizedBox(width: 9),
-                  _buildSortButton('하락률순', 'loss', _selectedSortBy == 'loss'),
-                  const SizedBox(width: 9),
-                  _buildSortButton('거래량순', 'volume', _selectedSortBy == 'volume'),
-                  const SizedBox(width: 9),
-                  _buildSortButton('급등 거래량순', 'surge', _selectedSortBy == 'surge'),
-                ],
-              ),
-            ),
+          FilterButtonGroup(
+            labels: ['상승률순', '하락률순', '거래량순', '급등 거래량순'],
+            values: ['gain', 'loss', 'volume', 'surge'],
+            initialValue: _selectedSortBy,
+            onChanged: (value) {
+              setState(() {
+                _selectedSortBy = value;
+              });
+              _loadStockRanking();
+            },
+            groupPadding: const EdgeInsets.only(top: 1, left: 16, right: 16, bottom: 9),
           ),
           // 종목 순위 리스트
           if (_stockRanking.isNotEmpty) ...[
@@ -965,39 +961,6 @@ class _TradeScreenState extends State<TradeScreen> {
     );
   }
 
-  // 정렬 버튼 위젯
-  Widget _buildSortButton(String text, String sortBy, bool isSelected) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedSortBy = sortBy;
-        });
-        _loadStockRanking();
-      },
-      child: Container(
-        height: 28,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: ShapeDecoration(
-          color: isSelected ? AppColors.primary : AppColors.white,
-          shape: RoundedRectangleBorder(
-            side: BorderSide(
-              width: 1,
-              color: AppColors.gray300, // Gray-300
-            ),
-            borderRadius: BorderRadius.circular(99),
-          ),
-        ),
-        child: Center(
-          child: Text(
-            text,
-            style: AppFonts.b2Regular.copyWith(
-              color: isSelected ? AppColors.white : AppColors.gray600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   // 종목 순위 아이템 위젯
   Widget _buildStockRankingItem(StockRankingModel stock) {

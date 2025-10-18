@@ -57,7 +57,7 @@ class HomeContentScreen extends StatelessWidget {
             Text(
               '구현예정',
               style: AppFonts.t1Bold.copyWith(
-                color: AppColors.gray500,
+                color: AppColors.gray600,
               ),
             ),
             const SizedBox(height: 16.0),

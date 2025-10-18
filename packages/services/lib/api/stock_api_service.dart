@@ -4,6 +4,7 @@ import 'api_client.dart';
 import '../models/stock_model.dart';
 import '../models/asset_model.dart';
 import '../models/stock_ranking_model.dart';
+import '../models/orderbook_model.dart';
 
 /// 주식 관련 API 서비스 모음
 
@@ -319,14 +320,20 @@ class StockApiService {
   }
 
   // 종목 검색
-  static Future<List<StockModel>?> searchStocks(String query) async {
+  static Future<List<StockModel>?> searchStocks(String query, {String? assetClass}) async {
     try {
-      logger.i('종목 검색 시작: $query');
+      logger.i('종목 검색 시작: $query, assetClass: $assetClass');
       
-      final response = await _dio.get('/stocks/search', queryParameters: {
+      final queryParams = <String, dynamic>{
         'q': query.toUpperCase(), // 자동으로 대문자 변환
-        'assetClass': 'us_equity', // 미국 주식으로 필터링
-      });
+      };
+      
+      // assetClass가 지정된 경우에만 추가
+      if (assetClass != null) {
+        queryParams['assetClass'] = assetClass;
+      }
+      
+      final response = await _dio.get('/stocks/search', queryParameters: queryParams);
       
       if (response.statusCode == 200) {
         logger.i('종목 검색 성공');
@@ -362,6 +369,56 @@ class StockApiService {
           logger.e('401 에러: 인증되지 않은 요청');
         } else if (error.response?.statusCode == 404) {
           logger.e('❌ 404 에러: 검색 결과 없음');
+        }
+      }
+      return null;
+    }
+  }
+
+  // 미국 주식 검색
+  static Future<List<StockModel>?> searchUSStocks(String query) async {
+    return searchStocks(query, assetClass: 'us_equity');
+  }
+
+  // 암호화폐 검색
+  static Future<List<StockModel>?> searchCrypto(String query) async {
+    return searchStocks(query, assetClass: 'crypto');
+  }
+
+  /// 암호화폐 호가창 조회
+  static Future<OrderBookModel?> getCryptoOrderBook(String symbol) async {
+    try {
+      logger.i('암호화폐 호가창 조회 시작: $symbol');
+      
+      final response = await _dio.get('/stocks/orderbook/$symbol');
+      
+      if (response.statusCode == 200) {
+        logger.i('암호화폐 호가창 조회 성공: $symbol');
+        logger.i('응답 데이터 타입: ${response.data.runtimeType}');
+        
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data as Map<String, dynamic>;
+          logger.i('매수 호가 개수: ${data['bids']?.length ?? 0}');
+          logger.i('매도 호가 개수: ${data['asks']?.length ?? 0}');
+          
+          return OrderBookModel.fromJson(data);
+        } else {
+          logger.e('응답 데이터가 Map이 아닙니다: ${response.data.runtimeType}');
+          return null;
+        }
+      } else {
+        logger.e('암호화폐 호가창 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('암호화폐 호가창 조회 에러: $error');
+      if (error is DioException) {
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
+        
+        if (error.response?.statusCode == 401) {
+          logger.e('401 에러: 인증되지 않은 요청');
+        } else if (error.response?.statusCode == 404) {
+          logger.e('❌ 404 에러: 호가창 데이터 없음 - $symbol');
         }
       }
       return null;

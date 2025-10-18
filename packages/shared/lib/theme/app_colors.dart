@@ -10,13 +10,13 @@ class AppColors {
   // Gray Scale
   static const Color gray900 = Color(0xFF323232); // Font Black
   static const Color gray600 = Color(0xFF7F7F7F); 
-  static const Color gray500 = Color(0xFF9E9E9E);
-  static const Color gray400 = Color(0xFFBDBDBD);
+  static const Color gray400 = Color(0xFFABABAB);
   static const Color gray300 = Color(0xFFBFBFBF);
   static const Color gray200 = Color(0xFFD5D5D5);
+  static const Color gray150 = Color(0xFFE2E2E2);
   static const Color gray100 = Color(0xFFE8EAED);
   static const Color gray50 = Color(0xFFF3F4F6);
-  static const Color gray30 = Color(0xFFF7F8FB);
+  static const Color gray30 = Color(0xFFF7F7F7);
   static const Color white = Color(0xFFFFFFFF); // White
   
   // Background Colors

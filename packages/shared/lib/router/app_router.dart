@@ -11,6 +11,7 @@ import 'package:qbit_shared/screens/my/my_screen.dart';
 import 'package:qbit_shared/screens/trade/trade_screen.dart';
 import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
 import 'package:qbit_shared/screens/trade/stock_search_screen.dart';
+import 'package:qbit_shared/screens/trade/stock_detail/stock_detail_navigation.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/api_client.dart';
@@ -73,6 +74,15 @@ class AppRouter {
         builder: (context, state) {
           final symbol = state.pathParameters['symbol'] ?? '';
           return StockSearchScreen(symbol: symbol.isEmpty ? null : symbol);
+        },
+      ),
+      GoRoute(
+        path: '/stock-detail/:symbol',
+        name: 'stock-detail',
+        builder: (context, state) {
+          final symbol = Uri.decodeComponent(state.pathParameters['symbol'] ?? '');
+          final name = Uri.decodeComponent(state.uri.queryParameters['name'] ?? '');
+          return StockDetailNavigation(symbol: symbol, name: name);
         },
       ),
     ],
