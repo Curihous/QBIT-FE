@@ -348,49 +348,52 @@ class _StockOrderTabState extends State<StockOrderTab> {
       );
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final dividerPosition = screenWidth * (173 / 393);
+    
     return Stack(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 8, 8),
-          child: widget.assetClass == 'crypto' 
-            ? Row(
-                children: [
-                  // 암호화폐: 좌측 호가창 + 우측 주문 폼
-                  Expanded(
-                    flex: 40,
-                    child: OrderBookWidget(
-                      symbol: widget.symbol,
-                      orderBook: _orderBook,
-                      isLoading: _isLoadingOrderBook,
-                      onRefresh: _loadOrderBook,
+        SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 8, 8),
+            child: widget.assetClass == 'crypto' 
+              ? Row(
+                  children: [
+                    // 암호화폐: 좌측 호가창 + 우측 주문 폼
+                    Expanded(
+                      flex: 173,
+                      child: OrderBookWidget(
+                        symbol: widget.symbol,
+                        orderBook: _orderBook,
+                        isLoading: _isLoadingOrderBook,
+                        onRefresh: _loadOrderBook,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  const SizedBox(width: 1.3),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    flex: 60,
-                    child: _buildOrderForm(),
-                  ),
-                ],
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: _buildOrderForm(),
-                  ),
-                ],
-              ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      flex: 220,
+                      child: _buildOrderForm(),
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: _buildOrderForm(),
+                    ),
+                  ],
+                ),
+          ),
         ),
         // 세로선 (암호화폐일 때만)
         if (widget.assetClass == 'crypto')
           Positioned(
-            left: MediaQuery.of(context).size.width * 0.45,
+            left: dividerPosition,
             top: 0,
             bottom: 0,
             child: Container(
-              width: 1.3,
+              width: 1,
               color: AppColors.gray100,
             ),
           ),
@@ -402,8 +405,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
     final isCryptoSymbol = widget.assetClass == 'crypto';
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
-      child: SingleChildScrollView(
-        child: Column(
+      child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: isCryptoSymbol ? CrossAxisAlignment.end : CrossAxisAlignment.center,
           children: [
@@ -695,7 +697,6 @@ class _StockOrderTabState extends State<StockOrderTab> {
             ),
           ],
         ),
-      ),
     );
   }
 

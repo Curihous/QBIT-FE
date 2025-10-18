@@ -23,8 +23,51 @@ class StockDetailNavigation extends StatefulWidget {
   State<StockDetailNavigation> createState() => _StockDetailNavigationState();
 }
 
-class _StockDetailNavigationState extends State<StockDetailNavigation> {
+class _StockDetailNavigationState extends State<StockDetailNavigation> with TickerProviderStateMixin {
   int _selectedTabIndex = 0; // 0: 차트, 1: 호가, 2: 주문, 3: 시세
+  bool _isBottomNavVisible = true;
+  late AnimationController _animationController;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 1), // 아래에서 시작
+      end: const Offset(0, 0),   // 원래 위치
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+    _animationController.forward(); // 초기 상태는 보이는 상태
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _handlePanUpdate(DragUpdateDetails details) {
+    // 아래로 드래그 (delta.dy > 0) - 네비게이션 바 숨기기
+    if (details.delta.dy > 3 && _isBottomNavVisible) {
+      setState(() {
+        _isBottomNavVisible = false;
+      });
+      _animationController.reverse();
+    }
+    // 위로 드래그 (delta.dy < 0) - 네비게이션 바 보이기
+    else if (details.delta.dy < -3 && !_isBottomNavVisible) {
+      setState(() {
+        _isBottomNavVisible = true;
+      });
+      _animationController.forward();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,17 +77,23 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> {
         title: widget.name,
         onBackPressed: () => Navigator.pop(context),
       ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              Expanded(
-                child: _buildTabContent(),
+      body: GestureDetector(
+        onPanUpdate: _handlePanUpdate,
+        child: Stack(
+          children: [
+              Column(
+                children: [
+                  Expanded(
+                    child: _buildTabContent(),
+                  ),
+                  SlideTransition(
+                    position: _slideAnimation,
+                    child: _buildBottomTabNavigation(),
+                  ),
+                ],
               ),
-              _buildBottomTabNavigation(),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
