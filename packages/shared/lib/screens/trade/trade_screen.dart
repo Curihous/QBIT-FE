@@ -1282,7 +1282,6 @@ class _TradeScreenState extends State<TradeScreen> {
 
   @override
   void dispose() {
-    _tokenExpiredSubscription?.cancel();
     super.dispose();
   }
 }
