@@ -28,37 +28,47 @@ class AuthService {
       final email = googleResult['email'];
       final displayName = googleResult['displayName'];
 
+      logger.i('구글 로그인 결과: idToken=${googleIdToken != null ? "있음" : "없음"}, accessToken=${googleAccessToken != null ? "있음" : "없음"}');
+      
+      // ID 토큰이 없으면 에러
+      if (googleIdToken == null || googleIdToken.isEmpty) {
+        logger.e('구글 ID 토큰이 없습니다. Google Cloud Console 설정을 확인하세요.');
+        return {
+          'success': false, 
+          'error': '구글 ID 토큰을 받지 못했습니다. Google Cloud Console OAuth 설정을 확인하세요.'
+        };
+      }
+
       // 2. 백엔드 API로 로그인
       final backendResult = await AuthApiService.googleLogin(
-        googleIdToken: googleIdToken ?? '',
+        googleIdToken: googleIdToken,
       );
 
-      if (backendResult != null) {
-        final response = GoogleLoginResponse.fromJson(backendResult);
-        
-        if (response.accessToken != null) {
-          // 토큰 저장
-          await TokenService.saveAccessToken(response.accessToken!);
-
-          logger.i('백엔드 구글 로그인 성공');
-          return {
-            'success': true,
-            'userId': response.userId?.toString() ?? userId,
-            'email': response.email ?? email,
-            'displayName': response.nickname ?? displayName,
-            'accessToken': response.accessToken,
-            'refreshToken': null,
-            'isNewUser': response.isNewUser,
-            'expiresIn': response.expiresIn,
-          };
-        } else {
-          logger.e('백엔드 구글 로그인 실패: 액세스 토큰 없음');
-          return {'success': false, 'error': '백엔드 구글 로그인 실패: 액세스 토큰 없음'};
-        }
-      } else {
+      if (backendResult == null) {
         logger.e('백엔드 구글 로그인 API 호출 실패');
-        return {'success': false, 'error': '백엔드 구글 로그인 API 호출 실패'};
+        return {'success': false, 'error': '백엔드 로그인 실패'};
       }
+
+      final response = GoogleLoginResponse.fromJson(backendResult);
+      
+      if (response.accessToken == null) {
+        logger.e('백엔드 구글 로그인 실패: 액세스 토큰 없음');
+        return {'success': false, 'error': '백엔드 로그인 실패: 액세스 토큰 없음'};
+      }
+
+      // 3. 토큰 저장
+      await TokenService.saveAccessToken(response.accessToken!);
+
+      logger.i('구글 로그인 성공');
+      return {
+        'success': true,
+        'userId': response.userId?.toString() ?? userId,
+        'email': response.email ?? email,
+        'displayName': response.nickname ?? displayName,
+        'accessToken': response.accessToken,
+        'isNewUser': response.isNewUser,
+        'expiresIn': response.expiresIn,
+      };
     } catch (error) {
       logger.e('구글 로그인 중 예외 발생: $error');
       return {'success': false, 'error': error.toString()};
@@ -78,8 +88,6 @@ class AuthService {
         return await loginWithTestToken();
       }
 
-      logger.i('프로덕션 모드: Kakao SDK 로그인');
-      
       // 1. 카카오 SDK로 로그인
       final kakaoResult = await KakaoAuthService.login();
       if (kakaoResult == null || !kakaoResult['success']) {
@@ -91,15 +99,8 @@ class AuthService {
       final userId = kakaoResult['userId'];
       final nickname = kakaoResult['nickname'];
       final email = kakaoResult['email'];
-
-      // 2. 카카오 토큰 상태 확인
-      final tokenInfo = await KakaoAuthService.getTokenInfo();
-      if (tokenInfo?['isExpired'] == true) {
-        logger.e('❌ 카카오 토큰이 만료되었습니다. 재로그인이 필요합니다.');
-        return {'success': false, 'error': '카카오 토큰이 만료되었습니다. 다시 로그인해주세요.'};
-      }
       
-      // 3. 백엔드 API로 로그인
+      // 2. 백엔드 API로 로그인
       final backendResult = await AuthApiService.kakaoLogin(
         kakaoAccessToken: kakaoAccessToken,
         userId: userId,
@@ -107,34 +108,33 @@ class AuthService {
         email: email,
       );
 
-      if (backendResult != null) {
-        final response = KakaoLoginResponse.fromJson(backendResult);
-        
-        if (response.accessToken != null) {
-          // 토큰 저장
-          await TokenService.saveAccessToken(response.accessToken!);
-          await TokenService.saveKakaoAccessToken(kakaoAccessToken);
-          await TokenService.saveKakaoUserId(userId);
-
-          logger.i('백엔드 로그인 성공');
-          return {
-            'success': true,
-            'userId': response.userId?.toString() ?? userId,
-            'nickname': response.nickname ?? nickname,
-            'email': response.email ?? email,
-            'accessToken': response.accessToken,
-            'refreshToken': null, // 백엔드에서 리프레시 토큰 미제공
-            'isNewUser': response.isNewUser,
-            'expiresIn': response.expiresIn,
-          };
-        } else {
-          logger.e('백엔드 로그인 실패: 액세스 토큰 없음');
-          return {'success': false, 'error': '백엔드 로그인 실패: 액세스 토큰 없음'};
-        }
-      } else {
-        logger.e('백엔드 로그인 API 호출 실패');
-        return {'success': false, 'error': '백엔드 로그인 API 호출 실패'};
+      if (backendResult == null) {
+        logger.e('백엔드 카카오 로그인 API 호출 실패');
+        return {'success': false, 'error': '백엔드 로그인 실패'};
       }
+
+      final response = KakaoLoginResponse.fromJson(backendResult);
+      
+      if (response.accessToken == null) {
+        logger.e('백엔드 카카오 로그인 실패: 액세스 토큰 없음');
+        return {'success': false, 'error': '백엔드 로그인 실패: 액세스 토큰 없음'};
+      }
+
+      // 3. 토큰 저장
+      await TokenService.saveAccessToken(response.accessToken!);
+      await TokenService.saveKakaoAccessToken(kakaoAccessToken);
+      await TokenService.saveKakaoUserId(userId);
+
+      logger.i('카카오 로그인 성공');
+      return {
+        'success': true,
+        'userId': response.userId?.toString() ?? userId,
+        'nickname': response.nickname ?? nickname,
+        'email': response.email ?? email,
+        'accessToken': response.accessToken,
+        'isNewUser': response.isNewUser,
+        'expiresIn': response.expiresIn,
+      };
     } catch (error) {
       logger.e('로그인 중 예외 발생: $error');
       return {'success': false, 'error': error.toString()};
@@ -144,21 +144,26 @@ class AuthService {
   /// 현재 사용자 정보 조회
   static Future<Map<String, dynamic>?> getCurrentUser() async {
     try {
-      // 백엔드 토큰이 있으면 백엔드에서 사용자 정보 조회
+      // 백엔드에서 사용자 정보 조회
       if (await TokenService.hasBackendToken()) {
-        final backendUserInfo = await AuthApiService.getCurrentUser();
-        if (backendUserInfo != null) {
+        final userInfo = await AuthApiService.getCurrentUser();
+        if (userInfo != null) {
           logger.i('백엔드에서 사용자 정보 조회 성공');
-          return backendUserInfo;
-        } else {
-          logger.w('백엔드 사용자 정보 조회 실패, 카카오 SDK로 폴백');
-          return await KakaoAuthService.getSimpleUserInfo();
+          return userInfo;
         }
-      } else {
-        // 백엔드 토큰이 없으면 카카오 SDK로만 사용자 정보 조회
-        logger.i('백엔드 토큰 없음, 카카오 SDK로 사용자 정보 조회');
-      return await KakaoAuthService.getSimpleUserInfo();
       }
+      
+      // 백엔드 실패 시 소셜 로그인(카카오/구글)에서 조회
+      if (await KakaoAuthService.hasToken()) {
+        logger.i('카카오 SDK에서 사용자 정보 조회');
+        return await KakaoAuthService.getSimpleUserInfo();
+      } else if (await GoogleAuthService.isSignedIn()) {
+        logger.i('구글 SDK에서 사용자 정보 조회');
+        return await GoogleAuthService.getSimpleUserInfo();
+      }
+      
+      logger.e('사용자 정보를 조회할 수 없습니다');
+      return null;
     } catch (error) {
       logger.e('사용자 정보 조회 실패: $error');
       return null;
@@ -176,13 +181,22 @@ class AuthService {
         }
       }
 
-      // 2. 로컬 토큰 삭제
+      // 2. 소셜 로그인 SDK 로그아웃
+      await Future.wait([
+        KakaoAuthService.logout().catchError((e) {
+          logger.w('카카오 로그아웃 실패 (무시): $e');
+          return false;
+        }),
+        GoogleAuthService.logout().catchError((e) {
+          logger.w('구글 로그아웃 실패 (무시): $e');
+          return false;
+        }),
+      ]);
+
+      // 3. 로컬 토큰 삭제
       await TokenService.clearAllTokens();
 
-      // 3. 카카오 SDK 로그아웃
-      await KakaoAuthService.logout();
-
-      logger.i('로그아웃 성공');
+      logger.i('로그아웃 완료');
       return true;
     } catch (error) {
       logger.e('로그아웃 실패: $error');
@@ -193,16 +207,14 @@ class AuthService {
   /// 로그인 상태 확인
   static Future<bool> isLoggedIn() async {
     try {
-      // 카카오 토큰이 있으면 로그인 상태로 간주 (백엔드 연결 실패 시에도 카카오 로그인만으로 사용 가능)
-      final kakaoLoggedIn = await KakaoAuthService.hasToken();
+      // 소셜 로그인 또는 백엔드 토큰 중 하나라도 있으면 로그인 상태
+      final results = await Future.wait([
+        KakaoAuthService.hasToken(),
+        GoogleAuthService.isSignedIn(),
+        TokenService.hasBackendToken(),
+      ]);
       
-      if (kakaoLoggedIn) {
-        // 카카오 토큰이 있으면 로그인 상태
-        return true;
-      } else {
-        // 카카오 토큰이 없으면 백엔드 토큰만으로도 확인
-        return await TokenService.isLoggedIn();
-      }
+      return results.any((hasToken) => hasToken);
     } catch (e) {
       logger.e('로그인 상태 확인 실패: $e');
       return false;
@@ -237,143 +249,54 @@ class AuthService {
     try {
       logger.i('토큰 갱신 시작');
       
-      // 1. 세션 타입 확인
-      final isKakaoOnly = await TokenService.isKakaoOnlySession();
-      final hasBackendToken = await TokenService.hasBackendToken();
-      final hasRefreshToken = await TokenService.getRefreshToken() != null;
-      
-      // 2. 로그인 타입 확인
+      // 1. 로그인 타입 확인
       final kakaoLoggedIn = await KakaoAuthService.hasToken();
       final googleLoggedIn = await GoogleAuthService.isSignedIn();
       
-      // 3. 카카오 토큰 상태 확인 및 갱신
+      // 2. 소셜 로그인(카카오/구글) 토큰 갱신
       if (kakaoLoggedIn) {
-        final kakaoTokenInfo = await KakaoAuthService.getTokenInfo();
-        if (kakaoTokenInfo?['isExpired'] == true) {
-          logger.i('카카오 토큰 만료, 명시적 갱신 시도');
-          
-          // 카카오 토큰 갱신 시도
-          final refreshResult = await KakaoAuthService.refreshAccessToken();
-          if (refreshResult?['success'] == true && refreshResult?['refreshed'] == true) {
-            // 갱신된 토큰 저장
-            await TokenService.saveKakaoAccessToken(refreshResult!['accessToken']);
-            await TokenService.saveKakaoUserId(refreshResult['userId']);
-            logger.i('카카오 토큰 갱신 및 저장 완료');
-          } else {
-            logger.e('카카오 토큰 갱신 실패: ${refreshResult?['error']}');
-            return false;
-          }
-        }
-      }
-      
-      // 4. 구글 토큰 갱신
-      if (googleLoggedIn) {
-        logger.i('구글 토큰 갱신 시도');
-        final refreshResult = await GoogleAuthService.refreshToken();
-        if (refreshResult?['success'] == true) {
-          // 갱신된 토큰 저장
-          final newAccessToken = refreshResult!['accessToken'];
-          if (newAccessToken != null) {
-            await TokenService.saveAccessToken(newAccessToken);
-            logger.i('구글 토큰 갱신 및 저장 완료');
-          }
-        } else {
-          logger.e('구글 토큰 갱신 실패: ${refreshResult?['error']}');
+        final result = await KakaoAuthService.refreshAccessToken();
+        if (result?['success'] != true) {
+          logger.e('카카오 토큰 갱신 실패. 재로그인 필요.');
           return false;
         }
-      }
-      
-      // 5. 카카오 전용 세션 처리 (백엔드 연동 없이 사용)
-      if (isKakaoOnly && kakaoLoggedIn) {
-        logger.i('카카오 전용 세션: 백엔드 토큰 갱신 불필요');
-        return true;
-      }
-      
-      // 6. 구글 전용 세션 처리 (백엔드 연동 없이 사용)
-      if (googleLoggedIn && !hasBackendToken) {
-        logger.i('구글 전용 세션: 백엔드 토큰 갱신 불필요');
-        return true;
-      }
-      
-      // 7. 백엔드 토큰 재발급 시도 (카카오)
-      final kakaoAccessToken = await TokenService.getKakaoAccessToken();
-      if (kakaoAccessToken != null && kakaoLoggedIn) {
-        logger.i('카카오 토큰으로 백엔드 토큰 재발급 시도');
-        
-        final userId = await TokenService.getKakaoUserId();
-        final result = await AuthApiService.kakaoLogin(
-          kakaoAccessToken: kakaoAccessToken,
-          userId: userId ?? '',
-          nickname: '', // 필요시 저장된 값 사용
-          email: '',
-        );
-        
-        if (result != null) {
-          final response = KakaoLoginResponse.fromJson(result);
-          if (response.accessToken != null) {
-            await TokenService.saveAccessToken(response.accessToken!);
-            logger.i('카카오 토큰 기반 백엔드 토큰 재발급 성공');
-            return true;
-          }
-        }
-        
-        logger.w('카카오 토큰 기반 백엔드 토큰 재발급 실패');
-      }
-      
-      // 8. 백엔드 토큰 재발급 시도 (구글)
-      // TODO: 백엔드에 구글 로그인 API 추가 후 활성화
-      // if (googleLoggedIn && hasBackendToken) {
-      //   final googleUser = await GoogleAuthService.getCurrentUser();
-      //   if (googleUser != null) {
-      //     final result = await AuthApiService.googleLogin(
-      //       googleIdToken: googleUser['idToken'],
-      //       userId: googleUser['userId'],
-      //       email: googleUser['email'],
-      //       displayName: googleUser['displayName'],
-      //     );
-      //     if (result != null) {
-      //       await TokenService.saveAccessToken(result['accessToken']);
-      //       return true;
-      //     }
-      //   }
-      // }
-      
-      // 9. 백엔드 리프레시 토큰으로 폴백 (백엔드 토큰이 기대되는 경우만)
-      if (hasBackendToken || hasRefreshToken) {
-        final refreshToken = await TokenService.getRefreshToken();
-        if (refreshToken == null) {
-          logger.e('백엔드 토큰이 기대되지만 리프레시 토큰이 없습니다');
+        logger.i('카카오 토큰 유효함');
+      } else if (googleLoggedIn) {
+        final result = await GoogleAuthService.refreshToken();
+        if (result?['success'] != true) {
+          logger.e('구글 토큰 갱신 실패. 재로그인 필요.');
           return false;
         }
-
-        final result = await AuthApiService.refreshToken(refreshToken: refreshToken);
-        if (result != null) {
-          final response = RefreshTokenResponse.fromJson(result);
-          
-          if (response.success) {
-            // 새 토큰 저장
-            if (response.accessToken != null) {
-              await TokenService.saveAccessToken(response.accessToken!);
-            }
-            if (response.refreshToken != null) {
-              await TokenService.saveRefreshToken(response.refreshToken!);
-            }
-            
-            logger.i('백엔드 리프레시 토큰으로 토큰 갱신 성공');
-            return true;
-          } else {
-            logger.e('백엔드 리프레시 토큰 갱신 실패: ${response.message}');
-            return false;
-          }
-        } else {
-          logger.e('백엔드 리프레시 토큰 갱신 API 호출 실패');
-          return false;
-        }
+        logger.i('구글 토큰 갱신 성공');
       } else {
-        // 백엔드 토큰이 기대되지 않는 경우 (카카오 전용 세션)
-        logger.i('백엔드 토큰이 기대되지 않음, 카카오 전용 세션으로 처리');
-        return true;
+        logger.e('로그인된 소셜 계정이 없습니다');
+        return false;
       }
+      
+      // 3. 백엔드 JWT 토큰 갱신
+      final refreshToken = await TokenService.getRefreshToken();
+      if (refreshToken == null) {
+        logger.i('백엔드 리프레시 토큰 없음. 소셜 로그인만 사용.');
+        return true; // 소셜 로그인만으로도 OK
+      }
+
+      final result = await AuthApiService.refreshToken(refreshToken: refreshToken);
+      if (result != null) {
+        final response = RefreshTokenResponse.fromJson(result);
+        
+        if (response.success && response.accessToken != null) {
+          await TokenService.saveAccessToken(response.accessToken!);
+          if (response.refreshToken != null) {
+            await TokenService.saveRefreshToken(response.refreshToken!);
+          }
+          logger.i('백엔드 JWT 토큰 갱신 성공');
+          return true;
+        }
+      }
+      
+      // 백엔드 토큰 갱신 실패 - 재로그인 필요
+      logger.e('백엔드 JWT 토큰 갱신 실패. 재로그인 필요.');
+      return false;
     } catch (error) {
       logger.e('토큰 갱신 중 예외 발생: $error');
       return false;
@@ -434,30 +357,29 @@ class AuthService {
     }
   }
 
-  // .env 파일의 JWT 토큰으로 직접 로그인
-  // TODO: 추후 제거
+  /// 테스트 로그인 (.env 파일의 JWT 토큰 사용)
   static Future<Map<String, dynamic>> loginWithTestToken() async {
     try {
-      logger.i('테스트 토큰으로 로그인 시작');
+      logger.i('테스트 로그인 시작');
       
       final backendToken = EnvConfig.backendTestAccessToken;
-      final kakaoToken = EnvConfig.kakaoTestAccessToken;
       
       if (backendToken.isEmpty) {
-        logger.e('.env 파일에 BACKEND_TEST_ACCESS_TOKEN이 설정되지 않음');
-        return {'success': false, 'error': '.env 파일에 BACKEND_TEST_ACCESS_TOKEN을 설정해주세요'};
+        logger.e('.env에 BACKEND_TEST_ACCESS_TOKEN 없음');
+        return {
+          'success': false, 
+          'error': '.env 파일에 BACKEND_TEST_ACCESS_TOKEN을 설정해주세요'
+        };
       }
       
-      // JWT 토큰 및 사용자 정보 저장
+      // 토큰 저장
       await TokenService.saveAccessToken(backendToken);
-      await TokenService.saveKakaoAccessToken(kakaoToken);
-      await TokenService.saveKakaoUserId('1');
       
       logger.i('테스트 로그인 성공');
       return {'success': true};
-    } catch (e, stack) {
-      logger.e('테스트 로그인 중 예외 발생: $e\n$stack');
-      return {'success': false, 'error': '로그인 중 오류가 발생했습니다'};
+    } catch (error) {
+      logger.e('테스트 로그인 실패: $error');
+      return {'success': false, 'error': '테스트 로그인 실패'};
     }
   }
 }

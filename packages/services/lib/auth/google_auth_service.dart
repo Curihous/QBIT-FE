@@ -1,5 +1,6 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:logger/logger.dart';
+import 'package:qbit_core/config/env_config.dart';
 
 final logger = Logger(
   printer: PrettyPrinter(
@@ -13,23 +14,37 @@ final logger = Logger(
 );
 
 class GoogleAuthService {
-  static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-      'profile',
-    ],
-  );
+  static GoogleSignIn? _googleSignInInstance;
+  
+  static GoogleSignIn get _googleSignIn {
+    if (_googleSignInInstance != null) return _googleSignInInstance!;
+    
+    final webClientId = EnvConfig.googleWebClientId;
+    
+    _googleSignInInstance = GoogleSignIn(
+      scopes: [
+        'email',
+        'profile',
+      ],
+      serverClientId: webClientId.isNotEmpty ? webClientId : null, // 웹 클라이언트 ID
+    );
+    
+    return _googleSignInInstance!;
+  }
 
   // 구글 로그인 실행
   static Future<Map<String, dynamic>?> login() async {
     try {
       logger.i('구글 로그인 시작');
       
-      // 기존 로그인 확인
-      GoogleSignInAccount? currentUser = _googleSignIn.currentUser;
+      // 1. 자동 로그인 시도 (이전 세션 복원)
+      GoogleSignInAccount? currentUser = await _googleSignIn.signInSilently();
       
-      if (currentUser == null) {
-        // 새로운 로그인 시도
+      if (currentUser != null) {
+        logger.i('자동 로그인 성공: ${currentUser.email}');
+      } else {
+        // 2. 자동 로그인 실패 시 수동 로그인
+        logger.i('자동 로그인 실패, 수동 로그인 시도');
         currentUser = await _googleSignIn.signIn();
       }
       
@@ -42,6 +57,8 @@ class GoogleAuthService {
 
       // 인증 정보 가져오기
       final GoogleSignInAuthentication auth = await currentUser.authentication;
+      
+      logger.i('구글 인증 토큰: idToken=${auth.idToken != null ? "있음(${auth.idToken?.substring(0, 20)}...)" : "없음"}, accessToken=${auth.accessToken != null ? "있음" : "❌없음"}');
       
       return {
         'success': true,
@@ -144,22 +161,23 @@ class GoogleAuthService {
     }
   }
 
-  // 토큰 갱신
+  // 토큰 갱신 (자동 로그인만 시도, 실패하면 로그인 화면으로)
   static Future<Map<String, dynamic>?> refreshToken() async {
     try {
       logger.i('구글 토큰 갱신 시작');
       
-      final GoogleSignInAccount? currentUser = _googleSignIn.currentUser;
+      // 1. 자동 로그인 시도 (UI 없이)
+      GoogleSignInAccount? currentUser = await _googleSignIn.signInSilently();
       
       if (currentUser == null) {
-        logger.e('갱신할 구글 사용자가 없습니다');
-        return {'success': false, 'error': '갱신할 사용자가 없습니다'};
+        logger.e('자동 로그인 실패. 로그인 화면으로 이동 필요.');
+        return {'success': false, 'error': '재로그인이 필요합니다'};
       }
 
-      // 인증 정보 다시 가져오기 (자동으로 갱신됨)
+      // 2. 인증 정보 다시 가져오기 (자동으로 갱신됨)
       final GoogleSignInAuthentication auth = await currentUser.authentication;
       
-      logger.i('구글 토큰 갱신 성공');
+      logger.i('구글 토큰 갱신 성공: ${currentUser.email}');
       
       return {
         'success': true,

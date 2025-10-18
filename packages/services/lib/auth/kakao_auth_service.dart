@@ -263,73 +263,46 @@ class KakaoAuthService {
     }
   }
 
-  /// 카카오 액세스 토큰 갱신
+  /// 카카오 액세스 토큰 상태 확인 (갱신은 카카오 SDK가 자동 처리)
   static Future<Map<String, dynamic>?> refreshAccessToken() async {
     try {
-      logger.i('카카오 액세스 토큰 갱신 시작');
+      logger.i('카카오 토큰 상태 확인 시작');
       
-      // 기존 토큰 확인
+      // 토큰 존재 여부 확인
       if (!await AuthApi.instance.hasToken()) {
-        logger.e('갱신할 토큰이 없습니다');
-        return {'success': false, 'error': '갱신할 토큰이 없습니다'};
+        logger.e('카카오 토큰 없음. 재로그인 필요.');
+        return {'success': false, 'error': '재로그인이 필요합니다'};
       }
 
-      // 토큰 정보 확인 (만료 예외시 갱신 경로로 분기)
-      AccessTokenInfo tokenInfo;
+      // 토큰 유효성 확인
       try {
-        tokenInfo = await UserApi.instance.accessTokenInfo();
+        final tokenInfo = await UserApi.instance.accessTokenInfo();
+        final now = DateTime.now();
+        final expiresAt = now.add(Duration(seconds: tokenInfo.expiresIn));
+        
+        // 토큰이 유효한지 확인
+        if (tokenInfo.expiresIn > 0 && expiresAt.isAfter(now)) {
+          logger.i('카카오 토큰 유효함');
+          final token = await TokenManagerProvider.instance.manager.getToken();
+          return {
+            'success': true,
+            'accessToken': token?.accessToken,
+            'userId': tokenInfo.id.toString(),
+          };
+        } else {
+          logger.e('카카오 토큰 만료됨. 재로그인 필요.');
+          return {'success': false, 'error': '재로그인이 필요합니다'};
+        }
       } on KakaoException catch (e) {
         if (e.isInvalidTokenError()) {
-          logger.i('토큰이 만료되어 재로그인으로 갱신 시도');
-          // 바로 갱신 시도
-          return await _reloginAndBuildResult();
+          logger.e('카카오 토큰 무효. 재로그인 필요.');
+          return {'success': false, 'error': '재로그인이 필요합니다'};
         }
         rethrow;
       }
-      final now = DateTime.now();
-      final expiresAt = now.add(Duration(seconds: tokenInfo.expiresIn));
-      
-      // 토큰이 유효한지 확인 (expiresIn > 0이고 미래에 만료되는 경우만 유효)
-      if (tokenInfo.expiresIn > 0 && expiresAt.isAfter(now)) {
-        logger.i('토큰이 아직 유효합니다. 갱신 불필요');
-        OAuthToken? token = await TokenManagerProvider.instance.manager.getToken();
-        return {
-          'success': true,
-          'accessToken': token?.accessToken,
-          'userId': tokenInfo.id.toString(),
-          'refreshed': false,
-        };
-      }
-
-      // 토큰 갱신 시도
-      try {
-        return await _reloginAndBuildResult();
-      } catch (refreshError) {
-        logger.e('카카오 토큰 갱신 실패: $refreshError');
-        return {'success': false, 'error': '토큰 갱신 실패: $refreshError'};
-      }
     } catch (error) {
-      logger.e('카카오 토큰 갱신 중 예외 발생: $error');
+      logger.e('카카오 토큰 확인 실패: $error');
       return {'success': false, 'error': error.toString()};
     }
-  }
-  /// 재로그인을 통한 토큰 갱신 헬퍼 메서드
-  static Future<Map<String, dynamic>> _reloginAndBuildResult() async {
-    final isInstalled = await isKakaoTalkInstalled();
-    final newToken = isInstalled
-        ? await UserApi.instance.loginWithKakaoTalk()
-        : await UserApi.instance.loginWithKakaoAccount();
-
-    logger.i('카카오 토큰 갱신 성공');
-    
-    final user = await UserApi.instance.me();
-    return {
-      'success': true,
-      'accessToken': newToken.accessToken,
-      'userId': user.id.toString(),
-      'nickname': user.kakaoAccount?.profile?.nickname,
-      'email': user.kakaoAccount?.email,
-      'refreshed': true,
-    };
   }
 }

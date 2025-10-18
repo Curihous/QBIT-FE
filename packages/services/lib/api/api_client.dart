@@ -3,6 +3,7 @@ import 'package:logger/logger.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:qbit_core/config/env_config.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
+import 'package:qbit_services/auth/google_auth_service.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/auth_api_service.dart';
 import 'package:qbit_services/models/auth_models.dart';
@@ -136,44 +137,22 @@ class ApiClient {
               return;
               
             } else {
-              // ========== 프로덕션 모드: Kakao SDK 사용 ==========
-              logger.i('프로덕션 모드: Kakao SDK 사용');
+              // ========== 프로덕션 모드: 소셜 로그인(카카오/구글) 사용 ==========
+              logger.i('프로덕션 모드: 소셜 로그인 토큰 확인');
               
+              // 카카오 로그인인 경우
               final hasKakaoToken = await KakaoAuthService.hasToken();
-              if (!hasKakaoToken) {
-                logger.w('Kakao SDK 토큰 없음 - 재로그인 필요');
-                _tokenExpiredController.add(null);
-                handler.next(error);
-                return;
-              }
-              
-              final tokenInfo = await KakaoAuthService.getTokenInfo();
-              if (tokenInfo == null) {
-                logger.w('Kakao SDK 토큰 정보 조회 실패 - 재로그인 필요');
-                _tokenExpiredController.add(null);
-                handler.next(error);
-                return;
-              }
-              
-              if (tokenInfo['isExpired']) {
-                logger.w('Kakao SDK 토큰 만료 - 재로그인 필요');
-                _tokenExpiredController.add(null);
-                handler.next(error);
-                return;
-              }
-              
-              // Kakao SDK 토큰이 유효하면 백엔드 토큰 재발급
-              logger.i('Kakao SDK 토큰 유효 - 백엔드 토큰 재발급 시도');
-              
-              final kakaoUser = await KakaoAuthService.getCurrentUser();
-              if (kakaoUser != null) {
+              if (hasKakaoToken) {
+                logger.i('카카오 로그인 감지 - 백엔드 토큰 재발급 시도');
+                
                 final kakaoAccessToken = await TokenService.getKakaoAccessToken();
                 if (kakaoAccessToken != null) {
+                  final userId = await TokenService.getKakaoUserId();
                   final backendResult = await AuthApiService.kakaoLogin(
                     kakaoAccessToken: kakaoAccessToken,
-                    userId: kakaoUser['id'].toString(),
-                    nickname: kakaoUser['nickname'] ?? '',
-                    email: kakaoUser['email'] ?? '',
+                    userId: userId ?? '',
+                    nickname: '',
+                    email: '',
                   );
                   
                   if (backendResult != null) {
@@ -192,9 +171,48 @@ class ApiClient {
                     }
                   }
                 }
+                
+                logger.w('카카오 토큰으로 백엔드 토큰 재발급 실패');
+                _tokenExpiredController.add(null);
+                handler.next(error);
+                return;
               }
               
-              logger.w('프로덕션 모드: 백엔드 토큰 재발급 실패');
+              // 구글 로그인인 경우
+              final hasGoogleToken = await GoogleAuthService.isSignedIn();
+              if (hasGoogleToken) {
+                logger.i('구글 로그인 감지 - 백엔드 토큰 재발급 시도');
+                
+                final googleUser = await GoogleAuthService.getCurrentUser();
+                if (googleUser != null && googleUser['idToken'] != null) {
+                  final backendResult = await AuthApiService.googleLogin(
+                    googleIdToken: googleUser['idToken'],
+                  );
+                  
+                  if (backendResult != null) {
+                    final response = GoogleLoginResponse.fromJson(backendResult);
+                    if (response.accessToken != null) {
+                      await TokenService.saveAccessToken(response.accessToken!);
+                      
+                      logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
+                      final newToken = await _getAccessToken();
+                      if (newToken != null) {
+                        error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                        final response = await _dio.fetch(error.requestOptions);
+                        handler.resolve(response);
+                        return;
+                      }
+                    }
+                  }
+                }
+                
+                logger.w('구글 토큰으로 백엔드 토큰 재발급 실패');
+                _tokenExpiredController.add(null);
+                handler.next(error);
+                return;
+              }
+              
+              logger.w('프로덕션 모드: 소셜 로그인 토큰 없음 - 재로그인 필요');
             }
           } catch (e) {
             logger.e('토큰 갱신 중 오류: $e');

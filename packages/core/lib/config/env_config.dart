@@ -123,6 +123,9 @@ class EnvConfig {
 
   /// 카카오 로그인 설정 (네이티브 앱 키만 필요)
   static String get kakaoNativeAppKey => getValue('KAKAO_NATIVE_APP_KEY');
+  
+  /// 구글 로그인 설정 (웹 클라이언트 ID)
+  static String get googleWebClientId => getValue('GOOGLE_WEB_CLIENT_ID');
 
   /// 앱 설정
   static String get appName => getValue('APP_NAME');
