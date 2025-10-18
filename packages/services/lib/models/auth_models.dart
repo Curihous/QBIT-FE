@@ -52,6 +52,36 @@ class KakaoLoginResponse {
   }
 }
 
+/// 구글 로그인 응답 모델
+class GoogleLoginResponse {
+  final String? accessToken;
+  final int? expiresIn;
+  final bool? isNewUser;
+  final int? userId;
+  final String? email;
+  final String? nickname;
+
+  GoogleLoginResponse({
+    this.accessToken,
+    this.expiresIn,
+    this.isNewUser,
+    this.userId,
+    this.email,
+    this.nickname,
+  });
+
+  factory GoogleLoginResponse.fromJson(Map<String, dynamic> json) {
+    return GoogleLoginResponse(
+      accessToken: json['accessToken'],
+      expiresIn: json['expiresIn'],
+      isNewUser: json['isNewUser'],
+      userId: json['userId'] is int ? json['userId'] : int.tryParse(json['userId']?.toString() ?? ''),
+      email: json['email'],
+      nickname: json['nickname'],
+    );
+  }
+}
+
 /// 토큰 갱신 요청 모델
 class RefreshTokenRequest {
   final String refreshToken;

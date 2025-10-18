@@ -48,6 +48,38 @@ class AuthApiService {
     }
   }
 
+  // 구글 로그인
+  static Future<Map<String, dynamic>?> googleLogin({
+    required String googleIdToken,
+  }) async {
+    try {
+      final response = await _dio.post(
+        '/auth/google/login',
+        data: {
+          'googleIdToken': googleIdToken,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        logger.i('구글 로그인 API 성공');
+        return response.data;
+      } else {
+        logger.e('구글 로그인 API 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('구글 로그인 API 에러: $error');
+      if (error is DioException) {
+        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('에러 타입: ${error.type}');
+        logger.e('에러 메시지: ${error.message}');
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+        logger.e('응답 상태: ${error.response?.statusCode}');
+      }
+      return null;
+    }
+  }
+
   /// 로그아웃
   /// POST /auth/logout
   static Future<bool> logout() async {
