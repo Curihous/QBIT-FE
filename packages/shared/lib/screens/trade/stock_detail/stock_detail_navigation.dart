@@ -5,6 +5,7 @@ import 'package:qbit_shared/screens/trade/stock_detail/stock_chart_tab.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/stock_orderbook_tab.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/stock_order_tab.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/stock_market_tab.dart';
+import 'package:qbit_shared/widgets/common/header_back.dart';
 
 class StockDetailNavigation extends StatefulWidget {
   final String symbol;
