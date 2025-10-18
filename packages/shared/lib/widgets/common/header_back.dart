@@ -45,7 +45,7 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
             SizedBox(width: context.w(15)),
             Text(
               title,
-              style: AppFonts.t1Bold,
+              style: AppFonts.t2Semibold, 
             ),
           ],
         ),
