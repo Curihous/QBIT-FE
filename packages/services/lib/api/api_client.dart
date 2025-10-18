@@ -133,24 +133,23 @@ class ApiClient {
                   if (response.accessToken != null) {
                     await TokenService.saveAccessToken(response.accessToken!);
                     
-                    logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
+                    logger.i('개발 모드 백엔드 토큰 재발급 성공 - 요청 재시도');
                     final newToken = await _getAccessToken();
                     if (newToken != null) {
                       logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
                       error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                       final response = await _dio.fetch(error.requestOptions);
                       handler.resolve(response);
-                      // return 제거 - finally 블록이 실행되도록 함
+                      return; // 성공 시에만 return
                     } else {
                       logger.e('새 토큰을 가져올 수 없음');
                     }
                   }
                 }
+                logger.w('개발 모드: 카카오 토큰으로 백엔드 토큰 재발급 실패');
+              } else {
+                logger.w('개발 모드: TokenService에 카카오 토큰 없음 - 재로그인 필요');
               }
-              
-              // 개발 모드에서 토큰이 없으면 재로그인 필요
-              logger.w('개발 모드: 토큰 없음 - 재로그인 필요');
-              _tokenExpiredController.add(null);
               
             } else {
               // ========== 프로덕션 모드: 소셜 로그인(카카오/구글) 사용 ==========
@@ -227,8 +226,11 @@ class ApiClient {
               }
               
               logger.w('프로덕션 모드: 모든 소셜 로그인 토큰 재발급 실패 - 재로그인 필요');
-              _tokenExpiredController.add(null);
             }
+            
+            // 모든 토큰 재발급 시도가 실패한 경우 공통 처리
+            _tokenExpiredController.add(null);
+            handler.next(error);
           } catch (e) {
             logger.e('토큰 갱신 중 오류: $e');
           } finally {
