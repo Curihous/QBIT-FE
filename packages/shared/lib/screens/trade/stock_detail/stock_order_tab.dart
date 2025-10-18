@@ -13,11 +13,13 @@ import 'package:qbit_shared/widgets/trade/orderbook_widget.dart';
 class StockOrderTab extends StatefulWidget {
   final String symbol;
   final String name;
+  final String assetClass;
 
   const StockOrderTab({
     super.key,
     required this.symbol,
     required this.name,
+    required this.assetClass,
   });
 
   @override
@@ -25,7 +27,6 @@ class StockOrderTab extends StatefulWidget {
 }
 
 class _StockOrderTabState extends State<StockOrderTab> {
-  StockModel? _stockDetail;
   OrderBookModel? _orderBook;
   bool _isLoading = true;
   bool _isLoadingOrderBook = false;
@@ -78,12 +79,6 @@ class _StockOrderTabState extends State<StockOrderTab> {
         });
         return;
       }
-      
-      // 액세스 토큰 출력 (스웨거 테스트용)
-      final accessToken = await TokenService.getAccessToken();
-      print('=== 액세스 토큰 (스웨거 테스트용) ===');
-      print(accessToken);
-      print('=====================================');
 
       // 환율 로드 (에러 처리 추가)
       try {
@@ -97,30 +92,8 @@ class _StockOrderTabState extends State<StockOrderTab> {
         // 환율 로드 실패해도 계속 진행
       }
 
-      // 주식 상세 정보 로드 (타임아웃 추가)
-      final stockDetail = await StockApiService.getStockDetail(widget.symbol)
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => null,
-          );
-      if (!mounted) return;
-      
-      if (stockDetail != null) {
-        setState(() {
-          _stockDetail = stockDetail;
-          _isLoading = false;
-        });
-        
-        // 암호화폐인 경우 호가창 데이터 로드
-        if (stockDetail.assetClass == 'crypto') {
-          _loadOrderBook();
-        }
-      } else {
-        setState(() {
-          _error = '종목 정보를 불러올 수 없습니다. 요청 시간이 초과되었거나 서버 오류가 발생했습니다.';
-          _isLoading = false;
-        });
-      }
+      // 호가창 데이터 로드
+      await _loadOrderBook();
     } catch (error) {
       if (!mounted) return;
       
@@ -137,15 +110,13 @@ class _StockOrderTabState extends State<StockOrderTab> {
         _error = errorMessage;
         _isLoading = false;
       });
-      print('데이터 로드 에러: $error');
     }
   }
 
   Future<void> _loadOrderBook() async {
-    if (_stockDetail?.assetClass != 'crypto') return;
-    
     setState(() {
       _isLoadingOrderBook = true;
+      _isLoading = true;
     });
 
     try {
@@ -158,6 +129,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
         setState(() {
           _orderBook = orderBook;
           _isLoadingOrderBook = false;
+          _isLoading = false;
         });
       }
     } catch (e) {
@@ -165,6 +137,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
         setState(() {
           _orderBook = null;
           _isLoadingOrderBook = false;
+          _isLoading = false;
         });
       }
       print('호가창 데이터 로드 중 에러: $e');
@@ -375,13 +348,11 @@ class _StockOrderTabState extends State<StockOrderTab> {
       );
     }
 
-    final isCrypto = _stockDetail?.assetClass == 'crypto';
-    
     return Stack(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 8, 8),
-          child: isCrypto 
+          child: widget.assetClass == 'crypto' 
             ? Row(
                 children: [
                   // 암호화폐: 좌측 호가창 + 우측 주문 폼
@@ -399,7 +370,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                   const SizedBox(width: 16),
                   Expanded(
                     flex: 60,
-                    child: _buildOrderForm(isCrypto),
+                    child: _buildOrderForm(),
                   ),
                 ],
               )
@@ -407,13 +378,13 @@ class _StockOrderTabState extends State<StockOrderTab> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Flexible(
-                    child: _buildOrderForm(isCrypto),
+                    child: _buildOrderForm(),
                   ),
                 ],
               ),
         ),
         // 세로선 (암호화폐일 때만)
-        if (isCrypto)
+        if (widget.assetClass == 'crypto')
           Positioned(
             left: MediaQuery.of(context).size.width * 0.45,
             top: 0,
@@ -427,13 +398,14 @@ class _StockOrderTabState extends State<StockOrderTab> {
     );
   }
 
-  Widget _buildOrderForm(bool isCrypto) {
+  Widget _buildOrderForm() {
+    final isCryptoSymbol = widget.assetClass == 'crypto';
     return Container(
       padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: isCrypto ? CrossAxisAlignment.end : CrossAxisAlignment.center,
+          crossAxisAlignment: isCryptoSymbol ? CrossAxisAlignment.end : CrossAxisAlignment.center,
           children: [
             // 매수/매도/내역 탭
             Column(
@@ -470,10 +442,10 @@ class _StockOrderTabState extends State<StockOrderTab> {
             
             // 지정가 드롭다운
             SizedBox(
-              width: isCrypto ? 188 : double.infinity,
+              width: isCryptoSymbol ? 188 : double.infinity,
               child: Text(
                 '지정가 ▾',
-                textAlign: isCrypto ? TextAlign.right : TextAlign.center,
+                textAlign: isCryptoSymbol ? TextAlign.right : TextAlign.center,
                 style: AppFonts.b2Semibold.copyWith(
                   color: AppColors.gray900,
                 ),
@@ -484,7 +456,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
             // 주문가능 금액
             Text(
               '주문가능금액',
-              textAlign: isCrypto ? TextAlign.right : TextAlign.center,
+              textAlign: isCryptoSymbol ? TextAlign.right : TextAlign.center,
               style: AppFonts.btn2.copyWith(
                 color: AppColors.gray900,
               ),
@@ -493,7 +465,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
             
             // 수량 입력 필드
             Container(
-              width: isCrypto ? 188 : double.infinity,
+              width: isCryptoSymbol ? 188 : double.infinity,
               height: 110,
               decoration: ShapeDecoration(
                 color: AppColors.gray50,
@@ -570,7 +542,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
             
             // 가격 입력 필드
             Container(
-              width: isCrypto ? 188 : double.infinity,
+              width: isCryptoSymbol ? 188 : double.infinity,
               height: 110,
               decoration: ShapeDecoration(
                 color: AppColors.gray50,
@@ -673,9 +645,9 @@ class _StockOrderTabState extends State<StockOrderTab> {
             
             // 총액
             Padding(
-              padding: EdgeInsets.only(left: isCrypto ? 8 : 0),
+              padding: EdgeInsets.only(left: isCryptoSymbol ? 8 : 0),
               child: Column(
-                crossAxisAlignment: isCrypto ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+                crossAxisAlignment: isCryptoSymbol ? CrossAxisAlignment.start : CrossAxisAlignment.center,
                 children: [
                   Text(
                     '총액',
@@ -701,7 +673,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
             GestureDetector(
               onTap: _isSubmittingOrder ? null : _handleOrderSubmit,
               child: Container(
-                width: isCrypto ? 188 : double.infinity,
+                width: isCryptoSymbol ? 188 : double.infinity,
                 height: 55,
                 decoration: BoxDecoration(
                   color: _selectedOrderTab == '매도' ? AppColors.loss : AppColors.profit,

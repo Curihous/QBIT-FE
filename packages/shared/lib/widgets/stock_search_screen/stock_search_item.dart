@@ -22,7 +22,8 @@ class StockSearchItem extends StatelessWidget {
       onTap: () {
         final encodedSymbol = Uri.encodeComponent(stock.symbol);
         final encodedName = Uri.encodeComponent(stock.name);
-        context.push('/stock-detail/$encodedSymbol?name=$encodedName');
+        final encodedAssetClass = Uri.encodeComponent(stock.assetClass ?? 'us_equity');
+        context.push('/stock-detail/$encodedSymbol?name=$encodedName&assetClass=$encodedAssetClass');
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 13),

@@ -31,6 +31,39 @@ class ApiClient {
     return 'https://api.qbit.o-r.kr';
   }
   
+  /// 오래된 토큰 감지 및 삭제
+  static Future<void> checkAndClearOldTokens() async {
+    try {
+      final token = await TokenService.getAccessToken();
+      if (token != null) {
+        // JWT 토큰 디코딩
+        final parts = token.split('.');
+        if (parts.length == 3) {
+          final payload = parts[1];
+          final paddedPayload = payload.padRight((payload.length + 3) & ~3, '=');
+          final decodedBytes = base64Url.decode(paddedPayload);
+          final decodedPayload = utf8.decode(decodedBytes);
+          final payloadJson = json.decode(decodedPayload);
+          
+          // 토큰 만료 확인
+          if (payloadJson['exp'] != null) {
+            final expTimestamp = payloadJson['exp'] as int;
+            final expDate = DateTime.fromMillisecondsSinceEpoch(expTimestamp * 1000);
+            final now = DateTime.now();
+            final timeLeft = expDate.difference(now);
+            
+            if (timeLeft.isNegative) {
+              logger.w('⚠️ 만료된 토큰 발견 - 삭제 중...');
+              await TokenService.clearAllTokens();
+            }
+          }
+        }
+      }
+    } catch (e) {
+      logger.e('토큰 확인 중 오류: $e');
+    }
+  }
+  
   static void initialize() {
     _dio = Dio(BaseOptions(
       baseUrl: baseUrl,
@@ -143,25 +176,14 @@ class ApiClient {
                   if (response.accessToken != null) {
                     await TokenService.saveAccessToken(response.accessToken!);
                     
-                    // 카카오 액세스 토큰 출력
-                    logger.i('🔍 카카오 액세스 토큰: $kakaoAccessToken');
-                    
                     logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
                     final newToken = await _getAccessToken();
                     if (newToken != null) {
                       error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-                      
-                      logger.i('🔍 실제 전송 헤더: ${error.requestOptions.headers}');
-                      logger.i('🔍 Authorization 헤더: ${error.requestOptions.headers['Authorization']}');
-                      try {
-                        final retryResponse = await _refreshDio.fetch(error.requestOptions);
-                        logger.i('✅ 토큰 재발급 후 요청 재시도 성공!');
-                        handler.resolve(retryResponse);
-                        return;
-                      } catch (retryError) {
-                        logger.e('❌ 토큰 재발급 후 요청 재시도 실패: $retryError');
-                        logger.e('❌ 백엔드에서 유효한 토큰을 거부하고 있습니다!');
-                      }
+                      final retryResponse = await _refreshDio.fetch(error.requestOptions);
+                      _retriedRequests.remove(requestKey);
+                      handler.resolve(retryResponse);
+                      return;
                     }
                   }
                 }
@@ -202,17 +224,9 @@ class ApiClient {
                       final newToken = await _getAccessToken();
                       if (newToken != null) {
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-                        logger.i('🔍 실제 전송 헤더: ${error.requestOptions.headers}');
-                        logger.i('🔍 Authorization 헤더: ${error.requestOptions.headers['Authorization']}');
-                        try {
-                          final retryResponse = await _refreshDio.fetch(error.requestOptions);
-                          logger.i('✅ 토큰 재발급 후 요청 재시도 성공!');
-                          handler.resolve(retryResponse);
-                          return;
-                        } catch (retryError) {
-                          logger.e('❌ 토큰 재발급 후 요청 재시도 실패: $retryError');
-                          logger.e('❌ 백엔드에서 유효한 토큰을 거부하고 있습니다!');
-                        }
+                        final retryResponse = await _refreshDio.fetch(error.requestOptions);
+                        _retriedRequests.remove(requestKey);
+                        handler.resolve(retryResponse);
                         return;
                       }
                     }
@@ -246,17 +260,9 @@ class ApiClient {
                       final newToken = await _getAccessToken();
                       if (newToken != null) {
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-                        logger.i('🔍 실제 전송 헤더: ${error.requestOptions.headers}');
-                        logger.i('🔍 Authorization 헤더: ${error.requestOptions.headers['Authorization']}');
-                        try {
-                          final retryResponse = await _refreshDio.fetch(error.requestOptions);
-                          logger.i('✅ 토큰 재발급 후 요청 재시도 성공!');
-                          handler.resolve(retryResponse);
-                          return;
-                        } catch (retryError) {
-                          logger.e('❌ 토큰 재발급 후 요청 재시도 실패: $retryError');
-                          logger.e('❌ 백엔드에서 유효한 토큰을 거부하고 있습니다!');
-                        }
+                        final retryResponse = await _refreshDio.fetch(error.requestOptions);
+                        _retriedRequests.remove(requestKey);
+                        handler.resolve(retryResponse);
                         return;
                       }
                     }

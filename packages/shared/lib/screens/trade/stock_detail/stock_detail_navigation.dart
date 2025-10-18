@@ -9,11 +9,13 @@ import 'package:qbit_shared/screens/trade/stock_detail/stock_market_tab.dart';
 class StockDetailNavigation extends StatefulWidget {
   final String symbol;
   final String name;
+  final String assetClass;
 
   const StockDetailNavigation({
     super.key,
     required this.symbol,
     required this.name,
+    required this.assetClass,
   });
 
   @override
@@ -91,16 +93,19 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> {
         return StockChartTab(
           symbol: widget.symbol,
           name: widget.name,
+          assetClass: widget.assetClass,
         );
       case 1: // 호가
         return StockOrderbookTab(
           symbol: widget.symbol,
           name: widget.name,
+          assetClass: widget.assetClass,
         );
       case 2: // 주문
         return StockOrderTab(
           symbol: widget.symbol,
           name: widget.name,
+          assetClass: widget.assetClass,
         );
       case 3: // 시세
         return StockMarketTab(
@@ -111,6 +116,7 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> {
         return StockChartTab(
           symbol: widget.symbol,
           name: widget.name,
+          assetClass: widget.assetClass,
         );
     }
   }

@@ -82,7 +82,8 @@ class AppRouter {
         builder: (context, state) {
           final symbol = Uri.decodeComponent(state.pathParameters['symbol'] ?? '');
           final name = Uri.decodeComponent(state.uri.queryParameters['name'] ?? '');
-          return StockDetailNavigation(symbol: symbol, name: name);
+          final assetClass = Uri.decodeComponent(state.uri.queryParameters['assetClass'] ?? 'us_equity');
+          return StockDetailNavigation(symbol: symbol, name: name, assetClass: assetClass);
         },
       ),
     ],

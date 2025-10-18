@@ -78,14 +78,6 @@ class TokenService {
     try {
       final token = await _storage.read(key: _kakaoAccessTokenKey);
       logger.i('카카오 액세스 토큰 조회: ${token != null ? '존재' : '없음'}');
-      
-      // 카카오 액세스 토큰 출력 (항상 출력)
-      if (token != null) {
-        logger.i('🔍 카카오 액세스 토큰: $token');
-      } else {
-        logger.w('⚠️ 카카오 액세스 토큰이 없습니다');
-      }
-      
       return token;
     } catch (error) {
       logger.e('카카오 액세스 토큰 조회 실패: $error');
@@ -112,16 +104,6 @@ class TokenService {
     } catch (error) {
       logger.e('카카오 사용자 ID 조회 실패: $error');
       return null;
-    }
-  }
-
-  /// 모든 토큰 삭제 (로그아웃 시)
-  static Future<void> clearAllTokens() async {
-    try {
-      await _storage.deleteAll();
-      logger.i('모든 토큰 삭제 완료');
-    } catch (error) {
-      logger.e('토큰 삭제 실패: $error');
     }
   }
 
@@ -159,6 +141,23 @@ class TokenService {
     } catch (error) {
       logger.e('카카오 전용 세션 확인 실패: $error');
       return false;
+    }
+  }
+  
+  /// 모든 토큰 완전 삭제 (로컬 스토리지 초기화)
+  static Future<void> clearAllTokens() async {
+    try {
+      logger.w('모든 토큰 삭제 시작...');
+      
+      await _storage.delete(key: _accessTokenKey);
+      await _storage.delete(key: _refreshTokenKey);
+      await _storage.delete(key: _kakaoAccessTokenKey);
+      await _storage.delete(key: _kakaoUserIdKey);
+      await _storage.deleteAll();
+      
+      logger.i('모든 토큰 삭제 완료');
+    } catch (error) {
+      logger.e('토큰 삭제 실패: $error');
     }
   }
 }

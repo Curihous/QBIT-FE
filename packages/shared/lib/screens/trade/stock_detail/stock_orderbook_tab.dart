@@ -9,11 +9,13 @@ import 'package:qbit_shared/widgets/trade/orderbook_widget.dart';
 class StockOrderbookTab extends StatefulWidget {
   final String symbol;
   final String name;
+  final String assetClass;
 
   const StockOrderbookTab({
     super.key,
     required this.symbol,
     required this.name,
+    required this.assetClass,
   });
 
   @override
@@ -21,9 +23,7 @@ class StockOrderbookTab extends StatefulWidget {
 }
 
 class _StockOrderbookTabState extends State<StockOrderbookTab> {
-  StockModel? _stockDetail;
   OrderBookModel? _orderBook;
-  bool _isLoadingStock = true;
   bool _isLoadingOrderBook = false;
   String? _error;
 
@@ -34,48 +34,14 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
   }
 
   Future<void> _loadData() async {
-    await _loadStockDetail();
-    
     // 암호화폐인 경우에만 호가창 로드
-    if (_stockDetail?.assetClass == 'crypto') {
+    if (widget.assetClass == 'crypto') {
       await _loadOrderBook();
     }
   }
 
-  Future<void> _loadStockDetail() async {
-    try {
-      setState(() {
-        _isLoadingStock = true;
-        _error = null;
-      });
-
-      final stockDetail = await StockApiService.getStockDetail(widget.symbol);
-      
-      if (mounted) {
-        if (stockDetail != null) {
-          setState(() {
-            _stockDetail = stockDetail;
-            _isLoadingStock = false;
-          });
-        } else {
-          setState(() {
-            _error = '종목 정보를 불러올 수 없습니다';
-            _isLoadingStock = false;
-          });
-        }
-      }
-    } catch (error) {
-      if (mounted) {
-        setState(() {
-          _error = '오류가 발생했습니다: $error';
-          _isLoadingStock = false;
-        });
-      }
-    }
-  }
-
   Future<void> _loadOrderBook() async {
-    if (_stockDetail?.assetClass != 'crypto') return;
+    if (widget.assetClass != 'crypto') return;
     
     setState(() {
       _isLoadingOrderBook = true;
@@ -102,7 +68,7 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoadingStock) {
+    if (_isLoadingOrderBook) {
       return const Center(
         child: CircularProgressIndicator(
           color: AppColors.primary,
@@ -137,7 +103,7 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
     }
 
     // 암호화폐가 아닌 경우
-    if (_stockDetail?.assetClass != 'crypto') {
+    if (widget.assetClass != 'crypto') {
       return Container(
         padding: const EdgeInsets.all(20),
         child: const Center(
