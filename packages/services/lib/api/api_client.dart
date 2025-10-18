@@ -136,10 +136,13 @@ class ApiClient {
                     logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
                     final newToken = await _getAccessToken();
                     if (newToken != null) {
+                      logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
                       error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                       final response = await _dio.fetch(error.requestOptions);
                       handler.resolve(response);
                       // return 제거 - finally 블록이 실행되도록 함
+                    } else {
+                      logger.e('새 토큰을 가져올 수 없음');
                     }
                   }
                 }
@@ -176,10 +179,13 @@ class ApiClient {
                       logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
                       final newToken = await _getAccessToken();
                       if (newToken != null) {
+                        logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                         final response = await _dio.fetch(error.requestOptions);
                         handler.resolve(response);
                         // return 제거 - finally 블록이 실행되도록 함
+                      } else {
+                        logger.e('새 토큰을 가져올 수 없음');
                       }
                     }
                   }
@@ -210,10 +216,13 @@ class ApiClient {
                       logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
                       final newToken = await _getAccessToken();
                       if (newToken != null) {
+                        logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                         final response = await _dio.fetch(error.requestOptions);
                         handler.resolve(response);
                         // return 제거 - finally 블록이 실행되도록 함
+                      } else {
+                        logger.e('새 토큰을 가져올 수 없음');
                       }
                     }
                   }
