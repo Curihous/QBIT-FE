@@ -37,12 +37,12 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
               onTap: onBackPressed ?? () => Navigator.of(context).pop(),
               child: SvgPicture.asset(
                 'assets/icons/navigation/top-nav-back.svg',
-                width: context.w(48),
-                height: context.h(48),
+                width: context.w(20),
+                height: context.h(20),
                 fit: BoxFit.contain,
               ),
             ),
-            SizedBox(width: context.w(0)),
+            SizedBox(width: context.w(15)),
             Text(
               title,
               style: AppFonts.t1Bold,

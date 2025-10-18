@@ -30,48 +30,9 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.gray900),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          children: [
-            Text(
-              widget.symbol,
-              style: AppFonts.t2Bold.copyWith(
-                color: AppColors.gray900,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Expanded(
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '체결가',
-                      style: AppFonts.b2Semibold.copyWith(
-                        color: AppColors.gray900,
-                        height: 1.71,
-                      ),
-                    ),
-                    Text(
-                      '등락률',
-                      style: AppFonts.b2Semibold.copyWith(
-                        color: AppColors.profit,
-                        height: 1.71,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 50), // 오른쪽 균형
-          ],
-        ),
+      appBar: HeaderBack(
+        title: widget.name,
+        onBackPressed: () => Navigator.pop(context),
       ),
       body: Stack(
         children: [
