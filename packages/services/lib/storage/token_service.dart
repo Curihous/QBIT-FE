@@ -78,6 +78,14 @@ class TokenService {
     try {
       final token = await _storage.read(key: _kakaoAccessTokenKey);
       logger.i('카카오 액세스 토큰 조회: ${token != null ? '존재' : '없음'}');
+      
+      // 카카오 액세스 토큰 출력 (항상 출력)
+      if (token != null) {
+        logger.i('🔍 카카오 액세스 토큰: $token');
+      } else {
+        logger.w('⚠️ 카카오 액세스 토큰이 없습니다');
+      }
+      
       return token;
     } catch (error) {
       logger.e('카카오 액세스 토큰 조회 실패: $error');

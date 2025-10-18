@@ -125,6 +125,9 @@ class AuthService {
       await TokenService.saveKakaoAccessToken(kakaoAccessToken);
       await TokenService.saveKakaoUserId(userId);
 
+      // 카카오 액세스 토큰 출력
+      logger.i('🔍 카카오 액세스 토큰: $kakaoAccessToken');
+
       logger.i('카카오 로그인 성공');
       return {
         'success': true,
@@ -149,6 +152,15 @@ class AuthService {
         final userInfo = await AuthApiService.getCurrentUser();
         if (userInfo != null) {
           logger.i('백엔드에서 사용자 정보 조회 성공');
+          
+          // 백엔드 성공 시에도 카카오 토큰 확인
+          final kakaoToken = await TokenService.getKakaoAccessToken();
+          if (kakaoToken != null) {
+            logger.i('🔍 카카오 액세스 토큰: $kakaoToken');
+          } else {
+            logger.w('⚠️ 카카오 액세스 토큰이 없습니다');
+          }
+          
           return userInfo;
         }
       }
@@ -156,6 +168,15 @@ class AuthService {
       // 백엔드 실패 시 소셜 로그인(카카오/구글)에서 조회
       if (await KakaoAuthService.hasToken()) {
         logger.i('카카오 SDK에서 사용자 정보 조회');
+        
+        // 카카오 액세스 토큰 출력
+        final kakaoToken = await TokenService.getKakaoAccessToken();
+        if (kakaoToken != null) {
+          logger.i('🔍 카카오 액세스 토큰: $kakaoToken');
+        } else {
+          logger.w('⚠️ 카카오 액세스 토큰이 없습니다');
+        }
+        
         return await KakaoAuthService.getSimpleUserInfo();
       } else if (await GoogleAuthService.isSignedIn()) {
         logger.i('구글 SDK에서 사용자 정보 조회');
@@ -213,6 +234,16 @@ class AuthService {
         GoogleAuthService.isSignedIn(),
         TokenService.hasBackendToken(),
       ]);
+      
+      // 카카오 토큰이 있으면 출력
+      if (results[0]) {
+        final kakaoToken = await TokenService.getKakaoAccessToken();
+        if (kakaoToken != null) {
+          logger.i('🔍 카카오 액세스 토큰: $kakaoToken');
+        } else {
+          logger.w('⚠️ 카카오 액세스 토큰이 없습니다');
+        }
+      }
       
       return results.any((hasToken) => hasToken);
     } catch (e) {

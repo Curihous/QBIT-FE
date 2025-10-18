@@ -14,6 +14,7 @@ final logger = Logger();
 
 class ApiClient {
   static late Dio _dio;
+  static late Dio _refreshDio;
   static final StreamController<void> _tokenExpiredController = StreamController<void>.broadcast();
   static final Set<String> _retriedRequests = {}; // 재시도한 요청 추적용
   
@@ -42,11 +43,23 @@ class ApiClient {
       },
     ));
 
-    // 인터셉터 추가 (에러만 표시)
+    // 토큰 재발급용 Dio 인스턴스 (인터셉터 없음)
+    _refreshDio = Dio(BaseOptions(
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      sendTimeout: const Duration(seconds: 10),
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Accept': 'application/json; charset=utf-8',
+      },
+    ));
+
+    // 인터셉터 추가 (모든 로그 비활성화)
     _dio.interceptors.add(LogInterceptor(
       requestBody: false,
       responseBody: false,
-      error: true,
+      error: false,
       requestHeader: false,
       responseHeader: false,
       logPrint: (obj) => logger.d(obj),
@@ -130,14 +143,25 @@ class ApiClient {
                   if (response.accessToken != null) {
                     await TokenService.saveAccessToken(response.accessToken!);
                     
+                    // 카카오 액세스 토큰 출력
+                    logger.i('🔍 카카오 액세스 토큰: $kakaoAccessToken');
+                    
                     logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
                     final newToken = await _getAccessToken();
                     if (newToken != null) {
                       error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-                      final response = await _dio.fetch(error.requestOptions);
-                      _retriedRequests.remove(requestKey); // 성공 시 추적에서 제거
-                      handler.resolve(response);
-                      return;
+                      
+                      logger.i('🔍 실제 전송 헤더: ${error.requestOptions.headers}');
+                      logger.i('🔍 Authorization 헤더: ${error.requestOptions.headers['Authorization']}');
+                      try {
+                        final retryResponse = await _refreshDio.fetch(error.requestOptions);
+                        logger.i('✅ 토큰 재발급 후 요청 재시도 성공!');
+                        handler.resolve(retryResponse);
+                        return;
+                      } catch (retryError) {
+                        logger.e('❌ 토큰 재발급 후 요청 재시도 실패: $retryError');
+                        logger.e('❌ 백엔드에서 유효한 토큰을 거부하고 있습니다!');
+                      }
                     }
                   }
                 }
@@ -178,9 +202,17 @@ class ApiClient {
                       final newToken = await _getAccessToken();
                       if (newToken != null) {
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-                        final response = await _dio.fetch(error.requestOptions);
-                        _retriedRequests.remove(requestKey); // 성공 시 추적에서 제거
-                        handler.resolve(response);
+                        logger.i('🔍 실제 전송 헤더: ${error.requestOptions.headers}');
+                        logger.i('🔍 Authorization 헤더: ${error.requestOptions.headers['Authorization']}');
+                        try {
+                          final retryResponse = await _refreshDio.fetch(error.requestOptions);
+                          logger.i('✅ 토큰 재발급 후 요청 재시도 성공!');
+                          handler.resolve(retryResponse);
+                          return;
+                        } catch (retryError) {
+                          logger.e('❌ 토큰 재발급 후 요청 재시도 실패: $retryError');
+                          logger.e('❌ 백엔드에서 유효한 토큰을 거부하고 있습니다!');
+                        }
                         return;
                       }
                     }
@@ -214,9 +246,17 @@ class ApiClient {
                       final newToken = await _getAccessToken();
                       if (newToken != null) {
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-                        final response = await _dio.fetch(error.requestOptions);
-                        _retriedRequests.remove(requestKey); // 성공 시 추적에서 제거
-                        handler.resolve(response);
+                        logger.i('🔍 실제 전송 헤더: ${error.requestOptions.headers}');
+                        logger.i('🔍 Authorization 헤더: ${error.requestOptions.headers['Authorization']}');
+                        try {
+                          final retryResponse = await _refreshDio.fetch(error.requestOptions);
+                          logger.i('✅ 토큰 재발급 후 요청 재시도 성공!');
+                          handler.resolve(retryResponse);
+                          return;
+                        } catch (retryError) {
+                          logger.e('❌ 토큰 재발급 후 요청 재시도 실패: $retryError');
+                          logger.e('❌ 백엔드에서 유효한 토큰을 거부하고 있습니다!');
+                        }
                         return;
                       }
                     }
