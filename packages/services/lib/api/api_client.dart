@@ -189,12 +189,12 @@ class ApiClient {
                       }
                     }
                   }
+                } else {
+                  logger.w('카카오 토큰으로 백엔드 토큰 재발급 실패');
+                  _tokenExpiredController.add(null);
+                  handler.next(error);
+                  return;
                 }
-                
-                logger.w('카카오 토큰으로 백엔드 토큰 재발급 실패');
-                _tokenExpiredController.add(null);
-                handler.next(error);
-                return;
               }
               
               // 구글 로그인인 경우
@@ -226,12 +226,12 @@ class ApiClient {
                       }
                     }
                   }
+                } else {
+                  logger.w('구글 토큰으로 백엔드 토큰 재발급 실패');
+                  _tokenExpiredController.add(null);
+                  handler.next(error);
+                  return;
                 }
-                
-                logger.w('구글 토큰으로 백엔드 토큰 재발급 실패');
-                _tokenExpiredController.add(null);
-                handler.next(error);
-                return;
               }
               
               logger.w('프로덕션 모드: 소셜 로그인 토큰 없음 - 재로그인 필요');
