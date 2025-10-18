@@ -14,7 +14,11 @@ final logger = Logger();
 
 class ApiClient {
   static late Dio _dio;
+  static late Dio _refreshDio; // 토큰 재발급 전용 Dio 인스턴스
   static final StreamController<void> _tokenExpiredController = StreamController<void>.broadcast();
+  static bool _isRefreshingToken = false; // 토큰 재발급 중인지 확인하는 플래그
+  static int _refreshAttemptCount = 0; // 토큰 재발급 시도 횟수
+  static const int _maxRefreshAttempts = 3; // 최대 재발급 시도 횟수
   
   static String get baseUrl {
     try {
@@ -41,15 +45,23 @@ class ApiClient {
       },
     ));
 
-    // 인터셉터 추가 (에러만 표시)
-    _dio.interceptors.add(LogInterceptor(
-      requestBody: false,
-      responseBody: false,
-      error: true,
-      requestHeader: false,
-      responseHeader: false,
-      logPrint: (obj) => logger.d(obj),
+    // 토큰 재발급 전용 Dio 인스턴스 (토큰 인터셉터 없음)
+    _refreshDio = Dio(BaseOptions(
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      sendTimeout: const Duration(seconds: 10),
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Accept': 'application/json; charset=utf-8',
+      },
     ));
+
+    // 로그 인터셉터 완전 제거
+    // _dio.interceptors.add(LogInterceptor(...));
+
+    // 토큰 재발급 전용 Dio에도 로그 인터셉터 완전 제거
+    // _refreshDio.interceptors.add(LogInterceptor(...));
 
     // UTF-8 인코딩 인터셉터 추가
     _dio.interceptors.add(InterceptorsWrapper(
@@ -73,75 +85,196 @@ class ApiClient {
       },
     ));
 
+    // 토큰 재발급 전용 Dio에는 UTF-8 인코딩 인터셉터만 추가 (토큰 인터셉터 없음)
+    _refreshDio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) {
+        // 요청 데이터 UTF-8 인코딩
+        if (options.data is String) {
+          options.data = utf8.encode(options.data);
+        }
+        handler.next(options);
+      },
+      onResponse: (response, handler) {
+        // 응답 데이터 UTF-8 디코딩
+        if (response.data is String) {
+          try {
+            response.data = utf8.decode(response.data.codeUnits);
+          } catch (e) {
+            logger.w('UTF-8 디코딩 실패: $e');
+          }
+        }
+        handler.next(response);
+      },
+    ));
+
     // 토큰 인터셉터 추가
     _dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
-        // 토큰이 있으면 헤더에 추가
-        final token = await _getAccessToken();
-        if (token != null) {
-          options.headers['Authorization'] = 'Bearer $token';
-          logger.i('토큰 추가됨: ${options.uri}');
+        // 토큰 재발급을 위한 엔드포인트는 토큰 제외
+        final isTokenRefreshEndpoint = options.path.contains('/auth/kakao/login') || 
+                                     options.path.contains('/auth/refresh') ||
+                                     options.uri.toString().contains('/auth/kakao/login') ||
+                                     options.uri.toString().contains('/auth/refresh');
+        
+        if (!isTokenRefreshEndpoint) {
+          // 토큰이 있으면 헤더에 추가
+          final token = await _getAccessToken();
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+            logger.i('토큰 추가됨: ${options.uri}');
+          } else {
+            logger.w('토큰 없음: ${options.uri}');
+          }
         } else {
-          logger.w('토큰 없음: ${options.uri}');
+          logger.i('토큰 재발급 엔드포인트 - 토큰 제외: ${options.uri}');
         }
         handler.next(options);
       },
       onError: (error, handler) async {
         // 401 에러 시 카카오 토큰 기반 백엔드 토큰 재발급 시도
         if (error.response?.statusCode == 401) {
-          logger.w('401 에러 발생 - 카카오 토큰 기반 백엔드 토큰 재발급 시도');
+          // 이미 토큰 재발급 중이거나 토큰 재발급 엔드포인트라면 무한 루프 방지
+          final isTokenRefreshEndpoint = error.requestOptions.path.contains('/auth/kakao/login') || 
+                                        error.requestOptions.path.contains('/auth/refresh');
+          
+          if (_isRefreshingToken || isTokenRefreshEndpoint || _refreshAttemptCount >= _maxRefreshAttempts) {
+            logger.w('토큰 재발급 중이거나 재발급 엔드포인트 또는 최대 시도 횟수 초과 - 무한 루프 방지');
+            handler.next(error);
+            return;
+          }
+          
+          logger.w('401 에러 발생 - 토큰 재발급 시도 (${_refreshAttemptCount + 1}/$_maxRefreshAttempts)');
+          _isRefreshingToken = true; // 토큰 재발급 시작
+          _refreshAttemptCount++; // 시도 횟수 증가
           
           try {
-            // 1. 카카오 토큰 상태 확인
-            final hasKakaoToken = await KakaoAuthService.hasToken();
-            if (hasKakaoToken) {
-              final tokenInfo = await KakaoAuthService.getTokenInfo();
-              if (tokenInfo != null && !tokenInfo['isExpired']) {
-                logger.i('카카오 토큰 유효 - 백엔드 토큰 재발급 시도');
+            // 환경변수로 개발/프로덕션 플로우 구분
+            final useDevLogin = EnvConfig.useDevLogin;
+            
+            if (useDevLogin) {
+              // ========== 개발 모드: TokenService에 저장된 .env 토큰 사용 ==========
+              logger.i('개발 모드: TokenService 토큰 사용');
+              
+              final kakaoAccessToken = await TokenService.getKakaoAccessToken();
+              final kakaoUserId = await TokenService.getKakaoUserId();
+              
+              if (kakaoAccessToken != null && kakaoUserId != null) {
+                logger.i('TokenService에서 카카오 토큰 발견 - 백엔드 토큰 재발급 시도');
                 
-                // 2. 카카오 사용자 정보 조회
-                final kakaoUser = await KakaoAuthService.getCurrentUser();
-                if (kakaoUser != null) {
-                  final kakaoAccessToken = await TokenService.getKakaoAccessToken();
-                  if (kakaoAccessToken != null) {
-                    // 3. 카카오 사용자 정보로 백엔드 토큰 재발급
-                    final backendResult = await AuthApiService.kakaoLogin(
-                      kakaoAccessToken: kakaoAccessToken,
-                      userId: kakaoUser['id'].toString(),
-                      nickname: kakaoUser['nickname'] ?? '',
-                      email: kakaoUser['email'] ?? '',
-                    );
+                final backendResult = await AuthApiService.kakaoLogin(
+                  kakaoAccessToken: kakaoAccessToken,
+                  userId: kakaoUserId,
+                  nickname: '',
+                  email: '',
+                );
+                
+                if (backendResult != null) {
+                  final response = KakaoLoginResponse.fromJson(backendResult);
+                  if (response.accessToken != null) {
+                    await TokenService.saveAccessToken(response.accessToken!);
                     
-                    if (backendResult != null) {
-                      final response = KakaoLoginResponse.fromJson(backendResult);
-                      if (response.accessToken != null) {
-                        // 4. 새 백엔드 토큰 저장 후 요청 재시도
-                        await TokenService.saveAccessToken(response.accessToken!);
-                        
-                        logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
-                        final newToken = await _getAccessToken();
-                        if (newToken != null) {
-                          error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-                          final response = await _dio.fetch(error.requestOptions);
-                          handler.resolve(response);
-                          return;
-                        }
-                      }
+                    logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
+                    final newToken = await _getAccessToken();
+                    if (newToken != null) {
+                      error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                      final response = await _dio.fetch(error.requestOptions);
+                      _isRefreshingToken = false; // 성공 시 플래그 리셋
+                      _refreshAttemptCount = 0; // 성공 시 시도 횟수 리셋
+                      handler.resolve(response);
+                      return;
                     }
                   }
                 }
-              } else {
-                logger.w('카카오 토큰 만료 - 재로그인 필요');
               }
+              
+              // 개발 모드에서 토큰이 없으면 재로그인 필요
+              logger.w('개발 모드: 토큰 없음 - 재로그인 필요');
+              _tokenExpiredController.add(null);
+              handler.next(error);
+              return;
+              
             } else {
-              logger.w('카카오 토큰 없음 - 재로그인 필요');
+              // ========== 프로덕션 모드: Kakao SDK 사용 ==========
+              logger.i('프로덕션 모드: Kakao SDK 사용');
+              
+              final hasKakaoToken = await KakaoAuthService.hasToken();
+              if (!hasKakaoToken) {
+                logger.w('Kakao SDK 토큰 없음 - 재로그인 필요');
+                _tokenExpiredController.add(null);
+                handler.next(error);
+                return;
+              }
+              
+              final tokenInfo = await KakaoAuthService.getTokenInfo();
+              if (tokenInfo == null) {
+                logger.w('Kakao SDK 토큰 정보 조회 실패 - 재로그인 필요');
+                _tokenExpiredController.add(null);
+                handler.next(error);
+                return;
+              }
+              
+              if (tokenInfo['isExpired']) {
+                logger.w('Kakao SDK 토큰 만료 - 재로그인 필요');
+                _tokenExpiredController.add(null);
+                handler.next(error);
+                return;
+              }
+              
+              // Kakao SDK 자동 토큰 갱신 활용
+              logger.i('Kakao SDK 자동 토큰 갱신 시도');
+              
+              try {
+                // SDK의 자동 토큰 갱신 기능 활용
+                final refreshResult = await KakaoAuthService.refreshAccessToken();
+                if (refreshResult?['success'] == true) {
+                  final kakaoAccessToken = refreshResult!['accessToken'];
+                  final userId = refreshResult['userId'];
+                  
+                  logger.i('Kakao SDK 토큰 갱신 성공 - 백엔드 토큰 재발급 시도');
+                  
+                  // 갱신된 카카오 토큰으로 백엔드 토큰 재발급
+                  final backendResult = await AuthApiService.kakaoLogin(
+                    kakaoAccessToken: kakaoAccessToken,
+                    userId: userId,
+                    nickname: '', // 필요시 저장된 값 사용
+                    email: '',
+                  );
+                  
+                  if (backendResult != null) {
+                    final response = KakaoLoginResponse.fromJson(backendResult);
+                    if (response.accessToken != null) {
+                      await TokenService.saveAccessToken(response.accessToken!);
+                      await TokenService.saveKakaoAccessToken(kakaoAccessToken);
+                      await TokenService.saveKakaoUserId(userId);
+                      
+                      logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
+                      final newToken = await _getAccessToken();
+                      if (newToken != null) {
+                        error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                        final response = await _dio.fetch(error.requestOptions);
+                        _isRefreshingToken = false; // 성공 시 플래그 리셋
+                        _refreshAttemptCount = 0; // 성공 시 시도 횟수 리셋
+                        handler.resolve(response);
+                        return;
+                      }
+                    }
+                  }
+                } else {
+                  logger.w('Kakao SDK 토큰 갱신 실패: ${refreshResult?['error']}');
+                }
+              } catch (refreshError) {
+                logger.e('Kakao SDK 토큰 갱신 중 오류: $refreshError');
+              }
+              
+              logger.w('프로덕션 모드: 백엔드 토큰 재발급 실패');
             }
             
-            // 5. 실패 시 로그인 화면으로 이동
+            // 실패 시 로그인 화면으로 이동
             _tokenExpiredController.add(null);
           } catch (e) {
             logger.e('토큰 갱신 중 오류: $e');
-            _tokenExpiredController.add(null);
+          } finally {
+            _isRefreshingToken = false; // 토큰 재발급 완료/실패 시 플래그 리셋
           }
         }
         handler.next(error);
@@ -150,6 +283,7 @@ class ApiClient {
   }
 
   static Dio get instance => _dio;
+  static Dio get refreshInstance => _refreshDio;
   static Stream<void> get onTokenExpired => _tokenExpiredController.stream;
 
   // 디버깅용 토큰 상태 확인
