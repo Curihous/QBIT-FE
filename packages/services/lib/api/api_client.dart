@@ -176,9 +176,10 @@ class ApiClient {
                   if (response.accessToken != null) {
                     await TokenService.saveAccessToken(response.accessToken!);
                     
-                    logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
+                    logger.i('개발 모드 백엔드 토큰 재발급 성공 - 요청 재시도');
                     final newToken = await _getAccessToken();
                     if (newToken != null) {
+                      logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
                       error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                       final retryResponse = await _refreshDio.fetch(error.requestOptions);
                       _retriedRequests.remove(requestKey);
@@ -187,6 +188,9 @@ class ApiClient {
                     }
                   }
                 }
+                logger.w('개발 모드: 카카오 토큰으로 백엔드 토큰 재발급 실패');
+              } else {
+                logger.w('개발 모드: TokenService에 카카오 토큰 없음 - 재로그인 필요');
               }
               
               // 개발 모드에서 토큰이 없으면 재로그인 필요
@@ -220,9 +224,10 @@ class ApiClient {
                     if (response.accessToken != null) {
                       await TokenService.saveAccessToken(response.accessToken!);
                       
-                      logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
+                      logger.i('카카오 백엔드 토큰 재발급 성공 - 요청 재시도');
                       final newToken = await _getAccessToken();
                       if (newToken != null) {
+                        logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                         final retryResponse = await _refreshDio.fetch(error.requestOptions);
                         _retriedRequests.remove(requestKey);
@@ -256,9 +261,10 @@ class ApiClient {
                     if (response.accessToken != null) {
                       await TokenService.saveAccessToken(response.accessToken!);
                       
-                      logger.i('백엔드 토큰 재발급 성공 - 요청 재시도');
+                      logger.i('구글 백엔드 토큰 재발급 성공 - 요청 재시도');
                       final newToken = await _getAccessToken();
                       if (newToken != null) {
+                        logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                         final retryResponse = await _refreshDio.fetch(error.requestOptions);
                         _retriedRequests.remove(requestKey);
@@ -268,7 +274,6 @@ class ApiClient {
                     }
                   }
                 }
-                
                 logger.w('구글 토큰으로 백엔드 토큰 재발급 실패');
                 _retriedRequests.remove(requestKey); // 실패 시에도 제거
                 _tokenExpiredController.add(null);
@@ -279,6 +284,10 @@ class ApiClient {
               logger.w('프로덕션 모드: 소셜 로그인 토큰 없음 - 재로그인 필요');
               _retriedRequests.remove(requestKey); // 실패 시에도 제거
             }
+            
+            // 모든 토큰 재발급 시도가 실패한 경우 공통 처리
+            _tokenExpiredController.add(null);
+            handler.next(error);
           } catch (e) {
             logger.e('토큰 갱신 중 오류: $e');
             if (error.response?.statusCode == 401) {

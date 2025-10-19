@@ -286,7 +286,7 @@ class AuthService {
       
       // 2. 소셜 로그인(카카오/구글) 토큰 갱신
       if (kakaoLoggedIn) {
-        final result = await KakaoAuthService.refreshAccessToken();
+        final result = await KakaoAuthService.checkOrValidateAccessToken();
         if (result?['success'] != true) {
           logger.e('카카오 토큰 갱신 실패. 재로그인 필요.');
           return false;

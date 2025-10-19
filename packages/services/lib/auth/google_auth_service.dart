@@ -26,7 +26,7 @@ class GoogleAuthService {
         'email',
         'profile',
       ],
-      serverClientId: webClientId.isNotEmpty ? webClientId : null, // 웹 클라이언트 ID
+      serverClientId: webClientId?.isNotEmpty == true ? webClientId : null, // 웹 클라이언트 ID
     );
     
     return _googleSignInInstance!;
