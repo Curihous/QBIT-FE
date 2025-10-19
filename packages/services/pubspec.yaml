@@ -14,6 +14,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   kakao_flutter_sdk_user: ^1.9.5
   google_sign_in: ^6.2.2
+  web_socket_channel: ^3.0.1
   qbit_core:
     path: ../core
 

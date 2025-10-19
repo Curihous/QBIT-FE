@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/widgets/common/header_basic.dart';
-import 'package:qbit_shared/widgets/common/padded_scaffold.dart';
 
 class StudyScreen extends StatelessWidget {
   const StudyScreen({super.key});
@@ -9,7 +8,8 @@ class StudyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PaddedScaffold(
+    return Scaffold(
+      backgroundColor: Colors.white,
       appBar: const HeaderBasic(
         title: '이론학습',
         onAlarmPressed: null,

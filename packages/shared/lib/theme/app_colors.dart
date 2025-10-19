@@ -38,7 +38,11 @@ class AppColors {
   
   // Trade Colors
   static const Color profit = Color(0xFFE74C3C); // 빨간색 (상승) 
-  static const Color loss = Color(0xFF178EDE); // 파란색 (하락) 
+  static const Color loss = Color(0xFF178EDE); // 파란색 (하락)
+  
+  // Order Book Bar Colors
+  static const Color orderBookBidBg = Color(0x33178EDE); 
+  static const Color orderBookAskBg = Color(0x33E74C3C); 
   
   
   // Neutral Colors
@@ -60,6 +64,7 @@ class AppSpacing {
   static const double xl = 32.0;
   static const double xxl = 48.0;
 }
+
 
 /// 앱 둥근 모서리 정의
 class AppBorderRadius {

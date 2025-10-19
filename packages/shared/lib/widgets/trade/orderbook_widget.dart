@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_services/models/orderbook_model.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/app_fonts.dart';
+import 'package:qbit_shared/theme/app_colors.dart';
+import 'package:qbit_shared/theme/app_fonts.dart';
 
 class OrderBookWidget extends StatefulWidget {
   final String symbol;
@@ -29,7 +29,7 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
   Widget build(BuildContext context) {
     return Container(
       height: 400,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -124,7 +124,8 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                       },
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        height: 32,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
                           color: isSelected 
                               ? AppColors.profit.withOpacity(0.1)
@@ -190,7 +191,8 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                       },
                       child: Container(
                         margin: const EdgeInsets.only(bottom: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        height: 32,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
                           color: isSelected 
                               ? AppColors.loss.withOpacity(0.1)

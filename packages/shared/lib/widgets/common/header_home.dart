@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
-import 'package:qbit_shared/utils/responsive_util.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 
 class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onAlarmPressed;
@@ -27,7 +27,7 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Container(
         width: context.screenWidth,
         height: context.h(28),
-        padding: EdgeInsets.symmetric(horizontal: context.w(24)),
+        padding: EdgeInsets.symmetric(horizontal: context.w(20)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,

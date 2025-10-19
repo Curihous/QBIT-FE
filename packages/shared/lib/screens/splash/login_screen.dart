@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -25,11 +26,12 @@ class _LoginScreenState extends State<LoginScreen> {
           children: [
             // 메인 콘텐츠
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40.0),
+              padding: EdgeInsets.symmetric(horizontal: context.w(40)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 250),
+                  // 상단 여백 (Spacer로 비율 조정)
+                  const Spacer(flex: 3),
               
               // Qbit 로고
               Text(
@@ -42,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               
-              const SizedBox(height: 24),
+              SizedBox(height: context.h(24)),
               
               // 설명 텍스트
               const Text(
@@ -53,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   height: 1.4,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: context.h(8)),
               const Text(
                 '큐빗과 함께 나만의 거래 감각을 만들어가요',
                 style: TextStyle(
@@ -63,7 +65,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               
-              const SizedBox(height: 170), // 버튼 위치 조절 (값 커질수록 위로)
+              // 중간 여백 (Spacer로 비율 조정)
+              const Spacer(flex: 2),
               
               // 로그인 버튼들
               Column(
@@ -71,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // 카카오 로그인 버튼
                   SizedBox(
                     width: double.infinity,
-                    height: 56,
+                    height: context.h(56),
                     child: InkWell(
                       onTap: _isLoading ? null : _handleKakaoLogin,
                       borderRadius: BorderRadius.circular(12),
@@ -80,22 +83,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           Image.asset(
                             'assets/images/kakao_login_large_wide.png',
                             width: double.infinity,
-                            height: 56,
+                            height: context.h(56),
                             fit: BoxFit.contain,
                           ),
                           if (_isLoading)
                             Container(
                               width: double.infinity,
-                              height: 56,
+                              height: context.h(56),
                               decoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
+                                  width: context.w(20),
+                                  height: context.h(20),
+                                  child: const CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
@@ -107,12 +110,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   
-                  const SizedBox(height: 16),
+                  SizedBox(height: context.h(16)),
                   
                   // 구글 로그인 버튼
                   SizedBox(
                     width: double.infinity,
-                    height: 56,
+                    height: context.h(56),
                     child: InkWell(
                       onTap: _isLoading ? null : _handleGoogleLogin,
                       borderRadius: BorderRadius.circular(12),
@@ -121,22 +124,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           SvgPicture.asset(
                             'assets/images/google_login.svg',
                             width: double.infinity,
-                            height: 56,
+                            height: context.h(56),
                             fit: BoxFit.contain,
                           ),
                           if (_isLoading)
                             Container(
                               width: double.infinity,
-                              height: 56,
+                              height: context.h(56),
                               decoration: BoxDecoration(
                                 color: Colors.black.withOpacity(0.3),
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Center(
+                              child: Center(
                                 child: SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
+                                  width: context.w(20),
+                                  height: context.h(20),
+                                  child: const CircularProgressIndicator(
                                     strokeWidth: 2,
                                     valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                                   ),
@@ -150,7 +153,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
               
-              const SizedBox(height: 60),
+              // 하단 여백 (Spacer로 비율 조정)
+              const Spacer(flex: 1),
                 ],
               ),
             ),

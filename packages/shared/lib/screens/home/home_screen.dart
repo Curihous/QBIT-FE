@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../widgets/common/bottom_navigation_bar.dart';
-import '../../widgets/common/header_home.dart';
-import '../../screens/study/study_screen.dart';
-import '../../screens/record/record_screen.dart';
-import '../../screens/trade/trade_screen.dart';
-import '../../screens/my/my_screen.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/app_fonts.dart';
+import 'package:qbit_shared/widgets/common/bottom_navigation_bar.dart';
+import 'package:qbit_shared/widgets/common/header_home.dart';
+import 'package:qbit_shared/screens/study/study_screen.dart';
+import 'package:qbit_shared/screens/record/record_screen.dart';
+import 'package:qbit_shared/screens/trade/trade_screen.dart';
+import 'package:qbit_shared/screens/my/my_screen.dart';
+import 'package:qbit_shared/theme/app_colors.dart';
+import 'package:qbit_shared/theme/app_fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

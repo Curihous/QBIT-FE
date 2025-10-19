@@ -346,7 +346,7 @@ class StockApiService {
     return searchStocks(query, assetClass: 'crypto');
   }
 
-  /// 암호화폐 호가창 조회
+  /// 암호화폐 호가창 조회 (스냅샷)
   static Future<OrderBookModel?> getCryptoOrderBook(String symbol) async {
     try {
       // 심볼에서 / 제거 (ETH/BTC -> ETHBTC)
@@ -356,7 +356,19 @@ class StockApiService {
       
       if (response.statusCode == 200) {
         if (response.data is Map<String, dynamic>) {
-          return OrderBookModel.fromJson(response.data);
+          final data = response.data;
+          final transformedData = {
+            'symbol': data['symbol'],
+            'bids': (data['bids'] as List).map((bid) => {
+              'price': bid['price'].toString(),
+              'quantity': bid['quantity'].toString(),
+            }).toList(),
+            'asks': (data['asks'] as List).map((ask) => {
+              'price': ask['price'].toString(),
+              'quantity': ask['quantity'].toString(),
+            }).toList(),
+          };
+          return OrderBookModel.fromJson(transformedData);
         } else {
           logger.e('응답 데이터가 Map이 아닙니다: ${response.data.runtimeType}');
           return null;

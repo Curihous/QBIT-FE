@@ -6,7 +6,7 @@ import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/models/stock_model.dart';
 import 'package:qbit_shared/widgets/stock_search_screen/stock_search_item.dart';
 import 'package:qbit_shared/widgets/common/header_back.dart';
-import 'package:qbit_shared/widgets/common/filter_button.dart';
+import 'package:qbit_shared/widgets/common/button/filter_button.dart';
 
 // 종목 검색 화면
 class StockSearchScreen extends StatefulWidget {
@@ -95,7 +95,7 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
         children: [
         // 검색 입력 필드
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(16),
           child: Container(
             width: double.infinity, // 좌우 여백 끝까지 채움
             height: 48,

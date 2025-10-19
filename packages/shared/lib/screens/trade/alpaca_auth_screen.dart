@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import '../../widgets/common/common_widgets.dart';
-import '../../widgets/common/header_back.dart';
-import '../../widgets/common/button_big_black.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/app_fonts.dart';
+import 'package:qbit_shared/widgets/common/common_widgets.dart';
+import 'package:qbit_shared/widgets/common/header_back.dart';
+import 'package:qbit_shared/widgets/common/button/big_black_button.dart';
+import 'package:qbit_shared/theme/app_colors.dart';
+import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_services/auth/alpaca_auth_service.dart';
 
 class AlpacaAuthScreen extends StatelessWidget {
@@ -73,7 +73,7 @@ class AlpacaAuthScreen extends StatelessWidget {
               left: 16,
               right: 16,
               top: 580,
-              child: ButtonBigBlack(
+              child: BigBlackButton(
                 text: 'Alpaca 계좌 연결',
                 onPressed: () {
                   _handleAlpacaAuth(context);

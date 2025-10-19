@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
-import 'package:qbit_shared/utils/responsive_util.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int currentIndex;

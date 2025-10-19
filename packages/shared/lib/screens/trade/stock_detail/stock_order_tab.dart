@@ -8,7 +8,8 @@ import 'package:qbit_services/models/stock_model.dart';
 import 'package:qbit_services/models/order_model.dart';
 import 'package:qbit_services/models/orderbook_model.dart';
 import 'package:qbit_services/storage/token_service.dart';
-import 'package:qbit_shared/widgets/trade/orderbook_widget.dart';
+import 'package:qbit_services/websocket/crypto_orderbook_websocket.dart';
+import 'package:qbit_shared/widgets/trade/vertical_orderbook_widget.dart';
 
 class StockOrderTab extends StatefulWidget {
   final String symbol;
@@ -31,6 +32,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
   bool _isLoading = true;
   bool _isLoadingOrderBook = false;
   String? _error;
+  CryptoOrderBookWebSocket? _webSocket;
   
   // 주문 관련 상태
   int _quantity = 1;
@@ -60,6 +62,8 @@ class _StockOrderTabState extends State<StockOrderTab> {
   void dispose() {
     _quantityController.dispose();
     _priceController.dispose();
+    _webSocket?.disconnect();
+    _webSocket?.dispose();
     super.dispose();
   }
 
@@ -120,16 +124,33 @@ class _StockOrderTabState extends State<StockOrderTab> {
     });
 
     try {
+      // 1. 초기 스냅샷 로드
       final orderBook = await StockApiService.getCryptoOrderBook(widget.symbol)
           .timeout(
             const Duration(seconds: 10),
             onTimeout: () => null,
           );
+      
       if (mounted) {
         setState(() {
           _orderBook = orderBook;
           _isLoadingOrderBook = false;
           _isLoading = false;
+        });
+      }
+
+      // 2. WebSocket 연결 시작 
+      if (widget.assetClass == 'crypto' && mounted) {
+        _webSocket = CryptoOrderBookWebSocket();
+        await _webSocket!.connect(widget.symbol);
+        
+        // WebSocket 스트림 구독
+        _webSocket!.orderBookStream.listen((updatedOrderBook) {
+          if (mounted) {
+            setState(() {
+              _orderBook = updatedOrderBook;
+            });
+          }
         });
       }
     } catch (e) {
@@ -349,44 +370,46 @@ class _StockOrderTabState extends State<StockOrderTab> {
     }
 
     final screenWidth = MediaQuery.of(context).size.width;
-    final dividerPosition = screenWidth * (173 / 393);
+    final dividerPosition = screenWidth / 2; // 1:1 비율이므로 화면 중앙
     
     return Stack(
       children: [
-        SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 8, 8),
-            child: widget.assetClass == 'crypto' 
-              ? Row(
-                  children: [
-                    // 암호화폐: 좌측 호가창 + 우측 주문 폼
-                    Expanded(
-                      flex: 173,
-                      child: OrderBookWidget(
-                        symbol: widget.symbol,
-                        orderBook: _orderBook,
-                        isLoading: _isLoadingOrderBook,
-                        onRefresh: _loadOrderBook,
-                      ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 9.0),
+          child: widget.assetClass == 'crypto' 
+            ? Row(
+                children: [
+                  // 암호화폐: 좌측 호가창 + 우측 주문 폼
+                  Expanded(
+                    flex: 1,
+                    child: VerticalOrderBookWidget(
+                      symbol: widget.symbol,
+                      orderBook: _orderBook,
+                      isLoading: _isLoadingOrderBook,
+                      onRefresh: () async {
+                        // WebSocket 재연결
+                        await _webSocket?.disconnect();
+                        await _loadOrderBook();
+                      },
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      flex: 220,
-                      child: _buildOrderForm(),
-                    ),
-                  ],
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: _buildOrderForm(),
-                    ),
-                  ],
-                ),
-          ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    flex: 1,
+                    child: _buildOrderForm(),
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: _buildOrderForm(),
+                  ),
+                ],
+              ),
         ),
-        // 세로선 (암호화폐일 때만)
+        // divider
         if (widget.assetClass == 'crypto')
           Positioned(
             left: dividerPosition,

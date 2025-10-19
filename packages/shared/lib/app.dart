@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_core/config/app_config.dart';
-import 'package:qbit_shared/theme/app_theme.dart';
 import 'package:qbit_shared/router/app_router.dart';
 
 /// QBit 앱의 메인 위젯
@@ -11,7 +10,6 @@ class QbitApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: AppConfig.appName,
-      theme: AppTheme.lightTheme,
       routerConfig: AppRouter.router,
       debugShowCheckedModeBanner: false,
     );
