@@ -29,7 +29,7 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
   Widget build(BuildContext context) {
     return Container(
       height: 400,
-      padding: const EdgeInsets.all(8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -52,7 +52,7 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                 ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
           
           // 호가창 내용
           Expanded(
@@ -95,6 +95,19 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
 
   Widget _buildOrderBook() {
     final orderBook = widget.orderBook!;
+    
+    // 최대 수량 계산 (사각형 크기 비율 계산용)
+    double maxQuantity = 0.0;
+    for (final bid in orderBook.bids) {
+      if (bid.quantity > maxQuantity) {
+        maxQuantity = bid.quantity;
+      }
+    }
+    for (final ask in orderBook.asks) {
+      if (ask.quantity > maxQuantity) {
+        maxQuantity = ask.quantity;
+      }
+    }
     
     return Row(
       children: [
@@ -140,9 +153,9 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                           children: [
                             Text(
                               _formatPrice(bid.price),
-                              style: AppFonts.b2Regular.copyWith(
+                              style: AppFonts.b2Semibold.copyWith(
                                 color: AppColors.profit,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                               ),
                             ),
                             Text(
@@ -207,9 +220,9 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                           children: [
                             Text(
                               _formatPrice(ask.price),
-                              style: AppFonts.b2Regular.copyWith(
+                              style: AppFonts.b2Semibold.copyWith(
                                 color: AppColors.loss,
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                               ),
                             ),
                             Text(
@@ -245,7 +258,7 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
     }
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: AppColors.background,
         borderRadius: BorderRadius.circular(8),
@@ -256,7 +269,7 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
         children: [
           Text(
             '체결 강도',
-            style: AppFonts.b2Regular.copyWith(color: AppColors.gray600),
+            style: AppFonts.b2Semibold.copyWith(color: AppColors.gray600),
           ),
           Text(
             '${executionStrength.toStringAsFixed(2)}%',

@@ -179,4 +179,3 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
     );
   }
 }
-

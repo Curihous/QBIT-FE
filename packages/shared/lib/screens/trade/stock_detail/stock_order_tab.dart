@@ -124,12 +124,24 @@ class _StockOrderTabState extends State<StockOrderTab> {
     });
 
     try {
-      // 1. 초기 스냅샷 로드
-      final orderBook = await StockApiService.getCryptoOrderBook(widget.symbol)
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => null,
-          );
+      // 1. 초기 스냅샷 로드 - 자산군별 분기 필요
+      OrderBookModel? orderBook;
+      if (widget.assetClass == 'crypto') {
+        // 암호화폐 호가창 (현재 지원)
+        orderBook = await StockApiService.getCryptoOrderBook(widget.symbol)
+            .timeout(
+              const Duration(seconds: 10),
+              onTimeout: () => null,
+            );
+      } else {
+        // TODO: Polygon API 결제 후 미국 주식 호가창 지원 예정
+        // orderBook = await StockApiService.getStockOrderBook(widget.symbol)
+        //     .timeout(
+        //       const Duration(seconds: 10),
+        //       onTimeout: () => null,
+        //     );
+        orderBook = null; // 현재는 비크립토 호가창 미지원
+      }
       
       if (mounted) {
         setState(() {
@@ -372,55 +384,104 @@ class _StockOrderTabState extends State<StockOrderTab> {
     final screenWidth = MediaQuery.of(context).size.width;
     final dividerPosition = screenWidth / 2; // 1:1 비율이므로 화면 중앙
     
-    return Stack(
+    return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 9.0),
-          child: widget.assetClass == 'crypto' 
-            ? Row(
-                children: [
-                  // 암호화폐: 좌측 호가창 + 우측 주문 폼
-                  Expanded(
-                    flex: 1,
-                    child: VerticalOrderBookWidget(
-                      symbol: widget.symbol,
-                      orderBook: _orderBook,
-                      isLoading: _isLoadingOrderBook,
-                      onRefresh: () async {
-                        // WebSocket 재연결
-                        await _webSocket?.disconnect();
-                        await _loadOrderBook();
-                      },
+        // 체결강도 블록 (crypto만 표시)
+        if (widget.assetClass == 'crypto') _buildExecutionStrength(),
+        
+        Expanded(
+          child: Stack(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 9.0),
+                child: widget.assetClass == 'crypto' 
+                  ? Row(
+                      children: [
+                        // 암호화폐: 좌측 호가창 + 우측 주문 폼
+                        Expanded(
+                          flex: 1,
+                          child: VerticalOrderBookWidget(
+                            symbol: widget.symbol,
+                            orderBook: _orderBook,
+                            isLoading: _isLoadingOrderBook,
+                            onRefresh: () async {
+                              // WebSocket 재연결
+                              await _webSocket?.disconnect();
+                              await _loadOrderBook();
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          flex: 1,
+                          child: _buildOrderForm(),
+                        ),
+                      ],
+                    )
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: _buildOrderForm(),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    flex: 1,
-                    child: _buildOrderForm(),
-                  ),
-                ],
-              )
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: _buildOrderForm(),
-                  ),
-                ],
               ),
+              // divider
+              if (widget.assetClass == 'crypto')
+                Positioned(
+                  left: dividerPosition,
+                  top: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 1,
+                    color: AppColors.gray100,
+                  ),
+                ),
+            ],
+          ),
         ),
-        // divider
-        if (widget.assetClass == 'crypto')
-          Positioned(
-            left: dividerPosition,
-            top: 0,
-            bottom: 0,
-            child: Container(
-              width: 1,
-              color: AppColors.gray100,
+      ],
+    );
+  }
+
+  Widget _buildExecutionStrength() {
+    // 체결강도 계산 (매수량 대비 매도량 비율)
+    double executionStrength = 50.0; // 기본값
+    
+    if (_orderBook != null && _orderBook!.bids.isNotEmpty && _orderBook!.asks.isNotEmpty) {
+      final totalBidVolume = _orderBook!.bids.fold<double>(0, (sum, bid) => sum + bid.quantity);
+      final totalAskVolume = _orderBook!.asks.fold<double>(0, (sum, ask) => sum + ask.quantity);
+      final totalVolume = totalBidVolume + totalAskVolume;
+      
+      if (totalVolume > 0) {
+        executionStrength = (totalBidVolume / totalVolume) * 100;
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD1E8F8), // #D1E8F8 배경색
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.gray200),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            '체결 강도',
+            style: AppFonts.b2Semibold.copyWith(color: AppColors.gray600),
+          ),
+          Text(
+            '${executionStrength.toStringAsFixed(2)}%',
+            style: AppFonts.b2Semibold.copyWith(
+              color: executionStrength > 50 ? AppColors.profit : AppColors.loss,
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 

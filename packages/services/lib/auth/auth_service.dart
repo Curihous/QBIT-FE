@@ -125,7 +125,7 @@ class AuthService {
       await TokenService.saveKakaoAccessToken(kakaoAccessToken);
       await TokenService.saveKakaoUserId(userId);
 
-      // 카카오 액세스 토큰 출력
+      // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
       logger.i('🔍 카카오 액세스 토큰: $kakaoAccessToken');
 
       logger.i('카카오 로그인 성공');
@@ -156,6 +156,7 @@ class AuthService {
           // 백엔드 성공 시에도 카카오 토큰 확인
           final kakaoToken = await TokenService.getKakaoAccessToken();
           if (kakaoToken != null) {
+            // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
             logger.i('🔍 카카오 액세스 토큰: $kakaoToken');
           } else {
             logger.w('⚠️ 카카오 액세스 토큰이 없습니다');
@@ -169,7 +170,7 @@ class AuthService {
       if (await KakaoAuthService.hasToken()) {
         logger.i('카카오 SDK에서 사용자 정보 조회');
         
-        // 카카오 액세스 토큰 출력
+        // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
         final kakaoToken = await TokenService.getKakaoAccessToken();
         if (kakaoToken != null) {
           logger.i('🔍 카카오 액세스 토큰: $kakaoToken');
@@ -239,6 +240,7 @@ class AuthService {
       if (results[0]) {
         final kakaoToken = await TokenService.getKakaoAccessToken();
         if (kakaoToken != null) {
+          // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
           logger.i('🔍 카카오 액세스 토큰: $kakaoToken');
         } else {
           logger.w('⚠️ 카카오 액세스 토큰이 없습니다');

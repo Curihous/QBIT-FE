@@ -127,9 +127,6 @@ class ApiClient {
         final token = await _getAccessToken();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
-          logger.i('토큰 추가됨: ${options.uri}');
-        } else {
-          logger.w('토큰 없음: ${options.uri}');
         }
         handler.next(options);
       },
@@ -326,10 +323,7 @@ class ApiClient {
       // TokenService 사용
       final token = await TokenService.getAccessToken();
           
-      logger.i('액세스 토큰 조회: ${token != null ? "존재" : "없음"}');
       if (token != null) {
-        logger.i('토큰 길이: ${token.length}');
-        logger.i('토큰 시작: ${token.substring(0, token.length > 20 ? 20 : token.length)}...');
         
         // JWT 토큰 디코딩하여 만료 시간 확인
         try {
@@ -351,8 +345,6 @@ class ApiClient {
               
               if (timeLeft.isNegative) {
                 logger.w('⚠️ 토큰이 만료되었습니다');
-              } else {
-                logger.i('✅ 토큰 유효: ${timeLeft.inMinutes}분 남음');
               }
             }
           }

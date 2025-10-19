@@ -23,7 +23,7 @@ class FilterButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container( 
-        height: height ?? 30,
+        height: (height ?? 44).clamp(44.0, double.infinity), // 최소 44px 보장
         padding: padding ?? const EdgeInsets.symmetric(horizontal: 10),
         decoration: BoxDecoration( // 활성화, 비활성화별로 버튼 색 차이
           color: isSelected ? AppColors.primaryLight : AppColors.gray30,
@@ -57,7 +57,7 @@ class FilterButtonGroup extends StatefulWidget {
   final EdgeInsetsGeometry? groupPadding;
   final bool scrollable;
 
-  const FilterButtonGroup({
+  FilterButtonGroup({
     super.key,
     required this.labels,
     required this.values,
@@ -67,7 +67,8 @@ class FilterButtonGroup extends StatefulWidget {
     this.padding,
     this.groupPadding,
     this.scrollable = true,
-  }) : assert(labels.length == values.length, 'labels and values must have the same length');
+  }) : assert(labels.length == values.length, 'labels and values must have the same length'),
+       assert(values.contains(initialValue), 'initialValue must be one of values');
 
   @override
   State<FilterButtonGroup> createState() => _FilterButtonGroupState();

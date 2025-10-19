@@ -29,14 +29,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+      body: Stack(
+        children: [
+          _screens[_currentIndex],
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: CustomBottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

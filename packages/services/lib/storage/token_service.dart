@@ -23,7 +23,6 @@ class TokenService {
   static Future<void> saveAccessToken(String token) async {
     try {
       await _storage.write(key: _accessTokenKey, value: token);
-      logger.i('액세스 토큰 저장 완료');
     } catch (error) {
       logger.e('액세스 토큰 저장 실패: $error');
     }
@@ -33,7 +32,6 @@ class TokenService {
   static Future<String?> getAccessToken() async {
     try {
       final token = await _storage.read(key: _accessTokenKey);
-      logger.i('액세스 토큰 조회: ${token != null ? '존재' : '없음'}');
       return token;
     } catch (error) {
       logger.e('액세스 토큰 조회 실패: $error');
@@ -45,7 +43,6 @@ class TokenService {
   static Future<void> saveRefreshToken(String token) async {
     try {
       await _storage.write(key: _refreshTokenKey, value: token);
-      logger.i('리프레시 토큰 저장 완료');
     } catch (error) {
       logger.e('리프레시 토큰 저장 실패: $error');
     }
@@ -55,7 +52,6 @@ class TokenService {
   static Future<String?> getRefreshToken() async {
     try {
       final token = await _storage.read(key: _refreshTokenKey);
-      logger.i('리프레시 토큰 조회: ${token != null ? '존재' : '없음'}');
       return token;
     } catch (error) {
       logger.e('리프레시 토큰 조회 실패: $error');
@@ -67,7 +63,6 @@ class TokenService {
   static Future<void> saveKakaoAccessToken(String token) async {
     try {
       await _storage.write(key: _kakaoAccessTokenKey, value: token);
-      logger.i('카카오 액세스 토큰 저장 완료');
     } catch (error) {
       logger.e('카카오 액세스 토큰 저장 실패: $error');
     }
@@ -77,7 +72,10 @@ class TokenService {
   static Future<String?> getKakaoAccessToken() async {
     try {
       final token = await _storage.read(key: _kakaoAccessTokenKey);
-      logger.i('카카오 액세스 토큰 조회: ${token != null ? '존재' : '없음'}');
+      if (token != null) {
+        // 개발용 로그 (리뷰 시 무시)
+        logger.i('🔍 카카오 액세스 토큰: $token');
+      }
       return token;
     } catch (error) {
       logger.e('카카오 액세스 토큰 조회 실패: $error');

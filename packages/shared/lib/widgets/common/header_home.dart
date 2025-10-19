@@ -27,7 +27,7 @@ class TopAppBar extends StatelessWidget implements PreferredSizeWidget {
       title: Container(
         width: context.screenWidth,
         height: context.h(28),
-        padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+        padding: EdgeInsets.only(left: context.w(20), right: context.w(8)),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.center,
