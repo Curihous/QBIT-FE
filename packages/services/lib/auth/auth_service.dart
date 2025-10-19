@@ -6,6 +6,7 @@ import 'package:qbit_services/auth/alpaca_auth_service.dart';
 import 'package:qbit_services/api/auth_api_service.dart';
 import 'package:qbit_services/models/auth_models.dart';
 import 'package:qbit_services/storage/token_service.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 final logger = Logger();
 
@@ -153,13 +154,16 @@ class AuthService {
         if (userInfo != null) {
           logger.i('백엔드에서 사용자 정보 조회 성공');
           
-          // 백엔드 성공 시에도 카카오 토큰 확인
-          final kakaoToken = await TokenService.getKakaoAccessToken();
-          if (kakaoToken != null) {
-            // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
-            logger.i('🔍 카카오 액세스 토큰: $kakaoToken');
-          } else {
-            logger.w('⚠️ 카카오 액세스 토큰이 없습니다');
+          // 카카오 SDK에서 직접 액세스 토큰 가져오기
+          try {
+            final token = await TokenManagerProvider.instance.manager.getToken();
+            if (token?.accessToken != null) {
+              logger.i('🔍 카카오 액세스 토큰: ${token!.accessToken}');
+            } else {
+              logger.w('⚠️ 카카오 SDK에서 액세스 토큰이 없습니다');
+            }
+          } catch (e) {
+            logger.w('⚠️ 카카오 SDK 토큰 조회 실패: $e');
           }
           
           return userInfo;
@@ -170,13 +174,8 @@ class AuthService {
       if (await KakaoAuthService.hasToken()) {
         logger.i('카카오 SDK에서 사용자 정보 조회');
         
-        // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
-        final kakaoToken = await TokenService.getKakaoAccessToken();
-        if (kakaoToken != null) {
-          logger.i('🔍 카카오 액세스 토큰: $kakaoToken');
-        } else {
-          logger.w('⚠️ 카카오 액세스 토큰이 없습니다');
-        }
+        // 카카오 SDK는 토큰을 자동으로 관리하므로 별도 저장 불필요
+        logger.i('카카오 SDK에서 사용자 정보 조회 (토큰 자동 관리)');
         
         return await KakaoAuthService.getSimpleUserInfo();
       } else if (await GoogleAuthService.isSignedIn()) {
@@ -236,15 +235,9 @@ class AuthService {
         TokenService.hasBackendToken(),
       ]);
       
-      // 카카오 토큰이 있으면 출력
+      // 카카오 SDK는 토큰을 자동으로 관리하므로 별도 확인 불필요
       if (results[0]) {
-        final kakaoToken = await TokenService.getKakaoAccessToken();
-        if (kakaoToken != null) {
-          // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
-          logger.i('🔍 카카오 액세스 토큰: $kakaoToken');
-        } else {
-          logger.w('⚠️ 카카오 액세스 토큰이 없습니다');
-        }
+        logger.i('카카오 로그인 상태 확인됨 (토큰 자동 관리)');
       }
       
       return results.any((hasToken) => hasToken);

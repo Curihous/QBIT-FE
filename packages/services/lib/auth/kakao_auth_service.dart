@@ -266,12 +266,10 @@ class KakaoAuthService {
     }
   }
 
-  /// 카카오 액세스 토큰 상태 확인 (갱신은 카카오 SDK가 자동 처리)
+  /// 카카오 액세스 토큰 상태 확인 및 자동 갱신
   static Future<Map<String, dynamic>?> checkOrValidateAccessToken() async {
-    const int GRACE_SECONDS = 30; // 만료 30초 전부터 만료로 처리
-    
     try {
-      logger.i('카카오 토큰 상태 확인 시작');
+      logger.i('카카오 토큰 상태 확인 및 자동 갱신 시작');
       
       // 토큰 존재 여부 확인
       if (!await AuthApi.instance.hasToken()) {
@@ -279,27 +277,19 @@ class KakaoAuthService {
         return {'success': false, 'error': '재로그인이 필요합니다'};
       }
 
-      // 토큰 유효성 확인
       try {
-        final tokenInfo = await UserApi.instance.accessTokenInfo();
-        final now = DateTime.now();
-        final expiresAt = now.add(Duration(seconds: tokenInfo.expiresIn));
+        // UserApi.instance.me() 호출로 토큰 자동 갱신 시도
+        // 카카오 SDK는 토큰이 만료되면 자동으로 갱신해줍니다
+        final user = await UserApi.instance.me();
+        final token = await TokenManagerProvider.instance.manager.getToken();
         
-        // 그레이스 윈도우 적용: 만료 30초 전부터 만료로 처리
-        final isExpired = tokenInfo.expiresIn <= GRACE_SECONDS;
+        logger.i('카카오 토큰 자동 갱신 성공: userId=${user.id}');
         
-        if (!isExpired && tokenInfo.expiresIn > 0 && expiresAt.isAfter(now)) {
-          logger.i('카카오 토큰 유효함 (${tokenInfo.expiresIn}초 남음)');
-          final token = await TokenManagerProvider.instance.manager.getToken();
-          return {
-            'success': true,
-            'accessToken': token?.accessToken,
-            'userId': tokenInfo.id.toString(),
-          };
-        } else {
-          logger.w('카카오 토큰 만료됨 (${tokenInfo.expiresIn}초 남음, 그레이스 윈도우 적용). 재로그인 필요.');
-          return {'success': false, 'error': '재로그인이 필요합니다'};
-        }
+        return {
+          'success': true,
+          'accessToken': token?.accessToken,
+          'userId': user.id.toString(),
+        };
       } on KakaoException catch (e) {
         if (e.isInvalidTokenError()) {
           logger.e('카카오 토큰 무효. 재로그인 필요.');
@@ -308,7 +298,7 @@ class KakaoAuthService {
         rethrow;
       }
     } catch (error) {
-      logger.e('카카오 토큰 확인 실패: $error');
+      logger.e('카카오 토큰 확인 및 갱신 실패: $error');
       return {'success': false, 'error': error.toString()};
     }
   }

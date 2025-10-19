@@ -10,6 +10,7 @@ import 'package:qbit_services/models/orderbook_model.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/websocket/crypto_orderbook_websocket.dart';
 import 'package:qbit_shared/widgets/trade/vertical_orderbook_widget.dart';
+import 'package:qbit_services/models/stock_detail_model.dart';
 
 class StockOrderTab extends StatefulWidget {
   final String symbol;
@@ -38,10 +39,15 @@ class _StockOrderTabState extends State<StockOrderTab> {
   int _quantity = 1;
   double _price = 0.0;
   String _selectedOrderTab = '매수'; // '매수', '매도', '내역'
+  String _selectedOrderType = '지정가'; // '지정가', '시장가'
+  
+  // 시장가 주문용 USDT 금액
+  double _marketOrderAmount = 1.0;
   
   // 입력 필드 컨트롤러
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
+  final TextEditingController _marketAmountController = TextEditingController();
   
   // 환율 관련
   double? _exchangeRate;
@@ -49,12 +55,19 @@ class _StockOrderTabState extends State<StockOrderTab> {
   
   // 주문 제출 상태
   bool _isSubmittingOrder = false;
+  
+  // 현재 시장 가격 (시장가 주문용)
+  double _currentMarketPrice = 0.0;
+  
+  // 종목 상세 정보
+  StockDetailModel? _stockDetail;
 
   @override
   void initState() {
     super.initState();
     _quantityController.text = '';
     _priceController.text = '';
+    _marketAmountController.text = '1.0';
     _loadData();
   }
 
@@ -62,6 +75,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
   void dispose() {
     _quantityController.dispose();
     _priceController.dispose();
+    _marketAmountController.dispose();
     _webSocket?.disconnect();
     _webSocket?.dispose();
     super.dispose();
@@ -98,6 +112,12 @@ class _StockOrderTabState extends State<StockOrderTab> {
 
       // 호가창 데이터 로드
       await _loadOrderBook();
+      
+      // 현재 시장 가격 로드
+      await _loadCurrentMarketPrice();
+      
+      // 종목 상세 정보 로드
+      await _loadStockDetail();
     } catch (error) {
       if (!mounted) return;
       
@@ -114,6 +134,47 @@ class _StockOrderTabState extends State<StockOrderTab> {
         _error = errorMessage;
         _isLoading = false;
       });
+    }
+  }
+  
+  /// 현재 시장 가격 로드
+  Future<void> _loadCurrentMarketPrice() async {
+    try {
+      if (widget.assetClass == 'crypto') {
+        // 암호화폐: 호가창에서 현재 가격 가져오기
+        if (_orderBook != null && _orderBook!.bids.isNotEmpty && _orderBook!.asks.isNotEmpty) {
+          final bestBid = _orderBook!.bids.first.price;
+          final bestAsk = _orderBook!.asks.first.price;
+          _currentMarketPrice = (bestBid + bestAsk) / 2; // 중간가격
+        }
+      } else {
+        // 주식: 현재 가격을 KRW로 설정 (환율 적용)
+        _currentMarketPrice = _price;
+      }
+    } catch (error) {
+      print('현재 시장 가격 로드 실패: $error');
+    }
+  }
+
+  /// 종목 상세 정보 로드
+  Future<void> _loadStockDetail() async {
+    try {
+      // 심볼 정규화: 중복 슬래시 제거
+      String normalizedSymbol = widget.symbol.replaceAll('//', '/');
+      logger.i('종목 상세 정보 로드 시작: ${widget.symbol} -> $normalizedSymbol');
+      _stockDetail = await StockApiService.getStockDetail(normalizedSymbol);
+      
+      if (_stockDetail != null) {
+        logger.i('종목 상세 정보 로드 성공');
+        logger.i('자산 클래스: ${_stockDetail!.assetClass}');
+        logger.i('최소 주문 수량: ${_stockDetail!.minOrderSize}');
+        logger.i('최소 거래 증분: ${_stockDetail!.minTradeIncrement}');
+        logger.i('가격 증분: ${_stockDetail!.priceIncrement}');
+      } else {
+        logger.e('종목 상세 정보 로드 실패');
+      }
+    } catch (error) {
+      logger.e('종목 상세 정보 로드 에러: $error');
     }
   }
 
@@ -189,10 +250,22 @@ class _StockOrderTabState extends State<StockOrderTab> {
       return;
     }
     
-    if (_price <= 0) {
+    // 지정가 주문일 때만 가격 검증
+    if (_selectedOrderType == '지정가' && _price <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('가격을 입력해주세요'),
+          backgroundColor: AppColors.loss,
+        ),
+      );
+      return;
+    }
+    
+    // 시장가 주문일 때 USDT 금액 검증 (암호화폐만)
+    if (_selectedOrderType == '시장가' && widget.assetClass == 'crypto' && _marketOrderAmount <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('USDT 금액을 입력해주세요'),
           backgroundColor: AppColors.loss,
         ),
       );
@@ -222,9 +295,20 @@ class _StockOrderTabState extends State<StockOrderTab> {
             children: [
               Text('종목: ${widget.symbol}'),
               Text('구분: $_selectedOrderTab'),
-              Text('수량: $_quantity주'),
-              Text('가격: ${_price.toStringAsFixed(0)}원'),
-              Text('총액: ${(_quantity * _price).toStringAsFixed(0)}원'),
+              Text('주문타입: $_selectedOrderType'),
+              if (widget.assetClass == 'crypto' && _selectedOrderType == '지정가') ...[
+                Text('수량: ${(_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizeQuantity(_quantity.toDouble()).toStringAsFixed(9)}개'),
+                Text('가격: ${(_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizePrice(_price).toStringAsFixed(2)} USD'),
+                Text('총액: ${((_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizeQuantity(_quantity.toDouble()) * (_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizePrice(_price)).toStringAsFixed(2)} USD'),
+              ] else if (widget.assetClass == 'crypto' && _selectedOrderType == '시장가') ...[
+                Text('금액: ${_marketOrderAmount.toStringAsFixed(2)} USDT'),
+                Text('예상 수량: ${(_marketOrderAmount / _currentMarketPrice).toStringAsFixed(9)}개'),
+                Text('가격: 시장가'),
+              ] else ...[
+                Text('수량: $_quantity주'),
+                Text('가격: ${_price.toStringAsFixed(0)}원'),
+                Text('총액: ${(_quantity * _price).toStringAsFixed(0)}원'),
+              ],
             ],
           ),
           actions: [
@@ -247,19 +331,115 @@ class _StockOrderTabState extends State<StockOrderTab> {
         _isSubmittingOrder = true;
       });
 
-      // 주문 생성 (가격을 USD로 변환)
-      final exchangeRate = _exchangeRate ?? 1300.0;
-      final priceInUsd = _price / exchangeRate;
-      final limitPriceInUsd = priceInUsd.toStringAsFixed(2);
+      // 주문 생성
+      String? limitPrice;
+      OrderType orderType;
+      TimeInForce timeInForce;
+      String quantity = _quantity.toString();
+      
+      if (_selectedOrderType == '시장가') {
+        orderType = OrderType.market;
+        limitPrice = null; // 시장가는 가격 지정 불필요
+        timeInForce = widget.assetClass == 'crypto' ? TimeInForce.gtc : TimeInForce.day;
+        
+        if (widget.assetClass == 'crypto') {
+          // 암호화폐 시장가: USDT 금액 기반으로 수량 계산
+          final rules = _stockDetail?.toOrderRules() ?? OrderRules.crypto(
+            minOrderSize: 0.000223249,
+            minTradeIncrement: 0.000000001,
+            priceIncrement: 0.01,
+          );
+          final estimatedQty = _marketOrderAmount / _currentMarketPrice;
+          final minQty = rules.minPassingQtyAtPrice(_currentMarketPrice);
+          final finalQty = estimatedQty > minQty ? estimatedQty : minQty;
+          quantity = finalQty.toStringAsFixed(9);
+        }
+      } else {
+        orderType = OrderType.limit;
+        timeInForce = widget.assetClass == 'crypto' ? TimeInForce.gtc : TimeInForce.day;
+        
+        if (widget.assetClass == 'crypto') {
+          // 암호화폐 지정가: 동적 규칙 적용
+          final rules = _stockDetail?.toOrderRules() ?? OrderRules.crypto(
+            minOrderSize: 0.000223249,
+            minTradeIncrement: 0.000000001,
+            priceIncrement: 0.01,
+          );
+          
+          // 가격 정규화
+          final normalizedPrice = rules.normalizePrice(_price);
+          
+          // 수량 정규화 및 최소 체결금액 보장
+          final normalizedQty = rules.normalizeQuantity(_quantity.toDouble());
+          final minPassingQty = rules.minPassingQtyAtPrice(normalizedPrice);
+          final finalQty = normalizedQty > minPassingQty ? normalizedQty : minPassingQty;
+          
+          limitPrice = normalizedPrice.toStringAsFixed(2);
+          quantity = finalQty.toStringAsFixed(9);
+          
+          // 유효성 검사
+          final validation = rules.validateOrder(
+            quantity: finalQty,
+            price: normalizedPrice,
+            isMarketOrder: false,
+          );
+          
+          if (!validation.isValid) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('주문 검증 실패: ${validation.errors.join(', ')}'),
+                backgroundColor: AppColors.loss,
+                duration: Duration(seconds: 3),
+              ),
+            );
+            return;
+          }
+        } else {
+          // 주식: KRW를 USD로 변환
+          final exchangeRate = _exchangeRate ?? 1300.0;
+          final priceInUsd = _price / exchangeRate;
+          limitPrice = priceInUsd.toStringAsFixed(2);
+        }
+      }
+      
+      // 심볼 형식 변환 (BTCUSDT -> BTC/USD, ETH/USDT -> ETH/USD)
+      String apiSymbol = widget.symbol;
+      
+      if (widget.assetClass == 'crypto') {
+        // 1. USDT를 USD로 변환 (ETHUSDT -> ETHUSD, ETH/USDT -> ETH/USD)
+        if (apiSymbol.contains('USDT')) {
+          apiSymbol = apiSymbol.replaceAll('USDT', 'USD');
+        } else if (apiSymbol.contains('USDC')) {
+          apiSymbol = apiSymbol.replaceAll('USDC', 'USD');
+        }
+        
+        // 2. 슬래시가 없으면 추가 (BTCUSD -> BTC/USD, ETHUSD -> ETH/USD)
+        if (!apiSymbol.contains('/') && apiSymbol.endsWith('USD')) {
+          final baseCurrency = apiSymbol.substring(0, apiSymbol.length - 3);
+          apiSymbol = '$baseCurrency/USD';
+        }
+      }
       
       final order = OrderRequest(
-        symbol: widget.symbol,
-        quantity: _quantity.toString(),
+        symbol: apiSymbol,
+        quantity: quantity,
         side: _selectedOrderTab == '매도' ? OrderSide.sell : OrderSide.buy,
-        type: OrderType.limit,
-        timeInForce: TimeInForce.day,
-        limitPrice: limitPriceInUsd,
+        type: orderType,
+        timeInForce: timeInForce,
+        limitPrice: limitPrice,
       );
+
+      // 주문 요청 로그 출력
+      print('=== 주문 요청 정보 ===');
+      print('원본 심볼: ${widget.symbol}');
+      print('API 심볼: $apiSymbol');
+      print('수량: $quantity');
+      print('방향: ${_selectedOrderTab == '매도' ? 'sell' : 'buy'}');
+      print('타입: ${orderType.name}');
+      print('유효기간: ${timeInForce.name}');
+      print('지정가: $limitPrice');
+      print('주문 데이터: ${order.toJson()}');
+      print('==================');
 
       final result = await OrderApiService.createOrder(order);
       
@@ -280,18 +460,31 @@ class _StockOrderTabState extends State<StockOrderTab> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('주문 접수에 실패했습니다'),
+            content: Text('주문 접수에 실패했습니다\n잠시 후 다시 시도해주세요'),
             backgroundColor: AppColors.loss,
+            duration: Duration(seconds: 3),
           ),
         );
       }
     } catch (e) {
       if (!mounted) return;
       
+      String errorMessage = '주문 처리 중 오류가 발생했습니다';
+      if (e.toString().contains('500')) {
+        errorMessage = '서버에 일시적인 문제가 발생했습니다\n잠시 후 다시 시도해주세요';
+      } else if (e.toString().contains('401')) {
+        errorMessage = '인증이 필요합니다\n로그인을 다시 해주세요';
+      } else if (e.toString().contains('403')) {
+        errorMessage = '거래 권한이 없습니다\n계정 설정을 확인해주세요';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = '요청 시간이 초과되었습니다\n네트워크를 확인해주세요';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('오류가 발생했습니다: $e'),
+          content: Text(errorMessage),
           backgroundColor: AppColors.loss,
+          duration: Duration(seconds: 4),
         ),
       );
     } finally {
@@ -526,16 +719,31 @@ class _StockOrderTabState extends State<StockOrderTab> {
             ),
             const SizedBox(height: 20),
             
-            // 지정가 드롭다운
+            // 주문 타입 선택 (암호화폐만 시장가 옵션 제공)
             SizedBox(
               width: isCryptoSymbol ? 188 : double.infinity,
-              child: Text(
-                '지정가 ▾',
-                textAlign: isCryptoSymbol ? TextAlign.right : TextAlign.center,
-                style: AppFonts.b2Semibold.copyWith(
-                  color: AppColors.gray900,
-                ),
-              ),
+              child: widget.assetClass == 'crypto' 
+                ? GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedOrderType = _selectedOrderType == '지정가' ? '시장가' : '지정가';
+                      });
+                    },
+                    child: Text(
+                      '$_selectedOrderType ▾',
+                      textAlign: isCryptoSymbol ? TextAlign.right : TextAlign.center,
+                      style: AppFonts.b2Semibold.copyWith(
+                        color: AppColors.gray900,
+                      ),
+                    ),
+                  )
+                : Text(
+                    '지정가 ▾',
+                    textAlign: isCryptoSymbol ? TextAlign.right : TextAlign.center,
+                    style: AppFonts.b2Semibold.copyWith(
+                      color: AppColors.gray900,
+                    ),
+                  ),
             ),
             const SizedBox(height: 2),
             
@@ -576,7 +784,9 @@ class _StockOrderTabState extends State<StockOrderTab> {
                             children: [
                               Expanded(
                                 child: TextField(
-                                  controller: _quantityController,
+                                  controller: widget.assetClass == 'crypto' && _selectedOrderType == '시장가' 
+                                    ? _marketAmountController 
+                                    : _quantityController,
                                   keyboardType: TextInputType.number,
                                   style: AppFonts.b1Regular.copyWith(
                                     color: AppColors.gray900,
@@ -584,7 +794,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                                     height: 1.50,
                                   ),
                                   decoration: InputDecoration(
-                                    hintText: '수량',
+                                    hintText: widget.assetClass == 'crypto' && _selectedOrderType == '시장가' ? 'USDT 금액' : '수량',
                                     border: InputBorder.none,
                                     enabledBorder: InputBorder.none,
                                     focusedBorder: InputBorder.none,
@@ -592,15 +802,24 @@ class _StockOrderTabState extends State<StockOrderTab> {
                                     contentPadding: EdgeInsets.zero,
                                   ),
                                   onChanged: (value) {
-                                    final quantity = int.tryParse(value) ?? 1;
-                                    setState(() {
-                                      _quantity = quantity;
-                                    });
+                                    if (widget.assetClass == 'crypto' && _selectedOrderType == '시장가') {
+                                      final amount = double.tryParse(value) ?? 1.0;
+                                      setState(() {
+                                        _marketOrderAmount = amount;
+                                      });
+                                    } else {
+                                      final quantity = int.tryParse(value) ?? 1;
+                                      setState(() {
+                                        _quantity = quantity;
+                                      });
+                                    }
                                   },
                                 ),
                               ),
                               Text(
-                                '주',
+                                widget.assetClass == 'crypto' 
+                                  ? (_selectedOrderType == '시장가' ? 'USDT' : '개')
+                                  : '주',
                                 style: AppFonts.b1Regular.copyWith(
                                   color: AppColors.gray900,
                                   fontWeight: FontWeight.w600,
@@ -631,7 +850,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
               width: isCryptoSymbol ? 188 : double.infinity,
               height: 110,
               decoration: ShapeDecoration(
-                color: AppColors.gray50,
+                color: _selectedOrderType == '시장가' ? AppColors.gray100 : AppColors.gray50,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               child: Padding(
@@ -655,13 +874,14 @@ class _StockOrderTabState extends State<StockOrderTab> {
                                 child: TextField(
                                   controller: _priceController,
                                   keyboardType: TextInputType.number,
+                                  enabled: _selectedOrderType != '시장가',
                                   style: AppFonts.b1Regular.copyWith(
-                                    color: AppColors.gray900,
+                                    color: _selectedOrderType == '시장가' ? AppColors.gray400 : AppColors.gray900,
                                     fontWeight: FontWeight.w600,
                                     height: 1.50,
                                   ),
                                   decoration: InputDecoration(
-                                    hintText: '가격',
+                                    hintText: _selectedOrderType == '시장가' ? '시장가' : '가격',
                                     border: InputBorder.none,
                                     enabledBorder: InputBorder.none,
                                     focusedBorder: InputBorder.none,
@@ -669,15 +889,17 @@ class _StockOrderTabState extends State<StockOrderTab> {
                                     contentPadding: EdgeInsets.zero,
                                   ),
                                   onChanged: (value) {
-                                    final price = double.tryParse(value) ?? 0.0;
-                                    setState(() {
-                                      _price = price;
-                                    });
+                                    if (_selectedOrderType != '시장가') {
+                                      final price = double.tryParse(value) ?? 0.0;
+                                      setState(() {
+                                        _price = price;
+                                      });
+                                    }
                                   },
                                 ),
                               ),
                               Text(
-                                '원',
+                                widget.assetClass == 'crypto' ? 'USD' : '원',
                                 style: AppFonts.b1Regular.copyWith(
                                   color: AppColors.gray900,
                                   fontWeight: FontWeight.w600,
@@ -743,7 +965,11 @@ class _StockOrderTabState extends State<StockOrderTab> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '${(_quantity * _price).toStringAsFixed(0)}원',
+                    widget.assetClass == 'crypto' 
+                      ? (_selectedOrderType == '시장가' 
+                          ? '${_marketOrderAmount.toStringAsFixed(2)} USDT' 
+                          : '${((_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizeQuantity(_quantity.toDouble()) * (_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizePrice(_price)).toStringAsFixed(2)} USD')
+                      : '${(_quantity * _price).toStringAsFixed(0)}원',
                     style: AppFonts.t1Bold.copyWith(
                       color: AppColors.gray900,
                       fontWeight: FontWeight.w600,

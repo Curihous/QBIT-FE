@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
-import 'dart:io';
+import 'dart:io' show Platform;
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -16,8 +17,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isIOS = Platform.isIOS;
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    final isIOS = !kIsWeb && Platform.isIOS;
     
     Widget navigationBar = Container(
       width: context.screenWidth,
@@ -95,18 +95,15 @@ class CustomBottomNavigationBar extends StatelessWidget {
       ),
     );
 
-    // iOS는 바닥에 붙게, 안드로이드는 SafeArea 사용
-    if (isIOS) {
-      return Padding(
+    // 모든 플랫폼에서 SafeArea 적용하고 안드로이드에서만 패딩 적용
+    return SafeArea(
+      child: Padding(
         padding: EdgeInsets.only(
-          bottom: context.h(10), // 고정값으로 바닥에 붙게
+          bottom: isIOS ? 0 : context.h(8), // iOS는 패딩 없음, 안드로이드만 패딩 적용
         ),
         child: navigationBar,
-      );
-    } else {
-      // 안드로이드는 SafeArea 적용 (시스템 네비게이션 바 고려)
-      return SafeArea(child: navigationBar);
-    }
+      ),
+    );
   }
 
   Widget _buildNavItem({
