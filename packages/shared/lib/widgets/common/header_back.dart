@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
-import 'package:qbit_shared/utils/responsive_util.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 
 class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -29,7 +29,7 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
       title: Container(
         width: context.screenWidth,
         height: kToolbarHeight,
-        padding: EdgeInsets.symmetric(horizontal: context.w(24)),
+        padding: EdgeInsets.symmetric(horizontal: context.w(20)),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -37,15 +37,15 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
               onTap: onBackPressed ?? () => Navigator.of(context).pop(),
               child: SvgPicture.asset(
                 'assets/icons/navigation/top-nav-back.svg',
-                width: context.w(48),
-                height: context.h(48),
+                width: context.w(20),
+                height: context.h(20),
                 fit: BoxFit.contain,
               ),
             ),
-            SizedBox(width: context.w(0)),
+            SizedBox(width: context.w(15)),
             Text(
               title,
-              style: AppFonts.t1Bold,
+              style: AppFonts.t2Semibold, 
             ),
           ],
         ),

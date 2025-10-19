@@ -6,6 +6,7 @@ import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/models/stock_model.dart';
 import 'package:qbit_shared/widgets/stock_search_screen/stock_search_item.dart';
 import 'package:qbit_shared/widgets/common/header_back.dart';
+import 'package:qbit_shared/widgets/common/button/filter_button.dart';
 
 // 종목 검색 화면
 class StockSearchScreen extends StatefulWidget {
@@ -22,6 +23,9 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
   List<StockModel> _searchResults = [];
   bool _isLoading = false;
   String? _error;
+  
+  // 검색 필터 상태
+  String _selectedFilter = 'all'; // 'all', 'us_equity', 'crypto'
 
   @override
   void initState() {
@@ -54,7 +58,16 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
     });
 
     try {
-      final results = await StockApiService.searchStocks(query.trim());
+      // 필터에 따라 assetClass 설정
+      String? assetClass;
+      if (_selectedFilter == 'us_equity') {
+        assetClass = 'us_equity';
+      } else if (_selectedFilter == 'crypto') {
+        assetClass = 'crypto';
+      }
+      // 'all'인 경우 assetClass는 null (모든 자산 클래스 검색)
+      
+      final results = await StockApiService.searchStocks(query.trim(), assetClass: assetClass);
       if (mounted) {
         setState(() {
           _searchResults = results ?? [];
@@ -82,7 +95,7 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
         children: [
         // 검색 입력 필드
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.all(16),
           child: Container(
             width: double.infinity, // 좌우 여백 끝까지 채움
             height: 48,
@@ -171,6 +184,24 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
               ],
             ),
           ),
+        ),
+        
+        // 필터 버튼들
+        FilterButtonGroup(
+          labels: ['전체', '주식', '암호화폐'],
+          values: ['all', 'us_equity', 'crypto'],
+          initialValue: _selectedFilter,
+          scrollable: false, // 왼쪽 정렬
+          onChanged: (value) {
+            setState(() {
+              _selectedFilter = value;
+            });
+            
+            // 검색어가 있으면 다시 검색
+            if (_searchController.text.isNotEmpty) {
+              _searchStocks(_searchController.text);
+            }
+          },
         ),
           
           // 검색 결과

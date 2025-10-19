@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/app_fonts.dart';
+import 'package:qbit_shared/theme/app_colors.dart';
+import 'package:qbit_shared/theme/app_fonts.dart';
 
 /// 로딩 위젯
 class LoadingWidget extends StatelessWidget {

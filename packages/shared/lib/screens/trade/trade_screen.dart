@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:dio/dio.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/app_fonts.dart';
-import '../../theme/app_theme.dart';
-import '../../widgets/common/common_widgets.dart';
-import '../../widgets/common/header_basic.dart';
-import 'alpaca_auth_screen.dart';
-import 'stock_search_screen.dart';
+import 'package:qbit_shared/theme/app_colors.dart';
+import 'package:qbit_shared/theme/app_fonts.dart';
+import 'package:qbit_shared/widgets/common/common_widgets.dart';
+import 'package:qbit_shared/widgets/common/header_basic.dart';
+import 'package:qbit_shared/widgets/common/button/filter_button.dart';
+import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
+import 'package:qbit_shared/screens/trade/stock_search_screen.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
 import 'package:qbit_services/auth/alpaca_auth_service.dart';
 import 'package:qbit_services/auth/auth_service.dart';
@@ -37,7 +38,7 @@ class _TradeScreenState extends State<TradeScreen> {
   List<StockRankingModel> _stockRanking = []; // 해외 종목 순위 데이터
   String _selectedSortBy = 'volume'; // 선택된 정렬 기준
   int? _selectedStockIndex; // 선택된 종목 인덱스
-  
+
   @override
   void initState() {
     super.initState();
@@ -336,10 +337,11 @@ class _TradeScreenState extends State<TradeScreen> {
     return Stack(
                   children: [
         // 기본 계좌 정보
-        Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
+        Inset.text(
+          child: Container(
+            margin: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
@@ -411,13 +413,17 @@ class _TradeScreenState extends State<TradeScreen> {
               ),
             ],
           ),
+          ),
         ),
         
         // 연동되지 않은 경우 블러 오버레이와 연동 버튼
         if (!_isAlpacaConnected)
-          Positioned.fill(
+          Positioned(
+            left: 20,
+            top: 16,
+            right: 20,
+            bottom: 16,
             child: Container(
-              margin: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 color: Colors.white.withOpacity(0.8),
@@ -484,8 +490,9 @@ class _TradeScreenState extends State<TradeScreen> {
   // 검색바 섹션
   Widget _buildSearchSection() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: GestureDetector(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: Inset.block(
+        child: GestureDetector(
         onTap: () {
           Navigator.push(
             context,
@@ -534,6 +541,7 @@ class _TradeScreenState extends State<TradeScreen> {
             ],
           ),
         ),
+        ),
       ),
     );
   }
@@ -544,25 +552,26 @@ class _TradeScreenState extends State<TradeScreen> {
       // Alpaca 연동 후 - 실제 자산 정보 표시
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.only(bottom: 9),
+        margin: const EdgeInsets.only(bottom: 9),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Container(
-              width: double.infinity,
-              height: 68,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(),
-              child: Column(
+            Inset.text(
+              child: Container(
+                width: double.infinity,
+                height: 68,
+                margin: const EdgeInsets.symmetric(vertical: 9),
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(),
+                child: Column(
                 mainAxisSize: MainAxisSize.min,
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
-                    width: 352,
+                    width: double.infinity,
                     height: 50,
                     child: Stack(
                       children: [
@@ -606,7 +615,7 @@ class _TradeScreenState extends State<TradeScreen> {
                           ),
                         ),
                         Positioned(
-                          left: 303,
+                          right: 0,
                           top: 26,
                           child: Text(
                             '상세보기',
@@ -619,9 +628,11 @@ class _TradeScreenState extends State<TradeScreen> {
                   ),
                 ],
               ),
+              ),
             ),
-            Container(
-              width: 359,
+            Inset.block(
+              child: Container(
+                width: double.infinity,
               height: 125,
               decoration: ShapeDecoration(
                 color: Colors.white /* Gray-0 */,
@@ -700,6 +711,7 @@ class _TradeScreenState extends State<TradeScreen> {
                   ),
                 ],
               ),
+              ),
             ),
           ],
         ),
@@ -711,19 +723,20 @@ class _TradeScreenState extends State<TradeScreen> {
           // 실제 자산 정보 (연동 후와 동일한 구조)
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.only(bottom: 9),
+            margin: const EdgeInsets.only(bottom: 9),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Container(
-                  width: double.infinity,
-                  height: 68,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
-                  clipBehavior: Clip.antiAlias,
-                  decoration: BoxDecoration(),
-                  child: Column(
+                Inset.text(
+                  child: Container(
+                    width: double.infinity,
+                    height: 68,
+                    margin: const EdgeInsets.symmetric(vertical: 9),
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(),
+                    child: Column(
                     mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -778,10 +791,12 @@ class _TradeScreenState extends State<TradeScreen> {
       ),
                     ],
                   ),
+                  ),
                 ),
-                Container(
-                  width: 359,
-                  height: 125,
+                Inset.block(
+                  child: Container(
+                    width: double.infinity,
+                    height: 125,
                   decoration: ShapeDecoration(
                     color: Colors.white /* Gray-0 */,
                     shape: RoundedRectangleBorder(
@@ -853,6 +868,7 @@ class _TradeScreenState extends State<TradeScreen> {
                       ),
                     ],
                   ),
+                  ),
                 ),
               ],
             ),
@@ -914,39 +930,40 @@ class _TradeScreenState extends State<TradeScreen> {
   // 해외 종목 순위 섹션
   Widget _buildStockRankingSection() {
     return Container(
-      padding: const EdgeInsets.only(top: 20, bottom: 9),
+      margin: const EdgeInsets.only(top: 20, bottom: 9),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 제목
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
-            child:             Text(
-              '해외 종목 순위',
-              style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
+            margin: const EdgeInsets.symmetric(vertical: 9),
+            child: Inset.text(
+              child: Text(
+                '해외 종목 순위',
+                style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
+              ),
             ),
           ),
           // 정렬 버튼들
-          Container(
-            padding: const EdgeInsets.only(top: 1, left: 16, right: 16, bottom: 9),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildSortButton('상승률순', 'gain', _selectedSortBy == 'gain'),
-                  const SizedBox(width: 9),
-                  _buildSortButton('하락률순', 'loss', _selectedSortBy == 'loss'),
-                  const SizedBox(width: 9),
-                  _buildSortButton('거래량순', 'volume', _selectedSortBy == 'volume'),
-                  const SizedBox(width: 9),
-                  _buildSortButton('급등 거래량순', 'surge', _selectedSortBy == 'surge'),
-                ],
-              ),
+          Inset.block(
+            child: FilterButtonGroup(
+            labels: ['상승률순', '하락률순', '거래량순', '급등 거래량순'],
+            values: ['gain', 'loss', 'volume', 'surge'],
+            initialValue: _selectedSortBy,
+            onChanged: (value) {
+              setState(() {
+                _selectedSortBy = value;
+              });
+              _loadStockRanking();
+            },
+            groupPadding: const EdgeInsets.only(top: 1, bottom: 9),
             ),
           ),
           // 종목 순위 리스트
           if (_stockRanking.isNotEmpty) ...[
-            ..._stockRanking.map((stock) => _buildStockRankingItem(stock)),
+            ..._stockRanking.map((stock) => Inset.block(
+              child: _buildStockRankingItem(stock),
+            )),
           ] else ...[
             // 로딩 중
             Container(
@@ -965,39 +982,6 @@ class _TradeScreenState extends State<TradeScreen> {
     );
   }
 
-  // 정렬 버튼 위젯
-  Widget _buildSortButton(String text, String sortBy, bool isSelected) {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedSortBy = sortBy;
-        });
-        _loadStockRanking();
-      },
-      child: Container(
-        height: 28,
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        decoration: ShapeDecoration(
-          color: isSelected ? AppColors.primary : AppColors.white,
-          shape: RoundedRectangleBorder(
-            side: BorderSide(
-              width: 1,
-              color: AppColors.gray300, // Gray-300
-            ),
-            borderRadius: BorderRadius.circular(99),
-          ),
-        ),
-        child: Center(
-          child: Text(
-            text,
-            style: AppFonts.b2Regular.copyWith(
-              color: isSelected ? AppColors.white : AppColors.gray600,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   // 종목 순위 아이템 위젯
   Widget _buildStockRankingItem(StockRankingModel stock) {
@@ -1011,7 +995,7 @@ class _TradeScreenState extends State<TradeScreen> {
         });
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
+        margin: EdgeInsets.zero,
         height: 56,
         decoration: BoxDecoration(
           color: isSelected ? AppColors.background : AppColors.white,
@@ -1026,9 +1010,7 @@ class _TradeScreenState extends State<TradeScreen> {
             ),
           ),
         ),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
+        child: Row(
             children: [
               // 순위
               SizedBox(
@@ -1068,7 +1050,6 @@ class _TradeScreenState extends State<TradeScreen> {
               ),
             ],
           ),
-        ),
       ),
     );
   }
@@ -1084,14 +1065,12 @@ class _TradeScreenState extends State<TradeScreen> {
   // 해외 주요 지수 섹션
   Widget _buildOverseasIndicesSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      padding: const EdgeInsets.only(top: 8, bottom: 9), 
+      margin: const EdgeInsets.only(top: 8, bottom: 9), 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child:             Text(
+          Inset.text(
+            child: Text(
               '해외 주요 지수',
               style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
             ),
@@ -1099,7 +1078,8 @@ class _TradeScreenState extends State<TradeScreen> {
           const SizedBox(height: 8),
           // API에서 가져온 데이터로 동적 생성
           if (_overseasIndices.isNotEmpty) ...[
-            Row(
+            Inset.block(
+              child: Row(
               children: [
                 Expanded(
                   child: _buildIndexItem(
@@ -1121,6 +1101,7 @@ class _TradeScreenState extends State<TradeScreen> {
                       ),
                     ],
               ],
+            ),
             ),
           ] else ...[
             // 로딩 중 또는 데이터 없음
@@ -1172,8 +1153,8 @@ class _TradeScreenState extends State<TradeScreen> {
   // 지수 아이템 위젯
   Widget _buildIndexItem(String name, String value, String change, bool isPositive) {
     return Container(
-      height: 120, 
-      padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 14), 
+      height: 120,
+      padding: const EdgeInsets.all(14), 
       decoration: BoxDecoration(
         color: AppColors.background, 
         borderRadius: BorderRadius.circular(8),

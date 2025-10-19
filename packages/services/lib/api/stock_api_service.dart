@@ -4,6 +4,7 @@ import 'api_client.dart';
 import '../models/stock_model.dart';
 import '../models/asset_model.dart';
 import '../models/stock_ranking_model.dart';
+import '../models/orderbook_model.dart';
 
 /// 주식 관련 API 서비스 모음
 
@@ -11,49 +12,13 @@ class StockApiService {
   static Dio get _dio => ApiClient.instance;
   static final Logger logger = Logger();
 
-  /// 특정 종목 상세 정보 조회
-  static Future<StockModel?> getStockDetail(String symbol) async {
-    try {
-      logger.i('주식 상세 정보 조회 시작: $symbol');
-      
-      final response = await _dio.get('/stocks/$symbol');
-      
-      if (response.statusCode == 200) {
-        logger.i('주식 상세 정보 조회 성공: $symbol');
-        final data = response.data;
-        if (data is Map<String, dynamic>) {
-          return StockModel.fromJson(data);
-        } else {
-          logger.e('응답 데이터가 Map이 아닙니다: ${data.runtimeType}');
-          return null;
-        }
-      } else {
-        logger.e('주식 상세 정보 조회 실패: ${response.statusCode}');
-        return null;
-      }
-    } catch (error) {
-      logger.e('주식 상세 정보 조회 에러: $error');
-      if (error is DioException) {
-        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
-        logger.e('Dio 에러 상태코드: ${error.response?.statusCode}');
-        if (error.response?.statusCode == 404) {
-          logger.e('❌ 종목을 찾을 수 없습니다: $symbol');
-          logger.e('❌ 백엔드에서 Alpaca API를 통해 데이터를 가져오지 못했을 수 있습니다.');
-        }
-      }
-      return null;
-    }
-  }
 
   /// 주식 목록 조회
   static Future<List<StockModel>?> getStockList() async {
     try {
-      logger.i('주식 목록 조회 시작');
-      
       final response = await _dio.get('/stocks');
       
       if (response.statusCode == 200) {
-        logger.i('주식 목록 조회 성공');
         final data = response.data;
         if (data is List) {
           return data.map((json) => StockModel.fromJson(json as Map<String, dynamic>)).toList();
@@ -77,12 +42,9 @@ class StockApiService {
   /// 해외 주요 지수 조회
   static Future<List<StockModel>?> getOverseasIndices() async {
     try {
-      logger.i('해외 주요 지수 조회 시작');
-      
       final response = await _dio.get('/indices');
       
       if (response.statusCode == 200) {
-        logger.i('해외 주요 지수 조회 성공');
         final data = response.data;
         if (data is List) {
           return data.map((json) => StockModel.fromJson(json as Map<String, dynamic>)).toList();
@@ -319,14 +281,20 @@ class StockApiService {
   }
 
   // 종목 검색
-  static Future<List<StockModel>?> searchStocks(String query) async {
+  static Future<List<StockModel>?> searchStocks(String query, {String? assetClass}) async {
     try {
-      logger.i('종목 검색 시작: $query');
+      logger.i('종목 검색 시작: $query, assetClass: $assetClass');
       
-      final response = await _dio.get('/stocks/search', queryParameters: {
+      final queryParams = <String, dynamic>{
         'q': query.toUpperCase(), // 자동으로 대문자 변환
-        'assetClass': 'us_equity', // 미국 주식으로 필터링
-      });
+      };
+      
+      // assetClass가 지정된 경우에만 추가
+      if (assetClass != null) {
+        queryParams['assetClass'] = assetClass;
+      }
+      
+      final response = await _dio.get('/stocks/search', queryParameters: queryParams);
       
       if (response.statusCode == 200) {
         logger.i('종목 검색 성공');
@@ -364,6 +332,53 @@ class StockApiService {
           logger.e('❌ 404 에러: 검색 결과 없음');
         }
       }
+      return null;
+    }
+  }
+
+  // 미국 주식 검색
+  static Future<List<StockModel>?> searchUSStocks(String query) async {
+    return searchStocks(query, assetClass: 'us_equity');
+  }
+
+  // 암호화폐 검색
+  static Future<List<StockModel>?> searchCrypto(String query) async {
+    return searchStocks(query, assetClass: 'crypto');
+  }
+
+  /// 암호화폐 호가창 조회 (스냅샷)
+  static Future<OrderBookModel?> getCryptoOrderBook(String symbol) async {
+    try {
+      // 심볼에서 / 제거 (ETH/BTC -> ETHBTC)
+      final cleanSymbol = symbol.replaceAll('/', '');
+      
+      final response = await _dio.get('/stocks/orderbook/$cleanSymbol');
+      
+      if (response.statusCode == 200) {
+        if (response.data is Map<String, dynamic>) {
+          final data = response.data;
+          final transformedData = {
+            'symbol': data['symbol'],
+            'bids': (data['bids'] as List).map((bid) => {
+              'price': bid['price'].toString(),
+              'quantity': bid['quantity'].toString(),
+            }).toList(),
+            'asks': (data['asks'] as List).map((ask) => {
+              'price': ask['price'].toString(),
+              'quantity': ask['quantity'].toString(),
+            }).toList(),
+          };
+          return OrderBookModel.fromJson(transformedData);
+        } else {
+          logger.e('응답 데이터가 Map이 아닙니다: ${response.data.runtimeType}');
+          return null;
+        }
+      } else {
+        logger.e('암호화폐 호가창 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('암호화폐 호가창 조회 에러: $error');
       return null;
     }
   }

@@ -6,7 +6,6 @@ import 'package:app_links/app_links.dart';
 import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
 import 'package:qbit_core/config/app_config.dart';
 import 'package:qbit_core/config/env_config.dart';
-import 'package:qbit_shared/theme/app_theme.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/api_client.dart';
 import 'package:qbit_shared/router/app_router.dart';
@@ -129,8 +128,8 @@ class _QbitAppState extends State<QbitApp> {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: AppConfig.appName,
-      theme: AppTheme.lightTheme,
       routerConfig: AppRouter.router,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

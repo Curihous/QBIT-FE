@@ -35,16 +35,11 @@ class GoogleAuthService {
   // 구글 로그인 실행
   static Future<Map<String, dynamic>?> login() async {
     try {
-      logger.i('구글 로그인 시작');
-      
       // 1. 자동 로그인 시도 (이전 세션 복원)
       GoogleSignInAccount? currentUser = await _googleSignIn.signInSilently();
       
-      if (currentUser != null) {
-        logger.i('자동 로그인 성공: ${currentUser.email}');
-      } else {
+      if (currentUser == null) {
         // 2. 자동 로그인 실패 시 수동 로그인
-        logger.i('자동 로그인 실패, 수동 로그인 시도');
         currentUser = await _googleSignIn.signIn();
       }
       
@@ -53,12 +48,9 @@ class GoogleAuthService {
         return {'success': false, 'error': '사용자 취소'};
       }
 
-      logger.i('구글 로그인 성공: ${currentUser.email}');
-
       // 인증 정보 가져오기
       final GoogleSignInAuthentication auth = await currentUser.authentication;
       
-      logger.i('구글 인증 토큰: idToken=${auth.idToken != null ? "있음(${auth.idToken?.substring(0, 20)}...)" : "없음"}, accessToken=${auth.accessToken != null ? "있음" : "❌없음"}');
       
       return {
         'success': true,
@@ -79,7 +71,6 @@ class GoogleAuthService {
   static Future<bool> logout() async {
     try {
       await _googleSignIn.signOut();
-      logger.i('구글 로그아웃 성공');
       return true;
     } catch (error) {
       logger.e('구글 로그아웃 실패: $error');
@@ -91,7 +82,6 @@ class GoogleAuthService {
   static Future<bool> disconnect() async {
     try {
       await _googleSignIn.disconnect();
-      logger.i('구글 연결 해제 성공');
       return true;
     } catch (error) {
       logger.e('구글 연결 해제 실패: $error');
@@ -107,7 +97,6 @@ class GoogleAuthService {
       
       // 2. 없으면 자동 로그인 시도
       if (currentUser == null) {
-        logger.i('현재 사용자 없음, 자동 로그인 시도');
         currentUser = await _googleSignIn.signInSilently();
       }
       
@@ -119,7 +108,6 @@ class GoogleAuthService {
       // 3. 인증 정보 가져오기
       final GoogleSignInAuthentication auth = await currentUser.authentication;
 
-      logger.i('구글 사용자 정보 조회 성공: ${currentUser.email}');
       
       return {
         'userId': currentUser.id,
@@ -143,7 +131,6 @@ class GoogleAuthService {
       
       // 2. 없으면 자동 로그인 시도
       if (currentUser == null) {
-        logger.i('현재 사용자 없음, 자동 로그인 시도');
         currentUser = await _googleSignIn.signInSilently();
       }
       
@@ -152,7 +139,6 @@ class GoogleAuthService {
         return null;
       }
 
-      logger.i('구글 간단한 사용자 정보 조회 성공: ${currentUser.email}');
       
       return {
         'userId': currentUser.id,
@@ -179,7 +165,6 @@ class GoogleAuthService {
   // 토큰 갱신 (자동 로그인만 시도, 실패하면 로그인 화면으로)
   static Future<Map<String, dynamic>?> refreshToken() async {
     try {
-      logger.i('구글 토큰 갱신 시작');
       
       // 1. 자동 로그인 시도 (UI 없이)
       GoogleSignInAccount? currentUser = await _googleSignIn.signInSilently();
@@ -192,7 +177,6 @@ class GoogleAuthService {
       // 2. 인증 정보 다시 가져오기 (자동으로 갱신됨)
       final GoogleSignInAuthentication auth = await currentUser.authentication;
       
-      logger.i('구글 토큰 갱신 성공: ${currentUser.email}');
       
       return {
         'success': true,
@@ -205,4 +189,3 @@ class GoogleAuthService {
     }
   }
 }
-

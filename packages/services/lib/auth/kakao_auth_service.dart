@@ -29,6 +29,9 @@ class KakaoAuthService {
           
           logger.i('기존 토큰 유효: userId=${tokenInfo.id}');
           
+          // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
+          logger.i('🔍 카카오 액세스 토큰: ${token?.accessToken}');
+          
           User user = await UserApi.instance.me();
           logger.i('자동 로그인 성공: 닉네임=${user.kakaoAccount?.profile?.nickname}');
           

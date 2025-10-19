@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../widgets/common/bottom_navigation_bar.dart';
-import '../../widgets/common/header_home.dart';
-import '../../screens/study/study_screen.dart';
-import '../../screens/record/record_screen.dart';
-import '../../screens/trade/trade_screen.dart';
-import '../../screens/my/my_screen.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/app_fonts.dart';
+import 'package:qbit_shared/widgets/common/bottom_navigation_bar.dart';
+import 'package:qbit_shared/widgets/common/header_home.dart';
+import 'package:qbit_shared/screens/study/study_screen.dart';
+import 'package:qbit_shared/screens/record/record_screen.dart';
+import 'package:qbit_shared/screens/trade/trade_screen.dart';
+import 'package:qbit_shared/screens/my/my_screen.dart';
+import 'package:qbit_shared/theme/app_colors.dart';
+import 'package:qbit_shared/theme/app_fonts.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,14 +29,23 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+      body: Stack(
+        children: [
+          _screens[_currentIndex],
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: CustomBottomNavigationBar(
+              currentIndex: _currentIndex,
+              onTap: (index) {
+                setState(() {
+                  _currentIndex = index;
+                });
+              },
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -57,7 +66,7 @@ class HomeContentScreen extends StatelessWidget {
             Text(
               '구현예정',
               style: AppFonts.t1Bold.copyWith(
-                color: AppColors.gray500,
+                color: AppColors.gray600,
               ),
             ),
             const SizedBox(height: 16.0),

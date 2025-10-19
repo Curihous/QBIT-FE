@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_services/models/stock_model.dart';
-import 'package:qbit_shared/screens/trade/stock_detail_screen.dart';
 
 /// 종목 검색 결과 아이템 컴포넌트
 class StockSearchItem extends StatelessWidget {
@@ -20,15 +20,10 @@ class StockSearchItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => StockDetailScreen(
-              symbol: stock.symbol,
-              name: stock.name,
-            ),
-          ),
-        );
+        final encodedSymbol = Uri.encodeComponent(stock.symbol);
+        final encodedName = Uri.encodeComponent(stock.name);
+        final encodedAssetClass = Uri.encodeComponent(stock.assetClass ?? 'us_equity');
+        context.push('/stock-detail/$encodedSymbol?name=$encodedName&assetClass=$encodedAssetClass');
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 13),
