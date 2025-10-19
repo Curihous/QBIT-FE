@@ -7,6 +7,7 @@ import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/auth_api_service.dart';
 import 'package:qbit_services/models/auth_models.dart';
 import 'package:qbit_services/storage/token_service.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'dart:convert';
 import 'dart:async';
 
@@ -206,33 +207,47 @@ class ApiClient {
               if (hasKakaoToken) {
                 logger.i('카카오 로그인 감지 - 백엔드 토큰 재발급 시도');
                 
-                final kakaoAccessToken = await TokenService.getKakaoAccessToken();
-                if (kakaoAccessToken != null) {
-                  final userId = await TokenService.getKakaoUserId();
-                  final backendResult = await AuthApiService.kakaoLogin(
-                    kakaoAccessToken: kakaoAccessToken,
-                    userId: userId ?? '',
-                    nickname: '',
-                    email: '',
-                  );
+                try {
+                  // 카카오 SDK에서 사용자 정보 조회 (자동 토큰 갱신 포함)
+                  final user = await UserApi.instance.me();
+                  final token = await TokenManagerProvider.instance.manager.getToken();
                   
-                  if (backendResult != null) {
-                    final response = KakaoLoginResponse.fromJson(backendResult);
-                    if (response.accessToken != null) {
-                      await TokenService.saveAccessToken(response.accessToken!);
-                      
-                      logger.i('카카오 백엔드 토큰 재발급 성공 - 요청 재시도');
-                      final newToken = await _getAccessToken();
-                      if (newToken != null) {
-                        logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
-                        error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
-                        final retryResponse = await _refreshDio.fetch(error.requestOptions);
-                        _retriedRequests.remove(requestKey);
-                        handler.resolve(retryResponse);
-                        return;
+                  if (token?.accessToken != null) {
+                    logger.i('카카오 SDK에서 토큰 갱신 성공 - 백엔드 토큰 재발급 시도');
+                    
+                    final backendResult = await AuthApiService.kakaoLogin(
+                      kakaoAccessToken: token!.accessToken,
+                      userId: user.id.toString(),
+                      nickname: user.kakaoAccount?.profile?.nickname ?? '',
+                      email: user.kakaoAccount?.email ?? '',
+                    );
+                    
+                    if (backendResult != null) {
+                      final response = KakaoLoginResponse.fromJson(backendResult);
+                      if (response.accessToken != null) {
+                        await TokenService.saveAccessToken(response.accessToken!);
+                        
+                        logger.i('카카오 백엔드 토큰 재발급 성공 - 요청 재시도');
+                        final newToken = await _getAccessToken();
+                        if (newToken != null) {
+                          logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
+                          error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                          final retryResponse = await _refreshDio.fetch(error.requestOptions);
+                          _retriedRequests.remove(requestKey);
+                          handler.resolve(retryResponse);
+                          return;
+                        }
                       }
                     }
                   }
+                } on KakaoException catch (e) {
+                  if (e.isInvalidTokenError()) {
+                    logger.e('카카오 토큰 무효. 재로그인 필요.');
+                  } else {
+                    logger.e('카카오 토큰 갱신 실패: $e');
+                  }
+                } catch (e) {
+                  logger.e('카카오 토큰 갱신 중 오류: $e');
                 }
                 
                 logger.w('카카오 토큰으로 백엔드 토큰 재발급 실패');

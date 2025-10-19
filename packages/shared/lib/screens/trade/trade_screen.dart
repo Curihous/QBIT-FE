@@ -1239,6 +1239,9 @@ class _TradeScreenState extends State<TradeScreen> {
         },
       ),
       body: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).padding.bottom + 72 + 8, // 네비게이션 바 높이 + 패딩
+        ),
         child: Column(
           children: [
             // 검색바 섹션

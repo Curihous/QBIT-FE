@@ -5,6 +5,8 @@ import '../models/stock_model.dart';
 import '../models/asset_model.dart';
 import '../models/stock_ranking_model.dart';
 import '../models/orderbook_model.dart';
+import '../models/candle_model.dart';
+import '../models/stock_detail_model.dart';
 
 /// 주식 관련 API 서비스 모음
 
@@ -151,12 +153,15 @@ class StockApiService {
         
         // Alpaca 계정 정보를 AssetModel 형태로 변환
         return AssetModel.fromJson({
-          'portfolioValue': accountInfo['portfolioValue'] ?? '0',
-          'cash': accountInfo['cash'] ?? '0',
-          'buyingPower': accountInfo['buyingPower'] ?? '0',
-          'equity': accountInfo['equity'] ?? '0',
-          'longMarketValue': accountInfo['longMarketValue'] ?? '0',
+          'accountNumber': accountInfo['accountNumber'] ?? '',
+          'status': accountInfo['status'] ?? '',
           'currency': accountInfo['currency'] ?? 'USD',
+          'buyingPower': accountInfo['buyingPower'] ?? '0',
+          'cash': accountInfo['cash'] ?? '0',
+          'portfolioValue': accountInfo['portfolioValue'] ?? '0',
+          'equity': accountInfo['equity'] ?? '0',
+          'lastEquity': accountInfo['lastEquity'] ?? '0',
+          'longMarketValue': accountInfo['longMarketValue'] ?? '0',
         });
       } else {
         logger.e('Alpaca 계정 정보 조회 실패');
@@ -253,6 +258,7 @@ class StockApiService {
       
       if (response.statusCode == 200) {
         logger.i('Alpaca 계정 정보 조회 성공');
+        logger.i('응답 데이터: ${response.data}');
         
         if (response.data is Map<String, dynamic>) {
           return response.data as Map<String, dynamic>;
@@ -379,6 +385,75 @@ class StockApiService {
       }
     } catch (error) {
       logger.e('암호화폐 호가창 조회 에러: $error');
+      return null;
+    }
+  }
+
+  /// 종목 상세 정보 조회
+  /// GET /stocks/{symbol}
+  static Future<StockDetailModel?> getStockDetail(String symbol) async {
+    try {
+      logger.i('종목 상세 정보 조회 시작: $symbol');
+      
+      final response = await _dio.get('/stocks/$symbol');
+      
+      if (response.statusCode == 200) {
+        logger.i('종목 상세 정보 조회 성공');
+        logger.i('응답 데이터: ${response.data}');
+        
+        if (response.data is Map<String, dynamic>) {
+          return StockDetailModel.fromJson(response.data as Map<String, dynamic>);
+        } else {
+          logger.e('응답 데이터 타입이 예상과 다름: ${response.data.runtimeType}');
+          return null;
+        }
+      } else {
+        logger.e('종목 상세 정보 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('종목 상세 정보 조회 에러: $error');
+      if (error is DioException) {
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
+        logger.e('Dio 에러 데이터: ${error.response?.data}');
+      }
+      return null;
+    }
+  }
+
+  /// 암호화폐 캔들 데이터 조회
+  static Future<CandleResponse?> getCryptoCandles({
+    required String symbol,
+    String interval = '1d',
+    required int startTime,
+    required int endTime,
+  }) async {
+    try {
+      // 심볼에서 / 제거 (ETH/BTC -> ETHBTC)
+      final cleanSymbol = symbol.replaceAll('/', '');
+      
+      final response = await _dio.get(
+        '/stocks/candle/$cleanSymbol',
+        queryParameters: {
+          'interval': interval,
+          'startTime': startTime,
+          'endTime': endTime,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        if (response.data is Map<String, dynamic>) {
+          return CandleResponse.fromJson(response.data);
+        } else {
+          logger.e('응답 데이터가 Map이 아닙니다: ${response.data.runtimeType}');
+          return null;
+        }
+      } else {
+        logger.e('암호화폐 캔들 데이터 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('암호화폐 캔들 데이터 조회 에러: $error');
       return null;
     }
   }

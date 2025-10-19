@@ -28,6 +28,10 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
   bool _isBottomNavVisible = true;
   late AnimationController _animationController;
   late Animation<Offset> _slideAnimation;
+  
+  // 가격 정보 상태
+  String _currentPrice = "0원";
+  String _priceChange = "+0.00%";
 
   @override
   void initState() {
@@ -73,10 +77,7 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: HeaderBack(
-        title: widget.name,
-        onBackPressed: () => Navigator.pop(context),
-      ),
+      appBar: _buildCustomAppBar(),
       body: GestureDetector(
         onPanUpdate: _handlePanUpdate,
         child: Stack(
@@ -105,6 +106,7 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
           symbol: widget.symbol,
           name: widget.name,
           assetClass: widget.assetClass,
+          onPriceUpdate: updatePriceInfo,
         );
       case 1: // 호가
         return StockOrderbookTab(
@@ -177,5 +179,78 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
         ),
       ),
     );
+  }
+
+  PreferredSizeWidget _buildCustomAppBar() {
+    return AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      leading: IconButton(
+        icon: const Icon(
+          Icons.arrow_back_ios,
+          color: AppColors.gray900,
+        ),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Row(
+        children: [
+          // 종목 심볼 (좌측)
+          Text(
+            widget.symbol,
+            style: AppFonts.b1Semibold.copyWith(
+              color: AppColors.gray900,
+              fontSize: 18,
+            ),
+          ),
+          const Spacer(),
+          // 가격 정보 (우측)
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                _getCurrentPrice(),
+                style: AppFonts.b1Semibold.copyWith(
+                  color: AppColors.gray900,
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                _getPriceChange(),
+                style: AppFonts.b1Semibold.copyWith(
+                  color: _getPriceChangeColor(),
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getCurrentPrice() {
+    return _currentPrice;
+  }
+
+  String _getPriceChange() {
+    return _priceChange;
+  }
+
+  // 가격 정보 업데이트 메서드
+  void updatePriceInfo(String price, String change) {
+    setState(() {
+      _currentPrice = price;
+      _priceChange = change;
+    });
+  }
+
+  Color _getPriceChangeColor() {
+    final change = _getPriceChange();
+    if (change.startsWith('+')) {
+      return AppColors.loss; // 빨간색 (상승)
+    } else if (change.startsWith('-')) {
+      return AppColors.profit; // 파란색 (하락)
+    }
+    return AppColors.gray600;
   }
 }

@@ -281,10 +281,11 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
   }
 
   String _formatPrice(double price) {
+    // 암호화폐는 소수점까지 정확하게 표시
     if (price >= 1000) {
-      return price.toStringAsFixed(0);
-    } else if (price >= 1) {
       return price.toStringAsFixed(2);
+    } else if (price >= 1) {
+      return price.toStringAsFixed(4);
     } else {
       return price.toStringAsFixed(6);
     }
