@@ -11,12 +11,14 @@ class StockDetailNavigation extends StatefulWidget {
   final String symbol;
   final String name;
   final String assetClass;
+  final String? binanceSymbol;
 
   const StockDetailNavigation({
     super.key,
     required this.symbol,
     required this.name,
     required this.assetClass,
+    this.binanceSymbol,
   });
 
   @override
@@ -103,20 +105,24 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
     switch (_selectedTabIndex) {
       case 0: // 차트
         return StockChartTab(
-          symbol: widget.symbol,
+          symbol: widget.assetClass == 'crypto' && (widget.binanceSymbol?.isNotEmpty ?? false)
+              ? widget.binanceSymbol!
+              : widget.symbol,
           name: widget.name,
           assetClass: widget.assetClass,
           onPriceUpdate: updatePriceInfo,
         );
       case 1: // 호가
         return StockOrderbookTab(
-          symbol: widget.symbol,
+          symbol: widget.assetClass == 'crypto' && (widget.binanceSymbol?.isNotEmpty ?? false)
+              ? widget.binanceSymbol!
+              : widget.symbol,
           name: widget.name,
           assetClass: widget.assetClass,
         );
       case 2: // 주문
         return StockOrderTab(
-          symbol: widget.symbol,
+          symbol: widget.symbol, // 주문은 기존 심볼 유지 (백엔드 주문 규격 기준)
           name: widget.name,
           assetClass: widget.assetClass,
         );
@@ -124,6 +130,10 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
         return StockMarketTab(
           symbol: widget.symbol,
           name: widget.name,
+          assetClass: widget.assetClass,
+          binanceSymbol: widget.assetClass == 'crypto' && (widget.binanceSymbol?.isNotEmpty ?? false)
+              ? widget.binanceSymbol
+              : null,
         );
       default:
         return StockChartTab(

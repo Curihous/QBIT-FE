@@ -8,6 +8,7 @@ StockDetailModel _$StockDetailModelFromJson(Map<String, dynamic> json) =>
     StockDetailModel(
       symbol: json['symbol'] as String,
       name: json['name'] as String,
+      binanceSymbol: json['binanceSymbol'] as String?,
       exchange: json['exchange'] as String,
       assetClass: json['assetClass'] as String,
       status: json['status'] as bool,
@@ -23,6 +24,7 @@ Map<String, dynamic> _$StockDetailModelToJson(StockDetailModel instance) =>
     <String, dynamic>{
       'symbol': instance.symbol,
       'name': instance.name,
+      'binanceSymbol': instance.binanceSymbol,
       'exchange': instance.exchange,
       'assetClass': instance.assetClass,
       'status': instance.status,

@@ -7,6 +7,7 @@ part 'stock_detail_model.g.dart';
 class StockDetailModel {
   final String symbol;
   final String name;
+  final String? binanceSymbol;
   final String exchange;
   final String assetClass;
   final bool status;
@@ -20,6 +21,7 @@ class StockDetailModel {
   StockDetailModel({
     required this.symbol,
     required this.name,
+    this.binanceSymbol,
     required this.exchange,
     required this.assetClass,
     required this.status,

@@ -37,8 +37,8 @@ class AppColors {
   static const Color secondarySoft = Color(0xFFFFF0CD); // Secondary soft
   
   // Trade Colors
-  static const Color profit = Color(0xFFE74C3C); // 빨간색 (상승) 
-  static const Color loss = Color(0xFF178EDE); // 파란색 (하락)
+  static const Color loss = Color(0xFFE74C3C); // 빨간색 (하락)
+  static const Color profit = Color(0xFF178EDE); // 파란색 (상승)
   
   // Order Book Bar Colors
   static const Color orderBookBidBg = Color(0x33178EDE); 
