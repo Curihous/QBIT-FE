@@ -33,11 +33,9 @@ class TokenService {
   /// 액세스 토큰 조회
   static Future<String?> getAccessToken() async {
     try {
-      logger.i('액세스 토큰 조회 시도');
+      // 토큰 조회 로그 제거 (너무 많이 출력됨)
       final token = await _storage.read(key: _accessTokenKey);
-      if (token != null) {
-        logger.i('액세스 토큰 조회 성공: ${token.substring(0, 20)}...');
-      } else {
+      if (token == null) {
         logger.w('저장된 액세스 토큰 없음');
       }
       return token;

@@ -30,12 +30,12 @@ class OrderWebSocketService {
     _manuallyClosed = false;
 
     try {
-      _logger.i('WS 연결 시도: $_wsUrl');
+      // 연결 시도 로그 제거 (너무 많이 출력됨)
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
       // 수신 스트림 리스닝
       _channelSub = _channel!.stream.listen(
         (event) {
-          _logger.d('WS 수신: $event');
+          // 일반적인 수신 로그 제거, 에러만 로깅
           dynamic parsed = event;
           try {
             if (event is String) {
@@ -45,7 +45,7 @@ class OrderWebSocketService {
           _messageController.add(parsed);
         },
         onDone: () {
-          _logger.w('WS 연결 종료 (code: ${_channel?.closeCode})');
+          // 연결 종료 로그 제거 (너무 많이 출력됨)
           _cleanup();
           if (!_manuallyClosed) _scheduleReconnect();
         },
@@ -68,7 +68,7 @@ class OrderWebSocketService {
   void _scheduleReconnect() {
     _reconnectAttempts++;
     final delayMs = (1000 * (_reconnectAttempts.clamp(1, 10))).toInt();
-    _logger.i('WS 재연결 예약: ${delayMs}ms 후 (${_reconnectAttempts}회 시도)');
+    // 재연결 로그 제거 (너무 많이 출력됨)
     Future.delayed(Duration(milliseconds: delayMs), () {
       if (_manuallyClosed) return;
       connect();
@@ -109,11 +109,45 @@ class OrderWebSocketService {
       buffer.write('\u0000'); // STOMP frame terminator
 
       final frame = buffer.toString();
-      _logger.i('STOMP CONNECT 전송');
+      // STOMP CONNECT 로그 제거 (너무 많이 출력됨)
       _channel?.sink.add(frame);
+      
+      // CONNECT 후 구독 요청
+      await Future.delayed(const Duration(milliseconds: 500));
+      await _subscribeToOrders();
     } catch (e) {
       _logger.e('STOMP CONNECT 전송 실패: $e');
     }
+  }
+
+  // 주문 상태 업데이트 구독
+  Future<void> _subscribeToOrders() async {
+    try {
+      final buffer = StringBuffer();
+      buffer.writeln('SUBSCRIBE');
+      buffer.writeln('id:orders-subscription');
+      buffer.writeln('destination:/user/queue/orders');
+      buffer.write('\u0000'); // STOMP frame terminator
+
+      final frame = buffer.toString();
+      // STOMP SUBSCRIBE 로그 제거 (너무 많이 출력됨)
+      _channel?.sink.add(frame);
+    } catch (e) {
+      _logger.e('STOMP SUBSCRIBE 전송 실패: $e');
+    }
+  }
+
+  // 주문 상태 업데이트 스트림 (필터링된)
+  Stream<Map<String, dynamic>> get orderUpdates {
+    return messages.where((message) {
+      if (message is Map<String, dynamic>) {
+        // 주문 관련 메시지만 필터링
+        return message.containsKey('orderId') || 
+               message.containsKey('status') ||
+               message.containsKey('symbol');
+      }
+      return false;
+    }).cast<Map<String, dynamic>>();
   }
 }
 

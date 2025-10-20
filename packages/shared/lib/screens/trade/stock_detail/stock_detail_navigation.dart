@@ -34,10 +34,18 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
   // 가격 정보 상태
   String _currentPrice = "0원";
   String _priceChange = "+0.00%";
+  
+  // 통화 전환 상태
+  bool _isShowingKRW = true; // true: 원화, false: 달러
 
   @override
   void initState() {
     super.initState();
+    // 암호화폐인 경우 달러를 기본값으로 설정
+    if (widget.assetClass == 'crypto') {
+      _isShowingKRW = false;
+      _currentPrice = "\$0";
+    }
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
@@ -213,25 +221,28 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
             ),
           ),
           const Spacer(),
-          // 가격 정보 (우측)
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                _getCurrentPrice(),
-                style: AppFonts.b1Semibold.copyWith(
-                  color: AppColors.gray900,
-                  fontSize: 14,
+          // 가격 정보 (우측) - 탭 가능
+          GestureDetector(
+            onTap: _toggleCurrency,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _getCurrentPrice(),
+                  style: AppFonts.b1Semibold.copyWith(
+                    color: AppColors.gray900,
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-              Text(
-                _getPriceChange(),
-                style: AppFonts.b1Semibold.copyWith(
-                  color: _getPriceChangeColor(),
-                  fontSize: 14,
+                Text(
+                  _getPriceChange(),
+                  style: AppFonts.b1Semibold.copyWith(
+                    color: _getPriceChangeColor(),
+                    fontSize: 14,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -251,6 +262,27 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
     setState(() {
       _currentPrice = price;
       _priceChange = change;
+    });
+  }
+  
+  // 통화 전환 메서드
+  void _toggleCurrency() {
+    setState(() {
+      _isShowingKRW = !_isShowingKRW;
+      // 실제로는 환율을 적용해서 변환해야 하지만, 여기서는 간단히 표시만 변경
+      if (_isShowingKRW) {
+        // 달러 -> 원화 변환 (예시: $100 -> 130,000원)
+        if (_currentPrice.startsWith('\$')) {
+          final dollarValue = double.tryParse(_currentPrice.substring(1)) ?? 0;
+          _currentPrice = '${(dollarValue * 1300).toStringAsFixed(0)}원';
+        }
+      } else {
+        // 원화 -> 달러 변환 (예시: 130,000원 -> $100)
+        if (_currentPrice.endsWith('원')) {
+          final krwValue = double.tryParse(_currentPrice.replaceAll(',', '').replaceAll('원', '')) ?? 0;
+          _currentPrice = '\$${(krwValue / 1300).toStringAsFixed(2)}';
+        }
+      }
     });
   }
 
