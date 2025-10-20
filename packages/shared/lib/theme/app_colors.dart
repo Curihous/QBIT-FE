@@ -34,7 +34,8 @@ class AppColors {
   // Secondary Colors
   
   static const Color secondaryMain = Color(0xFFFFE19C); // Secondary main
-  static const Color secondarySoft = Color(0xFFFFF0CD); // Secondary soft
+  static const Color secondaryLight = Color(0xFFFCE6B3); // Secondary soft
+  static const Color secondaryBG = Color(0xFFFFFBF3); // BG
   
   // Trade Colors
   static const Color loss = Color(0xFFE74C3C); // 빨간색 (하락)

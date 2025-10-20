@@ -107,7 +107,7 @@ class _QbitAppState extends State<QbitApp> {
     // 앱이 이미 실행 중일 때 URL 처리
     _appLinks.uriLinkStream.listen(
       (Uri uri) {
-        // 카카오 SDK가 자동으로 Deep Link 처리
+        _handleDeepLink(uri);
       },
       onError: (err) {
         if (kDebugMode) {
@@ -119,9 +119,48 @@ class _QbitAppState extends State<QbitApp> {
     // 앱이 종료된 상태에서 URL로 실행될 때 처리
     _appLinks.getInitialLink().then((Uri? uri) {
       if (uri != null) {
-        // 카카오 SDK가 자동으로 Deep Link 처리
+        _handleDeepLink(uri);
       }
     });
+  }
+
+  void _handleDeepLink(Uri uri) {
+    if (kDebugMode) {
+      debugPrint('Deep Link 수신: $uri');
+    }
+    
+    // 알파카 콜백 처리
+    if (uri.scheme == 'qbit' && uri.path.startsWith('/auth/alpaca/callback')) {
+      if (kDebugMode) {
+        debugPrint('✅ 알파카 콜백 Deep Link 감지: $uri');
+      }
+      
+      // GoRouter로 직접 이동
+      final path = uri.path;
+      final queryParams = uri.queryParameters;
+      
+      String fullPath = path;
+      if (queryParams.isNotEmpty) {
+        final queryString = queryParams.entries
+            .map((e) => '${e.key}=${e.value}')
+            .join('&');
+        fullPath = '$path?$queryString';
+      }
+      
+      if (kDebugMode) {
+        debugPrint('GoRouter로 이동: $fullPath');
+      }
+      
+      // 안전하게 GoRouter로 이동
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        AppRouter.router.go(fullPath);
+      });
+    } else {
+      // 카카오 SDK가 자동으로 Deep Link 처리
+      if (kDebugMode) {
+        debugPrint('카카오 SDK가 처리할 Deep Link: $uri');
+      }
+    }
   }
 
   @override

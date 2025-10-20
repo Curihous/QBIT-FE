@@ -239,18 +239,27 @@ class AuthApiService {
   static Future<bool> disconnectAlpaca() async {
     try {
       logger.i('Alpaca 연결 해제 시작');
+      logger.i('API 엔드포인트: /auth/alpaca/disconnect');
+      
       final response = await _dio.post('/auth/alpaca/disconnect');
+      
+      logger.i('응답 상태코드: ${response.statusCode}');
+      logger.i('응답 데이터: ${response.data}');
+      
       if (response.statusCode == 200) {
         logger.i('Alpaca 연결 해제 성공');
         return true;
       } else {
         logger.e('Alpaca 연결 해제 실패: ${response.statusCode}');
+        logger.e('응답 데이터: ${response.data}');
         return false;
       }
     } catch (error) {
       logger.e('Alpaca 연결 해제 에러: $error');
       if (error is DioException) {
         logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상태코드: ${error.response?.statusCode}');
+        logger.e('Dio 에러 메시지: ${error.message}');
       }
       return false;
     }

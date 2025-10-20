@@ -7,6 +7,7 @@ import 'package:qbit_shared/screens/trade/trade_screen.dart';
 import 'package:qbit_shared/screens/my/my_screen.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: 0,
+            bottom: -60, // 네비게이션 바 위치 조정
             child: CustomBottomNavigationBar(
               currentIndex: _currentIndex,
               onTap: (index) {
@@ -57,25 +58,129 @@ class HomeContentScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
       appBar: const TopAppBar(),
-      body: Center(
+      body: SingleChildScrollView(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              '구현예정',
-              style: AppFonts.t1Bold.copyWith(
-                color: AppColors.gray600,
+            // 노현선님을 위한 소식 섹션
+            Container(
+              width: double.infinity,
+              height: 276,
+              decoration: const BoxDecoration(
+                color: AppColors.secondaryMain, // 노란색 배경
+              ),
+              child: Stack(
+                children: [
+                  // 제목
+                  Positioned(
+                    left: 20,
+                    top: 25,
+                    child: Text(
+                      '10월 21일, 노현선님을 위한 소식',
+                      style: AppFonts.t2Bold.copyWith(
+                        color: AppColors.gray900,
+                      ),
+                    ),
+                  ),
+                  // 뉴스 카드
+                  Positioned(
+                    left: 20,
+                    top: 62,
+                    child: GestureDetector(
+                      onTap: () {
+                        context.go('/column');
+                      },
+                      child: Container(
+                        width: MediaQuery.of(context).size.width - 40,
+                        height: 214,
+                        decoration: const ShapeDecoration(
+                          color: AppColors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(18),
+                              topRight: Radius.circular(18),
+                              bottomRight: Radius.circular(1),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  // 뉴스 내용 배경
+                  Positioned(
+                    left: 20,
+                    top: 218,
+                    child: GestureDetector(
+                      onTap: () {
+                        context.go('/column');
+                      },
+                      child: Container(
+                        width: MediaQuery.of(context).size.width - 40,
+                        height: 58,
+                        decoration: const BoxDecoration(
+                          color: AppColors.gray30,
+                        ),
+                      ),
+                    ),
+                  ),
+                  // 뉴스 제목
+                  Positioned(
+                    left: 38,
+                    top: 228,
+                    child: Text(
+                      '🪙 이더리움, 다시 뜨거워질까?',
+                      style: AppFonts.b1Semibold.copyWith(
+                        color: AppColors.gray900,
+                      ),
+                    ),
+                  ),
+                  // 뉴스 부제목
+                  Positioned(
+                    left: 38,
+                    top: 251,
+                    child: Text(
+                      '불붙는 코인 시장, 유동성 신호등이 켜졌다.',
+                      style: AppFonts.c2.copyWith(
+                        color: AppColors.gray600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16.0),
-            Text(
-              'TODO: 포트폴리오 연동\n- 보유자산 조회 API 연동\n- 포트폴리오 차트 구현\n- 수익률 계산 및 표시',
-              style: AppFonts.b1Regular.copyWith(
-                color: AppColors.gray400,
+            // 추천 이론 학습 섹션 (구현 예정)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '추천 이론 학습',
+                    style: AppFonts.t2Semibold.copyWith(
+                      color: AppColors.gray900,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: AppColors.gray100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Center(
+                      child: Text(
+                        '구현 예정',
+                        style: AppFonts.b1Regular.copyWith(
+                          color: AppColors.gray400,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

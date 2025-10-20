@@ -10,6 +10,7 @@ import 'package:qbit_shared/widgets/common/common_widgets.dart';
 import 'package:qbit_shared/widgets/common/header_basic.dart';
 import 'package:qbit_shared/widgets/common/button/filter_button.dart';
 import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
 import 'package:qbit_shared/screens/trade/stock_search_screen.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
@@ -17,6 +18,8 @@ import 'package:qbit_services/auth/alpaca_auth_service.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/models/stock_model.dart';
+import 'package:qbit_shared/models/portfolio_history.dart';
+import 'package:qbit_shared/widgets/trade/portfolio_chart_widget.dart';
 import 'package:qbit_services/models/asset_model.dart';
 import 'package:qbit_services/models/stock_ranking_model.dart';
 import 'package:qbit_services/storage/token_service.dart';
@@ -30,7 +33,7 @@ class TradeScreen extends StatefulWidget {
 }
 
 class _TradeScreenState extends State<TradeScreen> {
-  bool _isAlpacaConnected = false; // Alpaca 연동 상태 - 강제로 false로 설정
+  bool _isAlpacaConnected = true; // Alpaca 연동 상태 - 테스트용으로 true로 설정
   
   String _userNickname = ''; // 카카오 닉네임
   List<StockModel> _overseasIndices = []; // 해외 주요 지수 데이터
@@ -38,6 +41,8 @@ class _TradeScreenState extends State<TradeScreen> {
   List<StockRankingModel> _stockRanking = []; // 해외 종목 순위 데이터
   String _selectedSortBy = 'volume'; // 선택된 정렬 기준
   int? _selectedStockIndex; // 선택된 종목 인덱스
+  int _overseasPage = 0; // 해외 지수 페이지 인덱스
+  final PageController _indicesPageController = PageController(viewportFraction: 1.0);
 
   @override
   void initState() {
@@ -61,8 +66,13 @@ class _TradeScreenState extends State<TradeScreen> {
     try {
       await _loadKakaoNickname();
       await _loadOverseasIndices();
-      await _checkAlpacaConnectionStatus();
-      await _loadUserAssets();
+      
+      // 알파카 연결 상태 확인과 자산 데이터 로드를 병렬로 실행
+      await Future.wait([
+        _checkAlpacaConnectionStatus(),
+        _loadUserAssets(),
+      ]);
+      
       await _loadStockRanking();
     } catch (e) {
       print('투자 화면 데이터 로드 중 에러: $e');
@@ -72,10 +82,14 @@ class _TradeScreenState extends State<TradeScreen> {
   // Alpaca 연결 상태 확인
   Future<void> _checkAlpacaConnectionStatus() async {
     try {
+      print('=== 알파카 연결 상태 확인 시작 ===');
+      
       // 먼저 로그인 상태 확인
       final isLoggedIn = await TokenService.isLoggedIn();
+      print('로그인 상태: $isLoggedIn');
       
       if (!isLoggedIn) {
+        print('로그인되지 않음 - 연결 상태를 false로 설정');
         if (mounted) {
           setState(() {
             _isAlpacaConnected = false;
@@ -84,15 +98,26 @@ class _TradeScreenState extends State<TradeScreen> {
         return;
       }
       
-
       // Alpaca 계정 정보로 연결 상태 확인
+      print('Alpaca 계정 정보 조회 중...');
       final accountInfo = await StockApiService.getAlpacaAccount();
+      print('계정 정보 조회 결과: ${accountInfo != null ? "성공" : "실패"}');
+      
       if (mounted) {
+        // 계정 정보가 있고 실제 데이터가 있을 때만 연결된 것으로 판단
+        bool isConnected = accountInfo != null && 
+                          accountInfo['portfolioValue'] != null && 
+                          (double.tryParse(accountInfo['portfolioValue'].toString()) ?? 0) > 0;
+        
         setState(() {
-          _isAlpacaConnected = accountInfo != null;
+          _isAlpacaConnected = isConnected;
         });
+        print('최종 연결 상태: $_isAlpacaConnected (계정정보: ${accountInfo != null}, 포트폴리오값: ${accountInfo?['portfolioValue']})');
       }
+      
+      print('=== 알파카 연결 상태 확인 완료 ===');
     } catch (error) {
+      print('연결 상태 확인 중 에러: $error');
       if (mounted) {
         setState(() {
           _isAlpacaConnected = false;
@@ -101,7 +126,7 @@ class _TradeScreenState extends State<TradeScreen> {
     }
   }
 
-  // 사용자 닉네임 가져오기 (백엔드 users/me 엔드포인트 사용)
+  // 사용자 닉네임 가져오기 
   Future<void> _loadKakaoNickname() async {
     try {
       // 백엔드에서 사용자 정보 가져오기
@@ -125,28 +150,50 @@ class _TradeScreenState extends State<TradeScreen> {
   // 보유자산 데이터 가져오기
   Future<void> _loadUserAssets() async {
     try {
+      print('=== 보유자산 데이터 로드 시작 ===');
+      
       final assets = await StockApiService.getUserAssets();
+      print('자산 데이터 조회 결과: ${assets != null ? "성공" : "실패"}');
+      
       if (mounted) {
         setState(() {
           _userAssets = assets;
+          // 실제 자산 데이터가 있을 때만 연결 상태를 true로 설정
+          // (하드코딩된 데이터가 아닌 실제 API 응답)
+          if (assets != null && assets.portfolioValue > 0) {
+            _isAlpacaConnected = true;
+            print('실제 자산 데이터 존재 - 연결 상태를 true로 설정');
+          } else {
+            _isAlpacaConnected = false;
+            print('자산 데이터 없음 또는 0값 - 연결 상태를 false로 설정');
+          }
+        });
+        print('자산 데이터 설정 완료, 현재 연결 상태: $_isAlpacaConnected');
+      }
+      
+      print('=== 보유자산 데이터 로드 완료 ===');
+    } catch (error) {
+      print('자산 데이터 로드 중 에러: $error');
+      // Alpaca 연결이 안 된 경우 null로 설정
+      if (mounted) {
+        setState(() {
+          _userAssets = null;
+          _isAlpacaConnected = false;
         });
       }
-    } catch (error) {
-      // Alpaca 연결이 안 된 경우 null로 설정
-      setState(() {
-        _userAssets = null;
-      });
     }
   }
 
   // 해외 종목 순위 데이터 가져오기 (하드코딩 데이터)
   Future<void> _loadStockRanking() async {
     // API 연동은 주석 처리하고 하드코딩된 데이터 사용
+    final base = _getDefaultStockRanking();
+    final sorted = _sortStockRanking(base, _selectedSortBy);
     setState(() {
-      _stockRanking = _getDefaultStockRanking();
+      _stockRanking = sorted;
     });
     
-    // TODO: 실제 API 연동 시 아래 코드 활성화
+    // TODO: 실제 API 연동 시 아래 코드 
     /*
     try {
       final ranking = await StockApiService.getOverseasStockRanking(sortBy: _selectedSortBy);
@@ -170,69 +217,101 @@ class _TradeScreenState extends State<TradeScreen> {
     return [
       StockRankingModel(
         rank: 1,
-        symbol: 'STOCK1',
-        name: '종목명',
-        price: 0.0, // 가격
-        changeAmount: 0.0,
-        changePercentage: 0.0, // 수익률
+        symbol: 'GNLN',
+        name: '그린레인 홀딩스',
+        price: 7026, // 가격
+        changeAmount: 1563.36, // 등락폭 (7026 * 28.6 / 100)
+        changePercentage: 28.6, // 등락률
         isPositive: true,
       ),
       StockRankingModel(
         rank: 2,
-        symbol: 'STOCK2',
-        name: '종목명',
-        price: 0.0, // 가격
-        changeAmount: 0.0,
-        changePercentage: 0.0, // 수익률
+        symbol: 'ALTO',
+        name: '알토 홀딩스',
+        price: 1322, // 가격
+        changeAmount: 134.84, // 등락폭 (1322 * 10.2 / 100)
+        changePercentage: 10.2, // 등락률
         isPositive: true,
         isHighlighted: true,
       ),
       StockRankingModel(
         rank: 3,
-        symbol: 'STOCK3',
-        name: '종목명',
-        price: 0.0, // 가격
-        changeAmount: 0.0,
-        changePercentage: 0.0, // 수익률
+        symbol: 'RAPT',
+        name: '랩트 테라퓨틱스',
+        price: 63891, // 가격
+        changeAmount: 33680.46, // 등락폭 (63891 * 52.7 / 100)
+        changePercentage: 52.7, // 등락
         isPositive: true,
       ),
       StockRankingModel(
         rank: 4,
-        symbol: 'STOCK4',
-        name: '종목명',
-        price: 0.0, // 가격
-        changeAmount: 0.0,
-        changePercentage: 0.0, // 수익률
+        symbol: 'BURU',
+        name: '누부루',
+        price: 537, // 가격
+        changeAmount: 56.92, // 등락폭 (537 * 10.6 / 100)
+        changePercentage: 10.6, // 등락
         isPositive: true,
       ),
       StockRankingModel(
         rank: 5,
-        symbol: 'STOCK5',
-        name: '종목명',
-        price: 0.0, // 가격
-        changeAmount: 0.0,
-        changePercentage: 0.0, // 수익률
+        symbol: 'AZTR',
+        name: '아지트라',
+        price: 1387, // 가격
+        changeAmount: 596.41, // 등락폭 (1387 * 43.0 / 100)
+        changePercentage: 43.0, // 등락
         isPositive: true,
       ),
       StockRankingModel(
         rank: 6,
-        symbol: 'STOCK6',
-        name: '종목명',
-        price: 0.0, // 가격
-        changeAmount: 0.0,
-        changePercentage: 0.0, // 수익률
+        symbol: 'GLD',
+        name: 'SPDR 금 ETF',
+        price: 564194, // 가격
+        changeAmount: 11848.07, // 등락폭 (564194 * 2.1 / 100)
+        changePercentage: 2.1, // 등락
         isPositive: true,
       ),
       StockRankingModel(
         rank: 7,
-        symbol: 'STOCK7',
-        name: '종목명',
-        price: 0.0, // 가격
-        changeAmount: 0.0,
-        changePercentage: 0.0, // 수익률
+        symbol: 'LAES',
+        name: '실SQ',
+        price: 10660, // 가격
+        changeAmount: 1332.50, // 등락폭 (10660 * 12.5 / 100)
+        changePercentage: 12.5, // 등락
         isPositive: true,
       ),
     ];
+  }
+
+  // 하드코딩 데이터 정렬 유틸
+  List<StockRankingModel> _sortStockRanking(List<StockRankingModel> items, String sortBy) {
+    final List<StockRankingModel> copy = List<StockRankingModel>.from(items);
+
+    switch (sortBy) {
+      case 'gain':
+        // 상승률순: 등락률 내림차순
+        copy.sort((a, b) => b.changePercentage.compareTo(a.changePercentage));
+        break;
+      case 'loss':
+        // 하락률순: 등락률 오름차순
+        copy.sort((a, b) => a.changePercentage.compareTo(b.changePercentage));
+        break;
+      case 'surge':
+        // 급등 거래량순: 대체 기준으로 등락폭 절대값 내림차순
+        copy.sort((a, b) => b.changeAmount.abs().compareTo(a.changeAmount.abs()));
+        break;
+      case 'volume':
+      default:
+        // 거래량순: 거래량 데이터가 없으므로 가격 내림차순으로 대체
+        copy.sort((a, b) => b.price.compareTo(a.price));
+        break;
+    }
+
+    // 정렬 후 rank 재부여 (1부터 시작)
+    for (int i = 0; i < copy.length; i++) {
+      copy[i] = copy[i].copyWith(rank: i + 1);
+    }
+
+    return copy;
   }
 
   // 해외 주요 지수 데이터 가져오기
@@ -241,24 +320,40 @@ class _TradeScreenState extends State<TradeScreen> {
       final indices = await StockApiService.getOverseasIndices();
       
       if (indices != null && indices.isNotEmpty) {
-        // S&P 500과 NASDAQ만 필터링
-        final filteredIndices = indices.where((index) {
-          final symbol = index.symbol.toUpperCase();
-          final name = index.name.toUpperCase();
-          return symbol.contains('SPX') || symbol.contains('GSPC') || 
-                 symbol.contains('NASDAQ') || symbol.contains('IXIC') ||
-                 name.contains('S&P') || name.contains('NASDAQ');
-        }).toList();
-        
+        final List<StockModel> merged = List<StockModel>.from(indices);
+        final Set<String> existing = merged.map((e) => e.symbol.toUpperCase()).toSet();
+
+        // 대표 지수 심볼 후보들
+        const List<String> preferredSymbols = ['SPX', 'GSPC', 'IXIC', 'DJI', 'RUT'];
+
+        // 필요시 상세 호출로 보강
+        if (merged.length < 4) {
+          final futures = <Future<StockModel?>>[];
+          for (final sym in preferredSymbols) {
+            if (!existing.contains(sym)) {
+              futures.add(StockApiService.getIndexDetail(sym));
+            }
+          }
+          final results = await Future.wait(futures);
+          for (final item in results) {
+            if (item != null) {
+              merged.add(item);
+            }
+          }
+        }
+
         setState(() {
-          _overseasIndices = filteredIndices;
+          _overseasIndices = merged;
         });
       } else {
-        _setDefaultIndices();
+        if (mounted) {
+          setState(() => _overseasIndices = []);
+        }
       }
     } catch (error) {
-      // 토큰 만료나 인증 오류와 관계없이 항상 기본 데이터 표시
-      _setDefaultIndices();
+      if (mounted) {
+        setState(() => _overseasIndices = []);
+      }
     }
   }
 
@@ -288,35 +383,6 @@ class _TradeScreenState extends State<TradeScreen> {
     final sign = changeAmount > 0 ? '+' : '';
     return '$sign${changePercentage.toStringAsFixed(1)}';
   }
-
-  // 기본 지수 데이터 설정 (API 실패 시에만 사용)
-  void _setDefaultIndices() {
-    
-    // 실제 지표 데이터로 폴백 (토큰 만료 시에도 사용자에게 유용한 정보 제공)
-    final defaultIndices = <StockModel>[
-      StockModel(
-        symbol: 'SPX',
-        name: 'S&P 500',
-        currentPrice: 5473.23,
-        changeAmount: 12.45,
-        changePercentage: 0.23,
-        isPositive: true,
-      ),
-      StockModel(
-        symbol: 'IXIC',
-        name: 'NASDAQ',
-        currentPrice: 17857.02,
-        changeAmount: -23.67,
-        changePercentage: -0.13,
-        isPositive: false,
-      ),
-    ];
-    
-    setState(() {
-      _overseasIndices = defaultIndices;
-    });
-  }
-
 
   // 계좌 연결하기 버튼 클릭
   void _onConnectAccount() {
@@ -383,7 +449,7 @@ class _TradeScreenState extends State<TradeScreen> {
                   ),
                   GestureDetector(
                     onTap: () {
-                      // 상세보기 기능
+                      context.push('/order-history');
                     },
                     child: Text(
                       '상세보기',
@@ -392,32 +458,13 @@ class _TradeScreenState extends State<TradeScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              // 실제 보유자산 금액 (API 연동 후 실제 데이터로 교체)
-              Text(
-                '\$ 50,400,500',
-                style: AppFonts.t1Bold.copyWith(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.gray900,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                height: 120,
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Container(),
-              ),
             ],
           ),
           ),
         ),
         
-        // 연동되지 않은 경우 블러 오버레이와 연동 버튼
-        if (!_isAlpacaConnected)
+        // 블러 오버레이 제거 (테스트용)
+        if (false) // 항상 false로 설정하여 블러 오버레이 비활성화
           Positioned(
             left: 20,
             top: 16,
@@ -502,7 +549,7 @@ class _TradeScreenState extends State<TradeScreen> {
           );
         },
         child: Container(
-          width: double.infinity, // 좌우 여백 끝까지 채움
+          width: double.infinity, 
           height: 48,
           padding: const EdgeInsets.all(2),
           decoration: ShapeDecoration(
@@ -548,11 +595,16 @@ class _TradeScreenState extends State<TradeScreen> {
 
   // 보유자산 섹션
   Widget _buildAssetSection() {
+    print('=== 보유자산 섹션 빌드 ===');
+    print('현재 연결 상태: $_isAlpacaConnected');
+    
     if (_isAlpacaConnected) {
-      // Alpaca 연동 후 - 실제 자산 정보 표시
+      print('연결된 상태 - 실제 자산 정보 표시');
+      // Alpaca 기반 실제 자산 표시
       return Container(
         width: double.infinity,
-        margin: const EdgeInsets.only(bottom: 9),
+        // 검색창과 보유자산 타이틀 사이 간격 
+        margin: EdgeInsets.only(top: context.h(16), bottom: context.h(9)),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
@@ -561,9 +613,10 @@ class _TradeScreenState extends State<TradeScreen> {
             Inset.text(
               child: Container(
                 width: double.infinity,
-                height: 68,
-                margin: const EdgeInsets.symmetric(vertical: 9),
-                clipBehavior: Clip.antiAlias,
+                // height: 64, 
+                // 금액 → 카드 상단 간격 
+                margin: EdgeInsets.only(bottom: context.h(6)),
+                clipBehavior: Clip.none,
                 decoration: BoxDecoration(),
                 child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -572,7 +625,7 @@ class _TradeScreenState extends State<TradeScreen> {
                 children: [
                   Container(
                     width: double.infinity,
-                    height: 50,
+                    height: 60,
                     child: Stack(
                       children: [
                         Positioned(
@@ -593,21 +646,24 @@ class _TradeScreenState extends State<TradeScreen> {
                                       children: [
                                         TextSpan(
                                           text: _userNickname.isNotEmpty ? _userNickname : '큐빗',
-                                          style: AppFonts.b1Bold.copyWith(color: AppColors.primary),
+                                          style: AppFonts.b1Semibold.copyWith(color: AppColors.primary),
                                         ),
                                         TextSpan(
                                           text: '님의 보유자산',
-                                          style: AppFonts.b1Semibold.copyWith(color: AppColors.gray900),
+                                          style: AppFonts.b1Regular.copyWith(color: AppColors.gray900),
                                         ),
                                       ],
                                     ),
                                   ),
                                 ),
+                                SizedBox(height: 0),
                                 SizedBox(
                                   width: 172,
                                   child: Text(
-                                    '\$ ${(_userAssets?.portfolioValue ?? 100500).toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
-                                    style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
+                                    _userAssets != null 
+                                        ? '\$ ${_userAssets!.portfolioValue.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'
+                                        : '\$ ${PortfolioHistoryMockData.currentPortfolioValue.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
+                                    style: AppFonts.t1Bold.copyWith(color: AppColors.gray900),
                                   ),
                                 ),
                               ],
@@ -616,12 +672,8 @@ class _TradeScreenState extends State<TradeScreen> {
                         ),
                         Positioned(
                           right: 0,
-                          top: 26,
-                          child: Text(
-                            '상세보기',
-                            textAlign: TextAlign.center,
-                            style: AppFonts.b2Semibold.copyWith(color: AppColors.gray600),
-                          ),
+                          top: 20, 
+                          child: Container(), // 빈 컨테이너로 대체
                         ),
                       ],
                     ),
@@ -631,40 +683,12 @@ class _TradeScreenState extends State<TradeScreen> {
               ),
             ),
             Inset.block(
-              child: Container(
-                width: double.infinity,
-              height: 125,
-              decoration: ShapeDecoration(
-                color: Colors.white /* Gray-0 */,
-                shape: RoundedRectangleBorder(
-                  side: BorderSide(
-                    width: 1,
-                    color: AppColors.gray300, /* Gray-300 */
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
               child: Stack(
                 children: [
-                  // Alpaca 연동 후 - 실제 차트와 데이터 표시
-                  Positioned(
-                    left: 16,
-                    top: 16,
-                    right: 16,
-                    bottom: 40,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            AppColors.background.withOpacity(0.3),
-                            AppColors.background.withOpacity(0.1),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
+                  // 데모용 포트폴리오 차트
+                  PortfolioChartWidget(
+                    chartPoints: PortfolioHistoryMockData.chartPoints,
+                    height: 125,
                   ),
                   // 수익률 표시 (카드 내부)
                   Positioned(
@@ -677,53 +701,28 @@ class _TradeScreenState extends State<TradeScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                       ),
                       child: Text(
-                        '${_calculateReturnPercentage()}%',
-                                    style: AppFonts.c2.copyWith(color: AppColors.gray900),
-                      ),
-                    ),
-                  ),
-                  // 기간 표시 (카드 내부)
-                  Positioned(
-                    left: 16,
-                    bottom: 16,
-                    child: Text(
-                      'Today',
-                                    style: AppFonts.c2.copyWith(color: AppColors.gray900),
-                    ),
-                  ),
-                  // 원형 마커 (카드 내부)
-                  Positioned(
-                    left: 50,
-                    bottom: 16,
-                    child: Container(
-                      width: 7,
-                      height: 7,
-                      decoration: ShapeDecoration(
-                        color: Colors.white /* Gray-0 */,
-                        shape: OvalBorder(
-                          side: BorderSide(
-                            width: 2,
-                            color: AppColors.primary, /* Primary-Main */
-                          ),
-                        ),
+                        _userAssets != null 
+                            ? '${_userAssets!.equity > 0 && _userAssets!.lastEquity > 0 ? (_userAssets!.equity >= _userAssets!.lastEquity ? '+' : '') : ''}${_userAssets!.equity > 0 && _userAssets!.lastEquity > 0 ? (((_userAssets!.equity - _userAssets!.lastEquity) / _userAssets!.lastEquity) * 100).toStringAsFixed(2) : '0.00'}%'
+                            : '${PortfolioHistoryMockData.currentReturnPercentage >= 0 ? '+' : ''}${PortfolioHistoryMockData.currentReturnPercentage.toStringAsFixed(2)}%',
+                        style: AppFonts.c2.copyWith(color: Colors.white),
                       ),
                     ),
                   ),
                 ],
-              ),
               ),
             ),
           ],
         ),
       );
     } else {
+      print('연결되지 않은 상태 - 블러 처리된 자산 정보 표시');
       // Alpaca 연동 전 - 실제 자산 정보 위에 블러 오버레이
       return Stack(
         children: [
           // 실제 자산 정보 (연동 후와 동일한 구조)
           Container(
             width: double.infinity,
-            margin: const EdgeInsets.only(bottom: 9),
+            margin: const EdgeInsets.only(top: 8, bottom: 9),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               mainAxisAlignment: MainAxisAlignment.start,
@@ -733,7 +732,7 @@ class _TradeScreenState extends State<TradeScreen> {
                   child: Container(
                     width: double.infinity,
                     height: 68,
-                    margin: const EdgeInsets.symmetric(vertical: 9),
+                    margin: EdgeInsets.only(bottom: context.h(9)),
                     clipBehavior: Clip.antiAlias,
                     decoration: BoxDecoration(),
                     child: Column(
@@ -774,18 +773,6 @@ class _TradeScreenState extends State<TradeScreen> {
                                 ),
                               ),
                             ),
-                            Positioned(
-                              left: 303,
-                              top: 26,
-                              child: Text(
-                                '상세보기',
-                                textAlign: TextAlign.center,
-                              style: AppFonts.b2Semibold.copyWith(
-                                  color: AppColors.gray600, /* Gray-600 */
-                                  height: 1.71,
-                       ),
-              ),
-            ),
           ],
         ),
       ),
@@ -927,6 +914,26 @@ class _TradeScreenState extends State<TradeScreen> {
     }
   }
 
+  // 주문내역 링크 위젯
+  Widget _buildOrderHistoryLink() {
+    return GestureDetector(
+      onTap: () {
+        print('주문내역 링크 클릭됨!');
+        context.push('/order-history');
+      },
+      child: Container(
+        margin: EdgeInsets.only(top: context.h(16), bottom: context.h(16)),
+        child: Text(
+          '주문내역',
+          style: AppFonts.c2.copyWith(
+            color: AppColors.gray400,
+            decoration: TextDecoration.underline,
+          ),
+        ),
+      ),
+    );
+  }
+
   // 해외 종목 순위 섹션
   Widget _buildStockRankingSection() {
     return Container(
@@ -936,7 +943,7 @@ class _TradeScreenState extends State<TradeScreen> {
         children: [
           // 제목
           Container(
-            margin: const EdgeInsets.symmetric(vertical: 9),
+            margin: EdgeInsets.only(top: 0, bottom: context.h(13)),
             child: Inset.text(
               child: Text(
                 '해외 종목 순위',
@@ -956,7 +963,7 @@ class _TradeScreenState extends State<TradeScreen> {
               });
               _loadStockRanking();
             },
-            groupPadding: const EdgeInsets.only(top: 1, bottom: 9),
+            groupPadding: EdgeInsets.only(top: context.h(0), bottom: context.h(12)),
             ),
           ),
           // 종목 순위 리스트
@@ -1034,7 +1041,7 @@ class _TradeScreenState extends State<TradeScreen> {
               SizedBox(
                 width: 80,
                 child: Text(
-                  '가격',
+                  _formatPrice(stock.price),
                   textAlign: TextAlign.center,
                   style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
                 ),
@@ -1043,9 +1050,11 @@ class _TradeScreenState extends State<TradeScreen> {
               SizedBox(
                 width: 80,
                 child: Text(
-                  '수익률',
+                  '${stock.changePercentage >= 0 ? '+' : ''}${stock.changePercentage.toStringAsFixed(1)}%',
                   textAlign: TextAlign.center,
-                  style: AppFonts.b2Regular.copyWith(color: AppColors.profit),
+                  style: AppFonts.b2Regular.copyWith(
+                    color: stock.isPositive ? AppColors.profit : AppColors.loss,
+                  ),
                 ),
               ),
             ],
@@ -1064,8 +1073,10 @@ class _TradeScreenState extends State<TradeScreen> {
 
   // 해외 주요 지수 섹션
   Widget _buildOverseasIndicesSection() {
+    final items = _overseasIndices;
+    final pageCount = (items.length / 2).ceil().clamp(1, 10);
     return Container(
-      margin: const EdgeInsets.only(top: 8, bottom: 9), 
+      margin: const EdgeInsets.only(top: 8, bottom: 9),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1075,36 +1086,77 @@ class _TradeScreenState extends State<TradeScreen> {
               style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
             ),
           ),
-          const SizedBox(height: 8),
-          // API에서 가져온 데이터로 동적 생성
-          if (_overseasIndices.isNotEmpty) ...[
-            Inset.block(
-              child: Row(
-              children: [
-                Expanded(
-                  child: _buildIndexItem(
-                    _overseasIndices[0].name,
-                    _formatPrice(_overseasIndices[0].currentPrice),
-                    _formatChange(_overseasIndices[0].changeAmount, _overseasIndices[0].changePercentage),
-                    _overseasIndices[0].isPositive,
-                  ),
-                ),
-                if (_overseasIndices.length > 1) ...[
-                const SizedBox(width: 12),
-                Expanded(
-                    child: _buildIndexItem(
-                      _overseasIndices[1].name,
-                      _formatPrice(_overseasIndices[1].currentPrice),
-                      _formatChange(_overseasIndices[1].changeAmount, _overseasIndices[1].changePercentage),
-                      _overseasIndices[1].isPositive,
+          SizedBox(height: context.h(12)),
+          if (items.isNotEmpty) ...[
+            SizedBox(
+              height: 109,
+              child: PageView.builder(
+                controller: _indicesPageController,
+                onPageChanged: (i) => setState(() => _overseasPage = i),
+                itemCount: pageCount,
+                itemBuilder: (context, page) {
+                  final leftIndex = page * 2;
+                  final rightIndex = leftIndex + 1;
+                  return Inset.text(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final double gap = 9;
+                        final double cardWidth = (constraints.maxWidth - gap) / 2;
+                        return Row(
+                          children: [
+                            SizedBox(
+                              width: cardWidth,
+                              child: _buildIndexItem(
+                                items[leftIndex].name,
+                                _formatPrice(items[leftIndex].currentPrice),
+                                _formatChange(items[leftIndex].changeAmount, items[leftIndex].changePercentage),
+                                items[leftIndex].isPositive,
+                              ),
+                            ),
+                            SizedBox(width: gap),
+                            if (rightIndex < items.length)
+                              SizedBox(
+                                width: cardWidth,
+                                child: _buildIndexItem(
+                                  items[rightIndex].name,
+                                  _formatPrice(items[rightIndex].currentPrice),
+                                  _formatChange(items[rightIndex].changeAmount, items[rightIndex].changePercentage),
+                                  items[rightIndex].isPositive,
+                                ),
+                              )
+                            else
+                              const SizedBox.shrink(),
+                          ],
+                        );
+                      },
+                    ),
+                  );
+                },
+              ),
+            ),
+            // 인디케이터
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (int i = 0; i < pageCount; i++) ...[
+                      Container(
+                        width: 6,
+                        height: 6,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: i == _overseasPage ? AppColors.gray600 : AppColors.gray100,
+                          shape: BoxShape.circle,
                         ),
                       ),
-                    ],
-              ],
-            ),
+                    ]
+                  ],
+                ),
+              ),
             ),
           ] else ...[
-            // 로딩 중 또는 데이터 없음
             const Center(
               child: Padding(
                 padding: EdgeInsets.all(20),
@@ -1153,11 +1205,12 @@ class _TradeScreenState extends State<TradeScreen> {
   // 지수 아이템 위젯
   Widget _buildIndexItem(String name, String value, String change, bool isPositive) {
     return Container(
-      height: 120,
+      height: 109,
       padding: const EdgeInsets.all(14), 
       decoration: BoxDecoration(
-        color: AppColors.background, 
+        color: AppColors.secondaryBG,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.secondaryMain, width: 1),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center, 
@@ -1247,13 +1300,26 @@ class _TradeScreenState extends State<TradeScreen> {
             // 검색바 섹션
             _buildSearchSection(),
             
-            // 해외 주요 지수 섹션
+            // 보유자산 섹션 (검색바 바로 아래)
+            _buildAssetSection(),
+            
+            // 주문내역 링크
+            _buildOrderHistoryLink(),
+
+            // 디바이더 (8px, Gray-30)
+            Container(
+              width: double.infinity,
+              height: 8,
+              color: AppColors.gray30,
+            ),
+
+            // 디바이더  
+            SizedBox(height: context.h(28)),
+
+            // 해외 주요 지수 섹션 (디바이더 아래)
             _buildOverseasIndicesSection(),
             
             const SizedBox(height: 20),
-            
-            // 보유자산 섹션
-            _buildAssetSection(),
             
             // 해외 종목 순위 섹션
             _buildStockRankingSection(),

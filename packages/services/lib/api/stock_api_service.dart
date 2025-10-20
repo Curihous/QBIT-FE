@@ -395,6 +395,9 @@ class StockApiService {
     try {
       logger.i('종목 상세 정보 조회 시작: $symbol');
       
+      // 현재 토큰 상태 확인
+      final currentToken = await ApiClient.debugTokenStatus();
+      
       final response = await _dio.get('/stocks/$symbol');
       
       if (response.statusCode == 200) {
@@ -416,6 +419,8 @@ class StockApiService {
       if (error is DioException) {
         logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
         logger.e('Dio 에러 데이터: ${error.response?.data}');
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+        logger.e('요청 헤더: ${error.requestOptions.headers}');
       }
       return null;
     }

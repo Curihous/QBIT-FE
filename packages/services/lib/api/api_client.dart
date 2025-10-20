@@ -89,14 +89,14 @@ class ApiClient {
       },
     ));
 
-    // 인터셉터 추가 (모든 로그 비활성화)
+    // 인터셉터 추가 (요청/응답 로그 활성화)
     _dio.interceptors.add(LogInterceptor(
-      requestBody: false,
-      responseBody: false,
-      error: false,
-      requestHeader: false,
-      responseHeader: false,
-      logPrint: (obj) => logger.d(obj),
+      requestBody: true,
+      responseBody: true,
+      error: true,
+      requestHeader: true,
+      responseHeader: true,
+      logPrint: (obj) => logger.i(obj),
     ));
 
     // UTF-8 인코딩 인터셉터 추가
@@ -224,20 +224,36 @@ class ApiClient {
                     
                     if (backendResult != null) {
                       final response = KakaoLoginResponse.fromJson(backendResult);
-                      if (response.accessToken != null) {
-                        await TokenService.saveAccessToken(response.accessToken!);
-                        
-                        logger.i('카카오 백엔드 토큰 재발급 성공 - 요청 재시도');
-                        final newToken = await _getAccessToken();
-                        if (newToken != null) {
-                          logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
-                          error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                    if (response.accessToken != null) {
+                      logger.i('새 토큰 저장 시작: ${response.accessToken!.substring(0, 20)}...');
+                      await TokenService.saveAccessToken(response.accessToken!);
+                      logger.i('새 토큰 저장 완료');
+                      
+                      logger.i('카카오 백엔드 토큰 재발급 성공 - 요청 재시도');
+                      final newToken = await _getAccessToken();
+                      logger.i('저장된 토큰 조회 결과: ${newToken != null ? '성공' : '실패'}');
+                      if (newToken != null) {
+                        logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
+                        error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                        logger.i('재시도 요청 헤더 설정 완료');
+                        try {
                           final retryResponse = await _refreshDio.fetch(error.requestOptions);
+                          logger.i('재시도 요청 성공');
                           _retriedRequests.remove(requestKey);
                           handler.resolve(retryResponse);
                           return;
+                        } catch (retryError) {
+                          logger.e('재시도 요청 실패: $retryError');
+                          if (retryError is DioException) {
+                            logger.e('재시도 요청 상태코드: ${retryError.response?.statusCode}');
+                            logger.e('재시도 요청 응답: ${retryError.response?.data}');
+                          }
+                          rethrow;
                         }
+                      } else {
+                        logger.e('저장된 토큰을 조회할 수 없음');
                       }
+                    }
                     }
                   }
                 } on KakaoException catch (e) {

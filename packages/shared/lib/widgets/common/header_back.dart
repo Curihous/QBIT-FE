@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 
 class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
-  final String title;
+  final String? title;
   final VoidCallback? onBackPressed;
+  final Color? backgroundColor;
 
   const HeaderBack({
     super.key,
-    required this.title,
+    this.title,
     this.onBackPressed,
+    this.backgroundColor,
   });
 
   @override
@@ -20,7 +23,7 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor ?? Colors.white,
       foregroundColor: AppColors.gray900,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
@@ -34,7 +37,13 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             GestureDetector(
-              onTap: onBackPressed ?? () => Navigator.of(context).pop(),
+              onTap: onBackPressed ?? () {
+                if (context.canPop()) {
+                  context.pop();
+                } else {
+                  context.go('/home');
+                }
+              },
               child: SvgPicture.asset(
                 'assets/icons/navigation/top-nav-back.svg',
                 width: context.w(20),
@@ -42,11 +51,13 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
                 fit: BoxFit.contain,
               ),
             ),
-            SizedBox(width: context.w(15)),
-            Text(
-              title,
-              style: AppFonts.t2Semibold, 
-            ),
+            if (title != null) ...[
+              SizedBox(width: context.w(15)),
+              Text(
+                title!,
+                style: AppFonts.t2Semibold, 
+              ),
+            ],
           ],
         ),
       ),
