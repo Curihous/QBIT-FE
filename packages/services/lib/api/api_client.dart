@@ -5,6 +5,7 @@ import 'package:qbit_services/auth/kakao_auth_service.dart';
 import 'package:qbit_services/auth/google_auth_service.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/auth_api_service.dart';
+import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/models/auth_models.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -242,6 +243,10 @@ class ApiClient {
                         try {
                           final retryResponse = await _refreshDio.fetch(error.requestOptions);
                           logger.i('재시도 요청 성공');
+                          
+                          // WebSocket 재연결
+                          await OrderWebSocketService.instance.reconnectWithNewToken();
+                          
                           _retriedRequests.remove(requestKey);
                           handler.resolve(retryResponse);
                           return;
@@ -301,6 +306,10 @@ class ApiClient {
                         logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                         final retryResponse = await _refreshDio.fetch(error.requestOptions);
+                        
+                        // WebSocket 재연결
+                        await OrderWebSocketService.instance.reconnectWithNewToken();
+                        
                         _retriedRequests.remove(requestKey);
                         handler.resolve(retryResponse);
                         return;

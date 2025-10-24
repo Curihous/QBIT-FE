@@ -1,3 +1,5 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
 part of 'stock_detail_model.dart';
 
 // **************************************************************************

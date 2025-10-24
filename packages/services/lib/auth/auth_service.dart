@@ -4,6 +4,7 @@ import 'package:qbit_services/auth/kakao_auth_service.dart';
 import 'package:qbit_services/auth/google_auth_service.dart';
 import 'package:qbit_services/auth/alpaca_auth_service.dart';
 import 'package:qbit_services/api/auth_api_service.dart';
+import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/models/auth_models.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -59,6 +60,9 @@ class AuthService {
 
       // 3. 토큰 저장
       await TokenService.saveAccessToken(response.accessToken!);
+
+      // 4. WebSocket 연결
+      await OrderWebSocketService.instance.connectOnLogin();
 
       logger.i('구글 로그인 성공');
       return {
@@ -125,6 +129,9 @@ class AuthService {
       await TokenService.saveAccessToken(response.accessToken!);
       await TokenService.saveKakaoAccessToken(kakaoAccessToken);
       await TokenService.saveKakaoUserId(userId);
+
+      // 4. WebSocket 연결
+      await OrderWebSocketService.instance.connectOnLogin();
 
       // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
       logger.i('🔍 카카오 액세스 토큰: $kakaoAccessToken');
@@ -214,7 +221,10 @@ class AuthService {
         }),
       ]);
 
-      // 3. 로컬 토큰 삭제
+      // 3. WebSocket 연결 해제
+      await OrderWebSocketService.instance.disconnectOnLogout();
+
+      // 4. 로컬 토큰 삭제
       await TokenService.clearAllTokens();
 
       logger.i('로그아웃 완료');

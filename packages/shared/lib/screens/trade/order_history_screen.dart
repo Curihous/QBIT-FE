@@ -10,6 +10,7 @@ import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/api/order_websocket_service.dart';
+import 'package:qbit_services/models/order_model.dart';
 import 'package:go_router/go_router.dart';
 
 // OrderModel - API 응답 데이터 모델
@@ -265,10 +266,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   // 실시간 주문 상태 업데이트 처리
-  void _handleOrderUpdate(Map<String, dynamic> orderUpdate) {
+  void _handleOrderUpdate(OrderUpdateMessage orderUpdate) {
     try {
-      final orderId = orderUpdate['orderId'];
-      final newStatus = orderUpdate['status'];
+      final orderId = orderUpdate.orderId;
+      final newStatus = orderUpdate.status;
       
       if (orderId != null && newStatus != null) {
         // 기존 주문 목록에서 해당 주문 찾아서 상태 업데이트
@@ -281,8 +282,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             symbol: _orders[orderIndex].symbol,
             side: _orders[orderIndex].side,
             quantity: _orders[orderIndex].quantity,
-            filledQuantity: orderUpdate['filledQuantity'] ?? _orders[orderIndex].filledQuantity,
-            filledAvgPrice: orderUpdate['filledAvgPrice'] ?? _orders[orderIndex].filledAvgPrice,
+            filledQuantity: orderUpdate.filledQuantity?.toString() ?? _orders[orderIndex].filledQuantity,
+            filledAvgPrice: orderUpdate.filledAvgPrice?.toString() ?? _orders[orderIndex].filledAvgPrice,
             type: _orders[orderIndex].type,
             timeInForce: _orders[orderIndex].timeInForce,
             limitPrice: _orders[orderIndex].limitPrice,
@@ -290,8 +291,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             status: newStatus,
             createdAt: _orders[orderIndex].createdAt,
             submittedAt: _orders[orderIndex].submittedAt,
-            filledAt: orderUpdate['filledAt'] ?? _orders[orderIndex].filledAt,
-            canceledAt: orderUpdate['canceledAt'] ?? _orders[orderIndex].canceledAt,
+            filledAt: orderUpdate.filledAt?.toIso8601String() ?? _orders[orderIndex].filledAt,
+            canceledAt: _orders[orderIndex].canceledAt,
             replacedAt: _orders[orderIndex].replacedAt,
             replacedBy: _orders[orderIndex].replacedBy,
             replaces: _orders[orderIndex].replaces,

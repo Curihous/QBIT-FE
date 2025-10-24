@@ -1,5 +1,9 @@
 import 'package:json_annotation/json_annotation.dart';
 
+// Export related models
+export 'order_update_message.dart';
+export 'trade_cycle.dart';
+
 part 'order_model.g.dart';
 
 @JsonSerializable()
