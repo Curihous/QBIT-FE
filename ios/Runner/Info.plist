@@ -46,8 +46,8 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<!-- 구글 로그인용 reversed client ID (GoogleService-Info.plist에서 확인 필요) -->
-				<string>com.googleusercontent.apps.YOUR_REVERSED_CLIENT_ID</string>
+				<!-- 구글 로그인용 reversed client ID -->
+				<string>com.googleusercontent.apps.778627600753-rgb07audi4to50ms0c1be1g45ovdqaof</string>
 			</array>
 		</dict>
 	</array>

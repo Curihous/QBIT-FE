@@ -61,8 +61,15 @@ class AuthService {
       // 3. 토큰 저장
       await TokenService.saveAccessToken(response.accessToken!);
 
-      // 4. WebSocket 연결
-      await OrderWebSocketService.instance.connectOnLogin();
+      // 4. WebSocket 연결 (실패해도 로그인은 성공)
+      try {
+        await OrderWebSocketService.instance.connectOnLogin();
+      } catch (e) {
+        logger.w('WebSocket 연결 실패 (무시): $e');
+      }
+
+      // 개발용 로그 (리뷰 시 무시) - 구글 액세스 토큰 출력
+      logger.i('🔍 구글 액세스 토큰: $googleAccessToken');
 
       logger.i('구글 로그인 성공');
       return {
@@ -130,8 +137,12 @@ class AuthService {
       await TokenService.saveKakaoAccessToken(kakaoAccessToken);
       await TokenService.saveKakaoUserId(userId);
 
-      // 4. WebSocket 연결
-      await OrderWebSocketService.instance.connectOnLogin();
+      // 4. WebSocket 연결 (실패해도 로그인은 성공)
+      try {
+        await OrderWebSocketService.instance.connectOnLogin();
+      } catch (e) {
+        logger.w('WebSocket 연결 실패 (무시): $e');
+      }
 
       // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
       logger.i('🔍 카카오 액세스 토큰: $kakaoAccessToken');
@@ -221,8 +232,12 @@ class AuthService {
         }),
       ]);
 
-      // 3. WebSocket 연결 해제
-      await OrderWebSocketService.instance.disconnectOnLogout();
+      // 3. WebSocket 연결 해제 (실패해도 로그아웃은 진행)
+      try {
+        await OrderWebSocketService.instance.disconnectOnLogout();
+      } catch (e) {
+        logger.w('WebSocket 연결 해제 실패 (무시): $e');
+      }
 
       // 4. 로컬 토큰 삭제
       await TokenService.clearAllTokens();
