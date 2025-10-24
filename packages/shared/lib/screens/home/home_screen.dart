@@ -36,7 +36,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Positioned(
             left: 0,
             right: 0,
-            bottom: MediaQuery.of(context).padding.bottom,
+            bottom: 0,
             child: CustomBottomNavigationBar(
               currentIndex: _currentIndex,
               onTap: (index) {
