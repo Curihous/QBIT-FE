@@ -178,8 +178,8 @@ void main() async {
   await _attemptTokenRefresh();
   
   // 개발용: 강제 로그아웃 (필요시 주석 해제)
-  await AuthService.logout();
-  debugPrint('강제 로그아웃 완료');
+  // await AuthService.logout();
+  // debugPrint('강제 로그아웃 완료');
   
   // 커맨드 실행 플래그 처리: flutter run --dart-define=RUN_COMMAND=getKakaoToken
   const runCommand = String.fromEnvironment('RUN_COMMAND');

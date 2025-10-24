@@ -148,15 +148,6 @@ String _formatQuantityAndPrice(OrderModel order) {
       ? '${quantity.toStringAsFixed(9).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')}개'
       : '${quantity.toStringAsFixed(2)}주';
   
-  // 디버깅 로그 추가
-  print('=== 주문 내역 디버깅 ===');
-  print('심볼: ${order.symbol}');
-  print('원본 수량 문자열: ${order.quantity}');
-  print('파싱된 수량: $quantity');
-  print('암호화폐 여부: $isCrypto');
-  print('최종 수량 텍스트: $quantityText');
-  print('==================');
-  
   if (price != null) {
     final priceText = isCrypto 
         ? '\$${price.toStringAsFixed(2)}'

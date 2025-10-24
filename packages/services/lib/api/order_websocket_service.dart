@@ -30,12 +30,12 @@ class OrderWebSocketService {
     _manuallyClosed = false;
 
     try {
-      // 연결 시도 로그 제거 (너무 많이 출력됨)
+      // 연결 시도 로그 제거 
       _channel = WebSocketChannel.connect(Uri.parse(_wsUrl));
       // 수신 스트림 리스닝
       _channelSub = _channel!.stream.listen(
         (event) {
-          // 일반적인 수신 로그 제거, 에러만 로깅
+          // 에러만 로깅
           dynamic parsed = event;
           try {
             if (event is String) {
@@ -45,7 +45,7 @@ class OrderWebSocketService {
           _messageController.add(parsed);
         },
         onDone: () {
-          // 연결 종료 로그 제거 (너무 많이 출력됨)
+          // 연결 종료 로그 제거
           _cleanup();
           if (!_manuallyClosed) _scheduleReconnect();
         },
@@ -68,7 +68,7 @@ class OrderWebSocketService {
   void _scheduleReconnect() {
     _reconnectAttempts++;
     final delayMs = (1000 * (_reconnectAttempts.clamp(1, 10))).toInt();
-    // 재연결 로그 제거 (너무 많이 출력됨)
+    // 재연결 로그 제거 
     Future.delayed(Duration(milliseconds: delayMs), () {
       if (_manuallyClosed) return;
       connect();
@@ -109,7 +109,7 @@ class OrderWebSocketService {
       buffer.write('\u0000'); // STOMP frame terminator
 
       final frame = buffer.toString();
-      // STOMP CONNECT 로그 제거 (너무 많이 출력됨)
+      // STOMP CONNECT 로그 제거 
       _channel?.sink.add(frame);
       
       // CONNECT 후 구독 요청
@@ -130,14 +130,14 @@ class OrderWebSocketService {
       buffer.write('\u0000'); // STOMP frame terminator
 
       final frame = buffer.toString();
-      // STOMP SUBSCRIBE 로그 제거 (너무 많이 출력됨)
+      // STOMP SUBSCRIBE 로그 제거 
       _channel?.sink.add(frame);
     } catch (e) {
       _logger.e('STOMP SUBSCRIBE 전송 실패: $e');
     }
   }
 
-  // 주문 상태 업데이트 스트림 (필터링된)
+  // 주문 상태 업데이트 스트림
   Stream<Map<String, dynamic>> get orderUpdates {
     return messages.where((message) {
       if (message is Map<String, dynamic>) {
