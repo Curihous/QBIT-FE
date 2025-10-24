@@ -28,7 +28,7 @@ class AIReportDetailScreen extends StatelessWidget {
                 children: [
                   // 텍스트 부분
                   Positioned(
-                    left: 16,
+                    left: 40,
                     top: 42,
                     child: Container(
                       width: 184,
@@ -36,7 +36,7 @@ class AIReportDetailScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '큐빗님의 투자유형은',
+                            '노현선님의 투자유형은',
                             style: TextStyle(
                               color: const Color(0xFF323232), // Gray-900
                               fontSize: 14,
@@ -427,7 +427,9 @@ class AIReportDetailScreen extends StatelessWidget {
                       children: [
                       GestureDetector(
                         onTap: () {
-                          context.push('/learning-card/risk_management');
+                          // AI 리포트 분석 결과에서 추출된 태그들
+                          final extractedTags = _extractTagsFromReport();
+                          context.push('/learning-card/risk_management', extra: extractedTags);
                         },
                         child: Container(
                           width: 234,
@@ -488,7 +490,9 @@ class AIReportDetailScreen extends StatelessWidget {
                       const SizedBox(width: 16),
                       GestureDetector(
                         onTap: () {
-                          context.push('/learning-card/investment_psychology');
+                          // AI 리포트 분석 결과에서 추출된 태그들
+                          final extractedTags = _extractTagsFromReport();
+                          context.push('/learning-card/investment_psychology', extra: extractedTags);
                         },
                         child: Container(
                         width: 234,
@@ -600,5 +604,49 @@ class AIReportDetailScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// AI 리포트 분석 결과에서 태그 추출
+  List<String> _extractTagsFromReport() {
+    // 실제로는 AI 리포트 분석 결과에서 태그를 추출해야 함
+    // 현재는 목업 데이터로 시뮬레이션
+    
+    final reportText = '''
+    이번 매매는 초보 투자자에게 이상적인 흐름이었어요. 매수는 기술 지표가 안정적인 구간에서 이루어졌고, 
+    시장 분위기를 무리 없이 따라간 점이 좋았습니다. 매도 시점도 과열 신호가 나타나기 직전으로, 
+    시장가 대응을 통해 작은 수익을 확정한 점은 긍정적이에요. 다만, 명확한 익절 목표나 손절 기준이 없어서 
+    매도 타이밍 판단이 다소 늦었고, 이후 이어진 상승 구간을 일부 놓쳤습니다. 향후에는 사전에 기준을 세워 
+    감정적 판단을 줄이고, 기술적 신호를 체계적으로 활용하는 연습이 필요합니다.
+    ''';
+
+    // 키워드 기반 태그 추출 (실제로는 NLP 모델 사용)
+    final List<String> extractedTags = [];
+    
+    if (reportText.contains('손절') || reportText.contains('손실')) {
+      extractedTags.add('손절매');
+    }
+    if (reportText.contains('익절') || reportText.contains('수익')) {
+      extractedTags.add('익절');
+    }
+    if (reportText.contains('기술') || reportText.contains('지표')) {
+      extractedTags.add('기술지표');
+    }
+    if (reportText.contains('감정') || reportText.contains('판단')) {
+      extractedTags.add('감정통제');
+    }
+    if (reportText.contains('기준') || reportText.contains('목표')) {
+      extractedTags.add('기준설정');
+    }
+    if (reportText.contains('매도') || reportText.contains('타이밍')) {
+      extractedTags.add('매도타이밍');
+    }
+    if (reportText.contains('초보') || reportText.contains('투자자')) {
+      extractedTags.add('초보투자');
+    }
+    if (reportText.contains('RSI') || reportText.contains('과열')) {
+      extractedTags.add('RSI');
+    }
+
+    return extractedTags;
   }
 }

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/common/header_back.dart';
+import '../../models/card_news_model.dart';
+import '../../services/card_news_service.dart';
 
 class LearningCardDetailScreen extends StatefulWidget {
   final String cardType;
+  final List<String>? extractedTags; // AI 리포트에서 추출된 태그들
   
   const LearningCardDetailScreen({
     super.key,
     required this.cardType,
+    this.extractedTags,
   });
 
   @override
@@ -17,12 +21,35 @@ class LearningCardDetailScreen extends StatefulWidget {
 class _LearningCardDetailScreenState extends State<LearningCardDetailScreen> {
   late PageController _pageController;
   int _currentPage = 0;
-  final int _totalPages = 5; // title + 4 pages
+  CardNewsSet? _currentCardNewsSet;
+  int _totalPages = 0;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _initializeCardNewsSet();
+  }
+
+  void _initializeCardNewsSet() {
+    final cardNewsService = CardNewsService();
+    
+    // 기본 카드뉴스 세트 초기화 (실제로는 앱 시작 시 한 번만 호출)
+    cardNewsService.initializeDefaultCardNewsSets();
+    
+    // AI 리포트에서 추출된 태그가 있으면 태그 기반 매칭
+    if (widget.extractedTags != null && widget.extractedTags!.isNotEmpty) {
+      cardNewsService.setExtractedTags(widget.extractedTags!);
+      _currentCardNewsSet = cardNewsService.findMatchingCardNewsSet();
+    }
+    
+    // 태그 매칭이 실패하거나 태그가 없으면 카테고리 기반으로 찾기
+    _currentCardNewsSet ??= cardNewsService.getCardNewsSetByCategory(widget.cardType);
+    
+    // 여전히 찾지 못했으면 기본 세트 사용
+    _currentCardNewsSet ??= cardNewsService.getCardNewsSetByCategory('risk_management');
+    
+    _totalPages = _currentCardNewsSet?.cards.length ?? 5;
   }
 
   @override
@@ -72,30 +99,7 @@ class _LearningCardDetailScreenState extends State<LearningCardDetailScreen> {
                       _currentPage = index;
                     });
                   },
-                  children: [
-                    // Title page
-                    Image.asset(
-                      'assets/cards/title.png',
-                      fit: BoxFit.cover,
-                    ),
-                    // Content pages
-                    Image.asset(
-                      'assets/cards/1.png',
-                      fit: BoxFit.cover,
-                    ),
-                    Image.asset(
-                      'assets/cards/2.png',
-                      fit: BoxFit.cover,
-                    ),
-                    Image.asset(
-                      'assets/cards/3.png',
-                      fit: BoxFit.cover,
-                    ),
-                    Image.asset(
-                      'assets/cards/4.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ],
+                  children: _buildCardPages(),
                 ),
               ),
             ),
@@ -119,7 +123,7 @@ class _LearningCardDetailScreenState extends State<LearningCardDetailScreen> {
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
-                      _getCategoryTag(widget.cardType),
+                      _getCategoryTag(),
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 13,
@@ -171,8 +175,82 @@ class _LearningCardDetailScreenState extends State<LearningCardDetailScreen> {
     );
   }
 
-  String _getCategoryTag(String cardType) {
-    switch (cardType) {
+  /// 카드 페이지들을 동적으로 생성
+  List<Widget> _buildCardPages() {
+    if (_currentCardNewsSet == null) {
+      return _buildDefaultPages();
+    }
+
+    return _currentCardNewsSet!.cards
+        .map((card) => Image.asset(
+              card.imagePath,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                // 이미지 로드 실패 시 기본 이미지 표시
+                return Container(
+                  color: Colors.grey[300],
+                  child: Center(
+                    child: Text(
+                      '이미지를 불러올 수 없습니다',
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ))
+        .toList();
+  }
+
+  /// 기본 카드 페이지들 (fallback)
+  List<Widget> _buildDefaultPages() {
+    return [
+      Image.asset(
+        'assets/cards/title.png',
+        fit: BoxFit.cover,
+      ),
+      Image.asset(
+        'assets/cards/1.png',
+        fit: BoxFit.cover,
+      ),
+      Image.asset(
+        'assets/cards/2.png',
+        fit: BoxFit.cover,
+      ),
+      Image.asset(
+        'assets/cards/3.png',
+        fit: BoxFit.cover,
+      ),
+      Image.asset(
+        'assets/cards/4.png',
+        fit: BoxFit.cover,
+      ),
+    ];
+  }
+
+  /// 카테고리 태그 반환
+  String _getCategoryTag() {
+    if (_currentCardNewsSet != null) {
+      switch (_currentCardNewsSet!.category) {
+        case 'risk_management':
+          return '#리스크관리';
+        case 'investment_psychology':
+          return '#투자심리';
+        case 'technical_analysis':
+          return '#기술적분석';
+        case 'basic_strategy':
+          return '#투자전략';
+        case 'market_analysis':
+          return '#시장분석';
+        default:
+          return '#학습';
+      }
+    }
+
+    // fallback
+    switch (widget.cardType) {
       case 'risk_management':
         return '#리스크관리';
       case 'investment_psychology':

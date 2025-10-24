@@ -539,55 +539,59 @@ class _TradeScreenState extends State<TradeScreen> {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Inset.block(
-        child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const StockSearchScreen(),
-            ),
-          );
-        },
-        child: Container(
-          width: double.infinity, 
-          height: 48,
-          padding: const EdgeInsets.all(2),
-          decoration: ShapeDecoration(
-            color: Colors.white, 
-            shape: RoundedRectangleBorder(
-              side: BorderSide(
-                width: 1,
-                color: AppColors.gray300, 
-              ),
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.start,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                margin: const EdgeInsets.only(left: 12, right: 4),
-                child: Icon(
-                  Icons.search,
-                  color: AppColors.gray600,
-                  size: 20,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const StockSearchScreen(),
                 ),
-              ),
-              Expanded(
-                child: Text(
-                  '종목을 입력하세요',
-                  style: AppFonts.b1Regular.copyWith(
-                    color: AppColors.gray600, 
+              );
+            },
+            borderRadius: BorderRadius.circular(999),
+            child: Container(
+              width: double.infinity, 
+              height: 48,
+              padding: const EdgeInsets.all(2),
+              decoration: ShapeDecoration(
+                color: Colors.white, 
+                shape: RoundedRectangleBorder(
+                  side: BorderSide(
+                    width: 1,
+                    color: AppColors.gray300, 
                   ),
+                  borderRadius: BorderRadius.circular(999),
                 ),
               ),
-            ],
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 34,
+                    height: 34,
+                    margin: const EdgeInsets.only(left: 12, right: 4),
+                    child: Icon(
+                      Icons.search,
+                      color: AppColors.gray600,
+                      size: 20,
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      '종목을 입력하세요',
+                      style: AppFonts.b1Regular.copyWith(
+                        color: AppColors.gray600, 
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
         ),
       ),
     );
@@ -875,40 +879,44 @@ class _TradeScreenState extends State<TradeScreen> {
                     color: Colors.white.withOpacity(0.3),
                   ),
                   child: Center(
-                    child: GestureDetector(
-                      onTap: () {
-                        context.push('/alpaca-auth');
-                      },
-                      child: Container(
-                        width: 103,
-                        height: 35,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: ShapeDecoration(
-                          color: AppColors.gray900,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 79,
-                              child: Text(
-                              '계좌 연결하기',
-                                textAlign: TextAlign.center,
-                                style: AppFonts.b2Semibold.copyWith(color: AppColors.white),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          context.push('/alpaca-auth');
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          width: 103,
+                          height: 35,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: ShapeDecoration(
+                            color: AppColors.gray900,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: 79,
+                                child: Text(
+                                '계좌 연결하기',
+                                  textAlign: TextAlign.center,
+                                  style: AppFonts.b2Semibold.copyWith(color: AppColors.white),
+                ),
               ),
-            ),
-          ],
-                        ),
+            ],
+                          ),
+          ),
         ),
-      ),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
       ],
     );
     }
@@ -916,18 +924,23 @@ class _TradeScreenState extends State<TradeScreen> {
 
   // 주문내역 링크 위젯
   Widget _buildOrderHistoryLink() {
-    return GestureDetector(
-      onTap: () {
-        print('주문내역 링크 클릭됨!');
-        context.push('/order-history');
-      },
-      child: Container(
-        margin: EdgeInsets.only(top: context.h(16), bottom: context.h(16)),
-        child: Text(
-          '주문내역',
-          style: AppFonts.c2.copyWith(
-            color: AppColors.gray400,
-            decoration: TextDecoration.underline,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          print('주문내역 링크 클릭됨!');
+          context.push('/order-history');
+        },
+        borderRadius: BorderRadius.circular(4),
+        child: Container(
+          margin: EdgeInsets.only(top: context.h(16), bottom: context.h(16)),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Text(
+            '주문내역',
+            style: AppFonts.c2.copyWith(
+              color: AppColors.gray400,
+              decoration: TextDecoration.underline,
+            ),
           ),
         ),
       ),
@@ -995,70 +1008,73 @@ class _TradeScreenState extends State<TradeScreen> {
     final index = _stockRanking.indexOf(stock);
     final isSelected = _selectedStockIndex == index;
     
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedStockIndex = isSelected ? null : index;
-        });
-      },
-      child: Container(
-        margin: EdgeInsets.zero,
-        height: 56,
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.background : AppColors.white,
-          border: Border(
-            top: BorderSide(
-              width: 1,
-              color: AppColors.borderLight, // Gray-100
-            ),
-            bottom: BorderSide(
-              width: 1,
-              color: AppColors.borderLight, // Gray-100
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _selectedStockIndex = isSelected ? null : index;
+          });
+        },
+        child: Container(
+          margin: EdgeInsets.zero,
+          height: 56,
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.background : AppColors.white,
+            border: Border(
+              top: BorderSide(
+                width: 1,
+                color: AppColors.borderLight, // Gray-100
+              ),
+              bottom: BorderSide(
+                width: 1,
+                color: AppColors.borderLight, // Gray-100
+              ),
             ),
           ),
-        ),
-        child: Row(
-            children: [
-              // 순위
-              SizedBox(
-                width: 24,
-                child: Text(
-                  stock.rank.toString(),
-                  textAlign: TextAlign.center,
-                  style: AppFonts.b2Regular.copyWith(color: AppColors.primary),
-                ),
-              ),
-              const SizedBox(width: 10),
-              // 종목명
-              Expanded(
-                flex: 2,
-                child: Text(
-                  stock.name,
-                  style: AppFonts.b1Semibold.copyWith(color: AppColors.gray900),
-                ),
-              ),
-              // 가격
-              SizedBox(
-                width: 80,
-                child: Text(
-                  _formatPrice(stock.price),
-                  textAlign: TextAlign.center,
-                  style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
-                ),
-              ),
-              // 변동률
-              SizedBox(
-                width: 80,
-                child: Text(
-                  '${stock.changePercentage >= 0 ? '+' : ''}${stock.changePercentage.toStringAsFixed(1)}%',
-                  textAlign: TextAlign.center,
-                  style: AppFonts.b2Regular.copyWith(
-                    color: stock.isPositive ? AppColors.profit : AppColors.loss,
+          child: Row(
+              children: [
+                // 순위
+                SizedBox(
+                  width: 24,
+                  child: Text(
+                    stock.rank.toString(),
+                    textAlign: TextAlign.center,
+                    style: AppFonts.b2Regular.copyWith(color: AppColors.primary),
                   ),
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 10),
+                // 종목명
+                Expanded(
+                  flex: 2,
+                  child: Text(
+                    stock.name,
+                    style: AppFonts.b1Semibold.copyWith(color: AppColors.gray900),
+                  ),
+                ),
+                // 가격
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    _formatPrice(stock.price),
+                    textAlign: TextAlign.center,
+                    style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
+                  ),
+                ),
+                // 변동률
+                SizedBox(
+                  width: 80,
+                  child: Text(
+                    '${stock.changePercentage >= 0 ? '+' : ''}${stock.changePercentage.toStringAsFixed(1)}%',
+                    textAlign: TextAlign.center,
+                    style: AppFonts.b2Regular.copyWith(
+                      color: stock.isPositive ? AppColors.profit : AppColors.loss,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ),
       ),
     );
   }

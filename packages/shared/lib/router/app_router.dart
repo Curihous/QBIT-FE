@@ -152,8 +152,12 @@ class AppRouter {
         name: 'learning-card',
         builder: (context, state) {
           final cardType = state.pathParameters['cardType'] ?? '';
-          print('Navigating to learning card: $cardType');
-          return LearningCardDetailScreen(cardType: cardType);
+          final extractedTags = state.extra as List<String>?;
+          print('Navigating to learning card: $cardType with tags: $extractedTags');
+          return LearningCardDetailScreen(
+            cardType: cardType,
+            extractedTags: extractedTags,
+          );
         },
       ),
       GoRoute(
