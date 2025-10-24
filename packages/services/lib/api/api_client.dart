@@ -229,6 +229,9 @@ class ApiClient {
                       await TokenService.saveAccessToken(response.accessToken!);
                       logger.i('새 토큰 저장 완료');
                       
+                      // 저장 완료를 위한 짧은 지연
+                      await Future.delayed(const Duration(milliseconds: 100));
+                      
                       logger.i('카카오 백엔드 토큰 재발급 성공 - 요청 재시도');
                       final newToken = await _getAccessToken();
                       logger.i('저장된 토큰 조회 결과: ${newToken != null ? '성공' : '실패'}');
@@ -288,6 +291,9 @@ class ApiClient {
                     final response = GoogleLoginResponse.fromJson(backendResult);
                     if (response.accessToken != null) {
                       await TokenService.saveAccessToken(response.accessToken!);
+                      
+                      // 저장 완료를 위한 짧은 지연
+                      await Future.delayed(const Duration(milliseconds: 100));
                       
                       logger.i('구글 백엔드 토큰 재발급 성공 - 요청 재시도');
                       final newToken = await _getAccessToken();
@@ -355,7 +361,6 @@ class ApiClient {
       final token = await TokenService.getAccessToken();
           
       if (token != null) {
-        
         // JWT 토큰 디코딩하여 만료 시간 확인
         try {
           final parts = token.split('.');
@@ -375,7 +380,10 @@ class ApiClient {
               final timeLeft = expDate.difference(now);
               
               if (timeLeft.isNegative) {
-                logger.w('⚠️ 토큰이 만료되었습니다');
+                logger.w('⚠️ 토큰이 만료되었습니다 - null 반환');
+                return null; // 만료된 토큰은 null 반환
+              } else {
+                logger.i('✅ 토큰 유효 - ${timeLeft.inMinutes}분 남음');
               }
             }
           }
