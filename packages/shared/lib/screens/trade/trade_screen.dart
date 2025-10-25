@@ -218,65 +218,65 @@ class _TradeScreenState extends State<TradeScreen> {
       StockRankingModel(
         rank: 1,
         symbol: 'GNLN',
-        name: '그린레인 홀딩스',
-        price: 7026, // 가격
-        changeAmount: 1563.36, // 등락폭 (7026 * 28.6 / 100)
-        changePercentage: 28.6, // 등락률
+        name: '종목명',
+        price: 0, // 가격
+        changeAmount: 0, // 등락폭
+        changePercentage: 0, // 등락률
         isPositive: true,
       ),
       StockRankingModel(
         rank: 2,
         symbol: 'ALTO',
-        name: '알토 홀딩스',
-        price: 1322, // 가격
-        changeAmount: 134.84, // 등락폭 (1322 * 10.2 / 100)
-        changePercentage: 10.2, // 등락률
+        name: '종목명',
+        price: 0, // 가격
+        changeAmount: 0, // 등락폭
+        changePercentage: 0, // 등락률
         isPositive: true,
         isHighlighted: true,
       ),
       StockRankingModel(
         rank: 3,
         symbol: 'RAPT',
-        name: '랩트 테라퓨틱스',
-        price: 63891, // 가격
-        changeAmount: 33680.46, // 등락폭 (63891 * 52.7 / 100)
-        changePercentage: 52.7, // 등락
+        name: '종목명',
+        price: 0, // 가격
+        changeAmount: 0, // 등락폭
+        changePercentage: 0, // 등락
         isPositive: true,
       ),
       StockRankingModel(
         rank: 4,
         symbol: 'BURU',
-        name: '누부루',
-        price: 537, // 가격
-        changeAmount: 56.92, // 등락폭 (537 * 10.6 / 100)
-        changePercentage: 10.6, // 등락
+        name: '종목명',
+        price: 0, // 가격
+        changeAmount: 0, // 등락폭
+        changePercentage: 0, // 등락
         isPositive: true,
       ),
       StockRankingModel(
         rank: 5,
         symbol: 'AZTR',
-        name: '아지트라',
-        price: 1387, // 가격
-        changeAmount: 596.41, // 등락폭 (1387 * 43.0 / 100)
-        changePercentage: 43.0, // 등락
+        name: '종목명',
+        price: 0, // 가격
+        changeAmount: 0, // 등락폭
+        changePercentage: 0, // 등락
         isPositive: true,
       ),
       StockRankingModel(
         rank: 6,
         symbol: 'GLD',
-        name: 'SPDR 금 ETF',
-        price: 564194, // 가격
-        changeAmount: 11848.07, // 등락폭 (564194 * 2.1 / 100)
-        changePercentage: 2.1, // 등락
+        name: '종목명',
+        price: 0, // 가격
+        changeAmount: 0, // 등락폭
+        changePercentage: 0, // 등락
         isPositive: true,
       ),
       StockRankingModel(
         rank: 7,
         symbol: 'LAES',
-        name: '실SQ',
-        price: 10660, // 가격
-        changeAmount: 1332.50, // 등락폭 (10660 * 12.5 / 100)
-        changePercentage: 12.5, // 등락
+        name: '종목명',
+        price: 0, // 가격
+        changeAmount: 0, // 등락폭
+        changePercentage: 0, // 등락
         isPositive: true,
       ),
     ];
@@ -666,7 +666,7 @@ class _TradeScreenState extends State<TradeScreen> {
                                   child: Text(
                                     _userAssets != null 
                                         ? '\$ ${_userAssets!.portfolioValue.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'
-                                        : '\$ ${PortfolioHistoryMockData.currentPortfolioValue.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}',
+                                        : '\$ --,---,---',
                                     style: AppFonts.t1Bold.copyWith(color: AppColors.gray900),
                                   ),
                                 ),
@@ -676,8 +676,24 @@ class _TradeScreenState extends State<TradeScreen> {
                         ),
                         Positioned(
                           right: 0,
-                          top: 20, 
-                          child: Container(), // 빈 컨테이너로 대체
+                          top: 28,
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () {
+                                print('주문내역 상세 클릭됨!');
+                                context.push('/order-history');
+                              },
+                              borderRadius: BorderRadius.circular(4),
+                              child: Text(
+                                '주문내역 상세 ',
+                                textAlign: TextAlign.right,
+                                style: AppFonts.c2.copyWith(
+                                  color: AppColors.gray400,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
@@ -689,27 +705,13 @@ class _TradeScreenState extends State<TradeScreen> {
             Inset.block(
               child: Stack(
                 children: [
-                  // 데모용 포트폴리오 차트
-                  PortfolioChartWidget(
-                    chartPoints: PortfolioHistoryMockData.chartPoints,
+                  // 포트폴리오 차트 (빈 차트로 표시)
+                  Container(
                     height: 125,
-                  ),
-                  // 수익률 표시 (카드 내부)
-                  Positioned(
-                    right: 16,
-                    top: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: ShapeDecoration(
-                        color: AppColors.secondaryMain,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                      ),
-                      child: Text(
-                        _userAssets != null 
-                            ? '${_userAssets!.equity > 0 && _userAssets!.lastEquity > 0 ? (_userAssets!.equity >= _userAssets!.lastEquity ? '+' : '') : ''}${_userAssets!.equity > 0 && _userAssets!.lastEquity > 0 ? (((_userAssets!.equity - _userAssets!.lastEquity) / _userAssets!.lastEquity) * 100).toStringAsFixed(2) : '0.00'}%'
-                            : '${PortfolioHistoryMockData.currentReturnPercentage >= 0 ? '+' : ''}${PortfolioHistoryMockData.currentReturnPercentage.toStringAsFixed(2)}%',
-                        style: AppFonts.c2.copyWith(color: Colors.white),
-                      ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.gray300, width: 1),
                     ),
                   ),
                 ],
@@ -1056,7 +1058,7 @@ class _TradeScreenState extends State<TradeScreen> {
                 SizedBox(
                   width: 80,
                   child: Text(
-                    _formatPrice(stock.price),
+                    '가격',
                     textAlign: TextAlign.center,
                     style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
                   ),
@@ -1065,10 +1067,10 @@ class _TradeScreenState extends State<TradeScreen> {
                 SizedBox(
                   width: 80,
                   child: Text(
-                    '${stock.changePercentage >= 0 ? '+' : ''}${stock.changePercentage.toStringAsFixed(1)}%',
+                    '등락률',
                     textAlign: TextAlign.center,
                     style: AppFonts.b2Regular.copyWith(
-                      color: stock.isPositive ? AppColors.profit : AppColors.loss,
+                      color: AppColors.gray900,
                     ),
                   ),
                 ),
@@ -1318,9 +1320,6 @@ class _TradeScreenState extends State<TradeScreen> {
             
             // 보유자산 섹션 (검색바 바로 아래)
             _buildAssetSection(),
-            
-            // 주문내역 링크
-            _buildOrderHistoryLink(),
 
             // 디바이더 (8px, Gray-30)
             Container(

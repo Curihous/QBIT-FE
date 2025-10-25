@@ -61,9 +61,9 @@ class AuthService {
       // 3. 토큰 저장
       await TokenService.saveAccessToken(response.accessToken!);
 
-      // 4. WebSocket 연결 (실패해도 로그인은 성공)
+      // 4. WebSocket 연결 (기존 연결 끊고 새 토큰으로 재연결)
       try {
-        await OrderWebSocketService.instance.connectOnLogin();
+        await OrderWebSocketService.instance.reconnectWithNewToken();
       } catch (e) {
         logger.w('WebSocket 연결 실패 (무시): $e');
       }
@@ -137,9 +137,9 @@ class AuthService {
       await TokenService.saveKakaoAccessToken(kakaoAccessToken);
       await TokenService.saveKakaoUserId(userId);
 
-      // 4. WebSocket 연결 (실패해도 로그인은 성공)
+      // 4. WebSocket 연결 (기존 연결 끊고 새 토큰으로 재연결)
       try {
-        await OrderWebSocketService.instance.connectOnLogin();
+        await OrderWebSocketService.instance.reconnectWithNewToken();
       } catch (e) {
         logger.w('WebSocket 연결 실패 (무시): $e');
       }

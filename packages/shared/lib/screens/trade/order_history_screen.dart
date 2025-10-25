@@ -11,6 +11,7 @@ import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/models/order_model.dart';
+import 'package:qbit_services/models/trade_cycle.dart';
 import 'package:go_router/go_router.dart';
 
 // OrderModel - API 응답 데이터 모델
@@ -173,14 +174,7 @@ class CycleItem {
   });
 }
 
-// 사이클 데모 데이터
-final demoCycles = <CycleItem>[
-  CycleItem(
-    dateRange: '2025.10.03-2025.10.17',
-    companyName: 'Figma Inc.',
-    ticker: 'FIG',
-  ),
-];
+// 사이클 데이터는 웹소켓을 통해 실시간으로 받아옴
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -194,6 +188,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   List<OrderModel> _orders = [];
   List<CycleItem> _cycleData = [];
   StreamSubscription? _wsSub;
+  StreamSubscription? _wsCycleSub; // 사이클 업데이트 구독
   bool _wsConnected = false;
   
   // 탭 상태
@@ -233,17 +228,22 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     }
   }
 
-  // 사이클 데이터 로드 (데모 데이터 사용)
+  // 사이클 데이터 로드 (웹소켓을 통해 실시간으로 받아옴)
   void _loadCycleData() {
     setState(() {
-      _cycleData = demoCycles;
+      _cycleData = []; // 빈 리스트로 초기화
     });
   }
 
   void _connectWs() {
+    print('WebSocket 연결 시작...');
     // WebSocket 연결 및 실시간 주문 상태 업데이트 구독
     OrderWebSocketService.instance.connect();
     
+    // WebSocket 연결 상태 확인
+    print('WebSocket 연결 상태: ${OrderWebSocketService.instance.isConnected}');
+    
+    // 개별 주문 업데이트 구독
     _wsSub = OrderWebSocketService.instance.orderUpdates.listen((orderUpdate) {
       print('실시간 주문 업데이트 수신: $orderUpdate');
       
@@ -262,6 +262,23 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           _wsConnected = false;
         });
       }
+    });
+    
+    // 사이클 업데이트 구독
+    _wsCycleSub = OrderWebSocketService.instance.tradeCycleUpdates.listen((cycleUpdate) {
+      print('실시간 사이클 업데이트 수신: $cycleUpdate');
+      print('사이클 업데이트 상세: symbol=${cycleUpdate.symbol}, side=${cycleUpdate.side}, executedAt=${cycleUpdate.executedAt}');
+      
+      if (mounted) {
+        setState(() {
+          _wsConnected = true;
+        });
+        
+        // 사이클 업데이트 처리
+        _handleCycleUpdate(cycleUpdate);
+      }
+    }, onError: (error) {
+      print('사이클 업데이트 WebSocket 에러: $error');
     });
   }
 
@@ -390,9 +407,44 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
+  // 실시간 사이클 업데이트 처리
+  void _handleCycleUpdate(TradeCycle cycleUpdate) {
+    try {
+      print('사이클 업데이트 처리 시작: ${cycleUpdate.symbol}');
+      print('현재 사이클 데이터 개수: ${_cycleData.length}');
+      
+      // 사이클 데이터를 CycleItem 형태로 변환
+      final newCycleItem = CycleItem(
+        dateRange: '${cycleUpdate.executedAt.year}.${cycleUpdate.executedAt.month.toString().padLeft(2, '0')}.${cycleUpdate.executedAt.day.toString().padLeft(2, '0')}',
+        companyName: cycleUpdate.symbol,
+        ticker: cycleUpdate.symbol,
+      );
+      
+      print('새로운 사이클 아이템 생성: $newCycleItem');
+      
+      setState(() {
+        // 중복 체크 후 추가
+        final existingCycle = _cycleData.any((cycle) => cycle.ticker == cycleUpdate.symbol);
+        print('중복 체크 결과: $existingCycle');
+        
+        if (!existingCycle) {
+          _cycleData.add(newCycleItem);
+          print('사이클 데이터 추가됨. 새로운 개수: ${_cycleData.length}');
+        } else {
+          print('중복된 사이클이므로 추가하지 않음');
+        }
+      });
+      
+      print('사이클 업데이트 완료: ${cycleUpdate.symbol}');
+    } catch (e) {
+      print('사이클 업데이트 처리 실패: $e');
+    }
+  }
+
   @override
   void dispose() {
     _wsSub?.cancel();
+    _wsCycleSub?.cancel(); // 사이클 구독 취소
     // WebSocket 연결은 다른 화면에서도 사용할 수 있으므로 여기서는 구독만 취소
     super.dispose();
   }
@@ -704,15 +756,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.timeline,
-              size: 64,
-              color: AppColors.gray400,
-            ),
-            const SizedBox(height: 16),
             Text(
-              '사이클 데이터가 없습니다',
-              style: AppFonts.b1Semibold.copyWith(color: AppColors.gray600),
+              '완료된 거래 사이클이 없습니다',
+              style: AppFonts.b1Regular.copyWith(
+                color: AppColors.gray400,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '매수부터 매도까지 완료된 거래가 여기에 표시됩니다',
+              style: AppFonts.c2.copyWith(
+                color: AppColors.gray300,
+              ),
             ),
           ],
         ),
@@ -720,7 +775,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
       itemCount: _cycleData.length,
       itemBuilder: (context, index) {
         final cycle = _cycleData[index];
@@ -731,110 +786,75 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   Widget _buildCycleItem(CycleItem cycle) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.gray200),
+      ),
+      child: Row(
         children: [
-          // 날짜 범위
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Text(
-              cycle.dateRange,
-              style: TextStyle(
-                color: const Color(0xFF7F7F7F) /* Gray-600 */,
-                fontSize: 13,
-                fontFamily: 'Pretendard',
-                fontWeight: FontWeight.w400,
-                height: 1.23,
-              ),
+          // 회사 로고
+          _buildCompanyLogo(cycle.ticker),
+          const SizedBox(width: 12),
+          
+          // 사이클 정보
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  cycle.companyName,
+                  style: AppFonts.b1Semibold.copyWith(
+                    color: AppColors.gray900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  cycle.ticker,
+                  style: AppFonts.c2.copyWith(
+                    color: AppColors.gray400,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  cycle.dateRange,
+                  style: AppFonts.c2.copyWith(
+                    color: AppColors.gray400,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 8),
           
-          // 회사 정보와 리포트 아이콘
-          Row(
-            children: [
-              // 회사 로고
-              Container(
-                width: 44,
-                height: 44,
-                decoration: ShapeDecoration(
-                  color: const Color(0xFFFFFBF3) /* Secondary-BG */,
-                  shape: OvalBorder(),
-                ),
-                child: Center(
-                  child: _buildCompanyLogo(cycle.ticker),
-                ),
-              ),
-              const SizedBox(width: 12),
-              
-              // 회사명과 티커
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      cycle.companyName,
-                      style: TextStyle(
-                        color: const Color(0xFF323232) /* Gray-900(Font-Black) */,
-                        fontSize: 16,
-                        fontFamily: 'Pretendard',
-                        fontWeight: FontWeight.w600,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      cycle.ticker,
-                      style: TextStyle(
-                        color: const Color(0xFF7F7F7F) /* Gray-600 */,
-                        fontSize: 14,
-                        fontFamily: 'Pretendard',
-                        fontWeight: FontWeight.w400,
-                        height: 1.21,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              
-              // 리포트 아이콘
-              GestureDetector(
-                onTap: () {
-                  print('리포트 아이콘 클릭됨!');
-                  context.push('/trade-report');
-                },
-                child: SvgPicture.asset(
-                  'assets/icons/report.svg',
-                  width: 24,
-                  height: 24,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ],
+          // 화살표
+          Icon(
+            Icons.arrow_forward_ios,
+            size: 16,
+            color: AppColors.gray300,
           ),
         ],
       ),
     );
   }
 
-  // 회사 로고 빌드 함수
   Widget _buildCompanyLogo(String ticker) {
-    switch (ticker.toUpperCase()) {
-      case 'FIG':
-        return SvgPicture.asset(
-          'assets/images/figma.svg',
-          width: 32,
-          height: 32,
-          fit: BoxFit.contain,
-        );
-      default:
-        return Icon(
-          Icons.business,
-          size: 20,
-          color: AppColors.gray400,
-        );
-    }
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: AppColors.gray100,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Center(
+        child: Text(
+          ticker.substring(0, 1).toUpperCase(),
+          style: AppFonts.b1Semibold.copyWith(
+            color: AppColors.gray600,
+          ),
+        ),
+      ),
+    );
   }
 }

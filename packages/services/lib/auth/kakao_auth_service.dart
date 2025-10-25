@@ -129,8 +129,13 @@ class KakaoAuthService {
   /// 로그아웃
   static Future<bool> logout() async {
     try {
-      await UserApi.instance.logout();
-      logger.i('카카오 로그아웃 성공');
+      // 토큰이 있는 경우에만 로그아웃 호출
+      if (await AuthApi.instance.hasToken()) {
+        await UserApi.instance.logout();
+        logger.i('카카오 로그아웃 성공');
+      } else {
+        logger.i('카카오 토큰 없음 - 로그아웃 불필요');
+      }
       return true;
     } catch (error) {
       logger.e('카카오 로그아웃 실패: $error');

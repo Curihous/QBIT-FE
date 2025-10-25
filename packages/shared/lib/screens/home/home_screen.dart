@@ -8,6 +8,9 @@ import 'package:qbit_shared/screens/my/my_screen.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:qbit_services/auth/auth_service.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -52,8 +55,88 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class HomeContentScreen extends StatelessWidget {
+class HomeContentScreen extends StatefulWidget {
   const HomeContentScreen({super.key});
+
+  @override
+  State<HomeContentScreen> createState() => _HomeContentScreenState();
+}
+
+class _HomeContentScreenState extends State<HomeContentScreen> {
+  String _userNickname = '';
+  String _currentDate = '';
+
+  @override
+  void initState() {
+    super.initState();
+    // 비동기 작업을 안전하게 실행
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeLocaleAndSetDate();
+      _loadUserData();
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  // 로케일 초기화 및 현재 날짜 설정
+  Future<void> _initializeLocaleAndSetDate() async {
+    try {
+      await initializeDateFormatting('ko_KR', null);
+      if (mounted) {
+        _setCurrentDate();
+      }
+    } catch (e) {
+      // 로케일 초기화 실패 시 기본 형식 사용
+      if (mounted) {
+        _setCurrentDateWithDefaultFormat();
+      }
+    }
+  }
+
+  // 현재 날짜 설정 (한국어 로케일)
+  void _setCurrentDate() {
+    if (!mounted) return;
+    final now = DateTime.now();
+    final formatter = DateFormat('M월 d일', 'ko_KR');
+    setState(() {
+      _currentDate = formatter.format(now);
+    });
+  }
+
+  // 현재 날짜 설정 (기본 형식)
+  void _setCurrentDateWithDefaultFormat() {
+    if (!mounted) return;
+    final now = DateTime.now();
+    setState(() {
+      _currentDate = '${now.month}월 ${now.day}일';
+    });
+  }
+
+  // 사용자 닉네임 가져오기
+  Future<void> _loadUserData() async {
+    try {
+      final userInfo = await AuthService.getCurrentUser();
+      if (!mounted) return;
+      
+      if (userInfo != null && userInfo['nickname'] != null) {
+        setState(() {
+          _userNickname = userInfo['nickname'] as String;
+        });
+      } else {
+        setState(() {
+          _userNickname = '';
+        });
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _userNickname = '';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +146,7 @@ class HomeContentScreen extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 노현선님을 위한 소식 섹션
+            // 사용자를 위한 소식 섹션
             Container(
               width: double.infinity,
               height: 276,
@@ -77,72 +160,11 @@ class HomeContentScreen extends StatelessWidget {
                     left: 20,
                     top: 25,
                     child: Text(
-                      '10월 21일, 노현선님을 위한 소식',
+                      _userNickname.isNotEmpty 
+                        ? '$_currentDate, $_userNickname님을 위한 소식'
+                        : '$_currentDate, 큐빗을 위한 소식',
                       style: AppFonts.t2Bold.copyWith(
                         color: AppColors.gray900,
-                      ),
-                    ),
-                  ),
-                  // 뉴스 카드
-                  Positioned(
-                    left: 20,
-                    top: 62,
-                    child: GestureDetector(
-                      onTap: () {
-                        context.go('/column');
-                      },
-                      child: Container(
-                        width: MediaQuery.of(context).size.width - 40,
-                        height: 214,
-                        decoration: const ShapeDecoration(
-                          color: AppColors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(18),
-                              topRight: Radius.circular(18),
-                              bottomRight: Radius.circular(1),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // 뉴스 내용 배경
-                  Positioned(
-                    left: 20,
-                    top: 218,
-                    child: GestureDetector(
-                      onTap: () {
-                        context.go('/column');
-                      },
-                      child: Container(
-                        width: MediaQuery.of(context).size.width - 40,
-                        height: 58,
-                        decoration: const BoxDecoration(
-                          color: AppColors.gray30,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // 뉴스 제목
-                  Positioned(
-                    left: 38,
-                    top: 228,
-                    child: Text(
-                      '🪙 이더리움, 다시 뜨거워질까?',
-                      style: AppFonts.b1Semibold.copyWith(
-                        color: AppColors.gray900,
-                      ),
-                    ),
-                  ),
-                  // 뉴스 부제목
-                  Positioned(
-                    left: 38,
-                    top: 251,
-                    child: Text(
-                      '불붙는 코인 시장, 유동성 신호등이 켜졌다.',
-                      style: AppFonts.c2.copyWith(
-                        color: AppColors.gray600,
                       ),
                     ),
                   ),

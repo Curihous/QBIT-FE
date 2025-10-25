@@ -7,6 +7,7 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/models/order_model.dart';
+import 'package:qbit_services/auth/auth_service.dart';
 
 /// 주문 실시간 체결 상태 WebSocket 서비스
 class OrderWebSocketService {
@@ -84,15 +85,52 @@ class OrderWebSocketService {
     _reconnectTimer = Timer(Duration(milliseconds: delayMs), () {
       if (_manuallyClosed) return;
       
-      // 토큰 상태 재확인
-      TokenService.getAccessToken().then((token) {
-        if (token != null) {
-          connect();
-        } else {
-          _logger.w('토큰이 없어 재연결을 건너뜁니다');
-        }
-      });
+      // 토큰 상태 재확인 및 갱신 시도
+      _refreshTokenAndReconnect();
     });
+  }
+
+  Future<void> _refreshTokenAndReconnect() async {
+    try {
+      // 현재 토큰 확인
+      final currentToken = await TokenService.getAccessToken();
+      if (currentToken == null) {
+        _logger.w('토큰이 없어 재연결을 건너뜁니다');
+        return;
+      }
+
+      // 토큰 만료 여부 확인 (JWT 디코딩)
+      final tokenParts = currentToken.split('.');
+      if (tokenParts.length == 3) {
+        try {
+          final payload = json.decode(utf8.decode(base64Url.decode(base64Url.normalize(tokenParts[1]))));
+          final exp = payload['exp'] as int?;
+          final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+          
+          if (exp != null && exp <= now + 60) { // 60초 전에 만료 예정이면 갱신
+            _logger.i('토큰이 곧 만료됩니다. 갱신을 시도합니다.');
+            await _refreshToken();
+          }
+        } catch (e) {
+          _logger.w('토큰 파싱 실패, 재연결을 시도합니다: $e');
+        }
+      }
+
+      // 재연결
+      await connect();
+    } catch (e) {
+      _logger.e('토큰 갱신 및 재연결 실패: $e');
+    }
+  }
+
+  Future<void> _refreshToken() async {
+    try {
+      // AuthService를 통해 토큰 갱신 시도
+      await AuthService.refreshAccessToken();
+      _logger.i('토큰 갱신 성공');
+    } catch (e) {
+      _logger.e('토큰 갱신 실패: $e');
+    }
   }
 
   void _startHeartbeat() {
@@ -132,6 +170,7 @@ class OrderWebSocketService {
         
         // CONNECTED 후 구독 요청
         await _subscribeToOrders();
+        await _subscribeToCycles();
         break;
       case 'ERROR':
         _logger.e('STOMP 에러: ${lines.skip(1).join('\n')}');
@@ -264,12 +303,26 @@ class OrderWebSocketService {
     try {
       final frame = 'SUBSCRIBE\r\n'
           'id:orders-subscription\r\n'
-          'destination:/user/queue/order-updates\r\n'
+          'destination:/user/queue/orders-updates\r\n'
           '\r\n'
           '\x00';
       _channel?.sink.add(frame);
     } catch (e) {
       _logger.e('STOMP SUBSCRIBE 전송 실패: $e');
+    }
+  }
+
+  // 사이클 업데이트 구독
+  Future<void> _subscribeToCycles() async {
+    try {
+      final frame = 'SUBSCRIBE\r\n'
+          'id:cycles-subscription\r\n'
+          'destination:/user/queue/trade-cycles-updates\r\n'
+          '\r\n'
+          '\x00';
+      _channel?.sink.add(frame);
+    } catch (e) {
+      _logger.e('STOMP 사이클 구독 전송 실패: $e');
     }
   }
 
@@ -295,15 +348,29 @@ class OrderWebSocketService {
   Stream<TradeCycle> get tradeCycleUpdates {
     return messages.where((message) {
       if (message is Map<String, dynamic>) {
-        // TradeCycle 관련 메시지만 필터링
-        return message['type'] == 'trade_cycle_update';
+        // 디버깅: 모든 메시지 로그 출력
+        _logger.d('수신된 웹소켓 메시지: $message');
+        _logger.d('메시지 타입: ${message['type']}');
+        _logger.d('메시지 키들: ${message.keys.toList()}');
+        
+        // TradeCycle 관련 메시지 필터링 (여러 타입 시도)
+        final isTradeCycle = message['type'] == 'trade_cycle_update' ||
+               message['type'] == 'cycle_update' ||
+               message['type'] == 'trade_cycle' ||
+               message.containsKey('cycleId') ||
+               message.containsKey('tradeCycleId') ||
+               message.containsKey('symbol') && message.containsKey('side');
+        
+        _logger.d('TradeCycle 메시지 여부: $isTradeCycle');
+        return isTradeCycle;
       }
       return false;
     }).map((message) {
       try {
+        _logger.i('사이클 업데이트 메시지 처리: $message');
         return TradeCycle.fromJson(message as Map<String, dynamic>);
       } catch (e) {
-        _logger.e('TradeCycle 메시지 파싱 실패: $e');
+        _logger.e('TradeCycle 메시지 파싱 실패: $e, 메시지: $message');
         throw e;
       }
     });
