@@ -28,7 +28,10 @@ class OrderWebSocketService {
   Timer? _heartbeatTimer;
   Timer? _reconnectTimer;
 
-  Stream<dynamic> get messages => _messageController.stream;
+  Stream<dynamic> get messages => _messageController.stream.map((message) {
+    _logger.i('🔍 모든 WebSocket 메시지 수신: $message');
+    return message;
+  });
 
   Future<void> connect() async {
     if (_connecting || _channel != null) return;
@@ -187,6 +190,10 @@ class OrderWebSocketService {
   // STOMP DATA 메시지 처리
   void _handleStompDataMessage(List<String> lines) {
     try {
+      _logger.i('🔔 STOMP DATA 메시지 수신!');
+      _logger.i('라인 수: ${lines.length}');
+      _logger.i('모든 라인: $lines');
+      
       // 헤더 파싱
       final headers = <String, String>{};
       int bodyStartIndex = 1;
@@ -205,6 +212,8 @@ class OrderWebSocketService {
           headers[key] = value;
         }
       }
+      
+      _logger.i('파싱된 헤더: $headers');
       
       // 본문 파싱
       if (bodyStartIndex < lines.length) {
