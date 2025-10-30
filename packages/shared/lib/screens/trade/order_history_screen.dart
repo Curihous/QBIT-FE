@@ -13,6 +13,7 @@ import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/models/order_model.dart';
 import 'package:qbit_services/models/trade_cycle.dart';
 import 'package:go_router/go_router.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 
 // OrderModel - API 응답 데이터 모델
 class OrderModel {
@@ -200,7 +201,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   List<OrderModel> _orders = [];
   List<CycleItem> _cycleData = [];
   StreamSubscription? _wsSub;
-  StreamSubscription? _wsCycleSub; // 사이클 업데이트 구독
   bool _wsConnected = false;
   
   // 탭 상태
@@ -242,48 +242,87 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     }
   }
 
-  // 사이클 데이터 로드 (주문 내역에서 완료된 거래 분석)
+  // 사이클 데이터 로드 
   void _loadCycleData() {
-    // 완료된 주문들을 분석해서 사이클 생성
-    final cycles = <String, OrderModel>{};
+    // 매수와 매도 쌍을 찾아서 사이클 생성
+    final cycles = <String, List<OrderModel>>{};
     
+    // 1. 매수 주문 수집 (side == 'buy'이고 filled) - 모두 수집
+    final buyOrders = <String, List<OrderModel>>{};
     for (final order in _orders) {
-      // filled 상태이고 수량이 있는 주문만 처리
-      if (order.status == 'filled' || 
-          (order.filledQuantity != null && 
-           order.filledQuantity != '' && 
-           order.filledQuantity != '0' && 
-           order.filledQuantity != '0E-8' && 
-           order.filledQuantity != '0.00000000')) {
-        // 기존 사이클이 없거나 최신 주문이면 업데이트
-        if (!cycles.containsKey(order.symbol) || 
-            order.filledAt != null && 
-            cycles[order.symbol]!.filledAt != null &&
-            DateTime.parse(order.filledAt!).isAfter(DateTime.parse(cycles[order.symbol]!.filledAt!))) {
-          cycles[order.symbol] = order;
+      if (order.side == 'buy' && 
+          (order.status == 'filled' || 
+           (order.filledQuantity != null && 
+            order.filledQuantity != '' && 
+            order.filledQuantity != '0' && 
+            order.filledQuantity != '0E-8' && 
+            order.filledQuantity != '0.00000000'))) {
+        if (!buyOrders.containsKey(order.symbol)) {
+          buyOrders[order.symbol] = [];
+        }
+        buyOrders[order.symbol]!.add(order);
+      }
+    }
+    
+    // 2. 매도 주문 수집 (side == 'sell'이고 filled) - 모두 수집
+    final sellOrders = <String, List<OrderModel>>{};
+    for (final order in _orders) {
+      if (order.side == 'sell' && 
+          (order.status == 'filled' || 
+           (order.filledQuantity != null && 
+            order.filledQuantity != '' && 
+            order.filledQuantity != '0' && 
+            order.filledQuantity != '0E-8' && 
+            order.filledQuantity != '0.00000000'))) {
+        if (!sellOrders.containsKey(order.symbol)) {
+          sellOrders[order.symbol] = [];
+        }
+        sellOrders[order.symbol]!.add(order);
+      }
+    }
+    
+    // 3. 매수와 매도 모두 있는 심볼의 모든 가능한 쌍 생성
+    final cycleItems = <CycleItem>[];
+    
+    for (final symbol in buyOrders.keys) {
+      if (sellOrders.containsKey(symbol)) {
+        final buys = buyOrders[symbol]!;
+        final sells = sellOrders[symbol]!;
+        
+        // 각 매수에 대해 그 이후의 매도와 매칭
+        for (final buyOrder in buys) {
+          final buyDate = buyOrder.filledAt != null 
+              ? DateTime.parse(buyOrder.filledAt!)
+              : DateTime.parse(buyOrder.createdAt);
+          
+          // 매수 이후의 매도만 찾기
+          for (final sellOrder in sells) {
+            final sellDate = sellOrder.filledAt != null 
+                ? DateTime.parse(sellOrder.filledAt!)
+                : DateTime.parse(sellOrder.createdAt);
+            
+            // 매도가 매수 이후여야 함
+            if (sellDate.isAfter(buyDate)) {
+              cycleItems.add(CycleItem(
+                dateRange: '${buyDate.year.toString().substring(2)}.${buyDate.month.toString().padLeft(2, '0')}.${buyDate.day.toString().padLeft(2, '0')}-${sellDate.year.toString().substring(2)}.${sellDate.month.toString().padLeft(2, '0')}.${sellDate.day.toString().padLeft(2, '0')}',
+                companyName: symbol,
+                ticker: symbol,
+                buyDate: buyDate,
+                sellDate: sellDate,
+              ));
+            }
+          }
         }
       }
     }
     
+    print('매수 주문 수: ${buyOrders.values.fold<int>(0, (sum, list) => sum + list.length)}');
+    print('매도 주문 수: ${sellOrders.values.fold<int>(0, (sum, list) => sum + list.length)}');
+    print('생성된 사이클 수: ${cycleItems.length}');
+    
     // 사이클 아이템 생성
     setState(() {
-      _cycleData = cycles.values.map((order) {
-        final executedDate = order.filledAt != null 
-            ? DateTime.parse(order.filledAt!)
-            : DateTime.parse(order.createdAt);
-        
-        // 매수 날짜를 createdAt으로, 매도 날짜를 filledAt으로 사용
-        final buyDate = DateTime.parse(order.createdAt);
-        final sellDate = executedDate;
-        
-        return CycleItem(
-          dateRange: '${executedDate.year}.${executedDate.month.toString().padLeft(2, '0')}.${executedDate.day.toString().padLeft(2, '0')}',
-          companyName: order.symbol,
-          ticker: order.symbol,
-          buyDate: buyDate, // 매수 날짜
-          sellDate: sellDate, // 매도 날짜
-        );
-      }).toList()
+      _cycleData = cycleItems
         ..sort((a, b) {
           // 매도 날짜가 가장 최신인 순으로 정렬
           if (a.sellDate == null && b.sellDate == null) return 0;
@@ -315,6 +354,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         
         // 주문 상태 업데이트 처리
         _handleOrderUpdate(orderUpdate);
+        
+        // 주문이 완료되면 사이클 데이터 다시 로드
+        if (orderUpdate.status?.toUpperCase() == 'FILLED') {
+          _loadCycleData();
+        }
       }
     }, onError: (error) {
       print('WebSocket 에러: $error');
@@ -323,23 +367,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           _wsConnected = false;
         });
       }
-    });
-    
-    // 사이클 업데이트 구독
-    _wsCycleSub = OrderWebSocketService.instance.tradeCycleUpdates.listen((cycleUpdate) {
-      print('실시간 사이클 업데이트 수신: $cycleUpdate');
-      print('사이클 업데이트 상세: symbol=${cycleUpdate.symbol}, side=${cycleUpdate.side}, executedAt=${cycleUpdate.executedAt}');
-      
-      if (mounted) {
-        setState(() {
-          _wsConnected = true;
-        });
-        
-        // 사이클 업데이트 처리
-        _handleCycleUpdate(cycleUpdate);
-      }
-    }, onError: (error) {
-      print('사이클 업데이트 WebSocket 에러: $error');
     });
   }
 
@@ -468,53 +495,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  // 실시간 사이클 업데이트 처리
-  void _handleCycleUpdate(TradeCycle cycleUpdate) {
-    try {
-      print('사이클 업데이트 처리 시작: ${cycleUpdate.symbol}');
-      print('현재 사이클 데이터 개수: ${_cycleData.length}');
-      
-      // 사이클 데이터를 CycleItem 형태로 변환
-      final newCycleItem = CycleItem(
-        dateRange: '${cycleUpdate.executedAt.year}.${cycleUpdate.executedAt.month.toString().padLeft(2, '0')}.${cycleUpdate.executedAt.day.toString().padLeft(2, '0')}',
-        companyName: cycleUpdate.symbol,
-        ticker: cycleUpdate.symbol,
-        buyDate: cycleUpdate.executedAt.subtract(const Duration(days: 7)), // 기본값: 7일 전
-        sellDate: cycleUpdate.executedAt, // 매도 날짜로 사용
-      );
-      
-      print('새로운 사이클 아이템 생성: $newCycleItem');
-      
-      setState(() {
-        // 중복 체크 후 추가
-        final existingCycle = _cycleData.any((cycle) => cycle.ticker == cycleUpdate.symbol);
-        print('중복 체크 결과: $existingCycle');
-        
-        if (!existingCycle) {
-          _cycleData.add(newCycleItem);
-          // 매도 날짜 기준으로 정렬
-          _cycleData.sort((a, b) {
-            if (a.sellDate == null && b.sellDate == null) return 0;
-            if (a.sellDate == null) return 1;
-            if (b.sellDate == null) return -1;
-            return b.sellDate!.compareTo(a.sellDate!);
-          });
-          print('사이클 데이터 추가됨. 새로운 개수: ${_cycleData.length}');
-        } else {
-          print('중복된 사이클이므로 추가하지 않음');
-        }
-      });
-      
-      print('사이클 업데이트 완료: ${cycleUpdate.symbol}');
-    } catch (e) {
-      print('사이클 업데이트 처리 실패: $e');
-    }
-  }
-
   @override
   void dispose() {
     _wsSub?.cancel();
-    _wsCycleSub?.cancel(); // 사이클 구독 취소
     // WebSocket 연결은 다른 화면에서도 사용할 수 있으므로 여기서는 구독만 취소
     super.dispose();
   }
@@ -536,20 +519,20 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           if (_wsConnected)
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              padding: EdgeInsets.symmetric(horizontal: context.w(16), vertical: context.h(4)),
               color: AppColors.primary.withOpacity(0.1),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 8,
-                    height: 8,
+                    width: context.w(8),
+                    height: context.h(8),
                     decoration: const BoxDecoration(
                       color: AppColors.primary,
                       shape: BoxShape.circle,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: context.w(8)),
                   Text(
                     '실시간 업데이트 중',
                     style: AppFonts.c2.copyWith(
@@ -574,13 +557,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   Widget _buildTabSelector() {
     return Container(
-      padding: const EdgeInsets.only(left: 20, right: 20, top: 0, bottom: 16),
+      padding: EdgeInsets.only(left: context.w(20), right: context.w(20), top: 0, bottom: context.h(16)),
       child: Row(
         children: [
           GestureDetector(
             onTap: () => setState(() => _selectedTab = '개별'),
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              padding: EdgeInsets.symmetric(vertical: context.h(8), horizontal: context.w(16)),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
@@ -601,11 +584,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               ),
             ),
           ),
-          const SizedBox(width: 17),
+          SizedBox(width: context.w(17)),
           GestureDetector(
             onTap: () => setState(() => _selectedTab = '사이클'),
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+              padding: EdgeInsets.symmetric(vertical: context.h(8), horizontal: context.w(16)),
               decoration: BoxDecoration(
                 border: Border(
                   bottom: BorderSide(
@@ -635,8 +618,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     if (_selectedTab != '개별') return const SizedBox.shrink();
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      margin: const EdgeInsets.only(top: 8, bottom: 8),
+      padding: EdgeInsets.symmetric(horizontal: context.w(16)),
+      margin: EdgeInsets.only(top: context.h(8), bottom: context.h(8)),
       child: Row(
         children: [
           FilterButton(
@@ -644,13 +627,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             isSelected: _selectedFilter == '전체',
             onTap: () => setState(() => _selectedFilter = '전체'),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: context.w(8)),
           FilterButton(
             label: '매수',
             isSelected: _selectedFilter == '매수',
             onTap: () => setState(() => _selectedFilter = '매수'),
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: context.w(8)),
           FilterButton(
             label: '매도',
             isSelected: _selectedFilter == '매도',
@@ -676,7 +659,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       if (_selectedFilter == '매도') return order.side == 'sell';
       return true;
     }).toList()
-      ..sort((a, b) => b.createdAt.compareTo(a.createdAt)); // 최신순 정렬
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt)); // 최신순으로 정렬
 
     if (filteredOrders.isEmpty) {
       return Center(
@@ -685,10 +668,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           children: [
             Icon(
               Icons.receipt_long,
-              size: 64,
+              size: context.w(64),
               color: AppColors.gray400,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: context.h(16)),
             Text(
               '주문 내역이 없습니다',
               style: AppFonts.b1Semibold.copyWith(color: AppColors.gray600),
@@ -699,7 +682,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.symmetric(vertical: context.h(16)),
       itemCount: filteredOrders.length,
       itemBuilder: (context, index) {
         final order = filteredOrders[index];
@@ -712,15 +695,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     final isSelected = _selectedOrderId == order.orderId;
     
     return Container(
-      margin: const EdgeInsets.only(bottom: 24),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      margin: EdgeInsets.only(bottom: context.h(24)),
+      padding: EdgeInsets.symmetric(horizontal: context.w(16)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 날짜 (MM.DD)
           Container(
-            width: 40,
-            padding: const EdgeInsets.only(top: 11),
+            width: context.w(40),
+            padding: EdgeInsets.only(top: context.h(11)),
             child: Text(
               _formatDate(order.createdAt),
               style: AppFonts.c1.copyWith(
@@ -731,7 +714,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             ),
           ),
           
-          const SizedBox(width: 16),
+          SizedBox(width: context.w(16)),
           
           // 심볼과 상태
           Expanded(
@@ -757,7 +740,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       height: 1.25,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: context.h(4)),
                   Text(
                     _getStatusLabel(order),
                     style: AppFonts.c1.copyWith(
@@ -776,7 +759,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             GestureDetector(
               onTap: () => _showDeleteDialog(order),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: EdgeInsets.symmetric(horizontal: context.w(12), vertical: context.h(6)),
                 decoration: BoxDecoration(
                   color: Colors.red,
                   borderRadius: BorderRadius.circular(4),
@@ -825,9 +808,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 color: AppColors.gray400,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: context.h(8)),
             Text(
-              '매수부터 매도까지 완료된 거래가 여기에 표시됩니다',
+              '매수부터 전량 매도까지 완료된 거래가 여기에 표시됩니다.',
               style: AppFonts.c2.copyWith(
                 color: AppColors.gray300,
               ),
@@ -838,7 +821,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: EdgeInsets.symmetric(horizontal: context.w(20)),
       itemCount: _cycleData.length,
       itemBuilder: (context, index) {
         final cycle = _cycleData[index];
@@ -848,40 +831,30 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   Widget _buildCycleItem(CycleItem cycle) {
-    // 매수~매도 날짜 범위 포맷팅
     String dateRangeText = cycle.dateRange;
-    if (cycle.buyDate != null && cycle.sellDate != null) {
-      final buyDate = '${cycle.buyDate!.year.toString().substring(2)}.${cycle.buyDate!.month.toString().padLeft(2, '0')}.${cycle.buyDate!.day.toString().padLeft(2, '0')}';
-      final sellDate = '${cycle.sellDate!.year.toString().substring(2)}.${cycle.sellDate!.month.toString().padLeft(2, '0')}.${cycle.sellDate!.day.toString().padLeft(2, '0')}';
-      dateRangeText = '$buyDate-$sellDate';
-      print('날짜 범위: $dateRangeText (buyDate: $buyDate, sellDate: $sellDate)');
-    }
     
     return Container(
       width: double.infinity,
-      height: 89,
+      height: context.h(89),
       child: Stack(
         children: [
-          // 날짜 범위 (상단)
+          // 날짜 범위
           Positioned(
             left: 0,
             top: 0,
             child: Text(
               dateRangeText,
-              style: TextStyle(
-                color: const Color(0xFF7F7F7F), // Gray-600
-                fontSize: 13,
-                fontFamily: 'Pretendard',
-                fontWeight: FontWeight.w400,
-                height: 1.23,
-              ),
+                style: AppFonts.c1.copyWith(
+                  color: AppColors.gray600,
+                  height: 1.23,
+                ),
             ),
           ),
           
           // 메인 컨텐츠 영역
           Positioned(
             left: 0,
-            top: 25,
+            top: context.h(25),
             right: 0,
             child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -890,10 +863,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                   children: [
                     // 회사 로고 (원형)
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: context.w(44),
+                      height: context.h(44),
                       decoration: const ShapeDecoration(
-                        color: Color(0xFFFFFBF3), // Secondary-BG
+                        color: AppColors.secondaryBG,
                         shape: OvalBorder(),
                       ),
                       child: Center(
@@ -901,8 +874,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                             ? ClipOval(
                                 child: Image.network(
                                   cycle.logoUrl!,
-                                  width: 44,
-                                  height: 44,
+                                  width: context.w(44),
+                                  height: context.h(44),
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
                                     return _buildCompanyLogo(cycle.ticker);
@@ -913,17 +886,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       ),
                     ),
                     
-                    const SizedBox(width: 12),
+                    SizedBox(width: context.w(12)),
                     
                     // 회사 정보 (심볼명만 표시)
                     Text(
                       cycle.ticker,
-                      style: TextStyle(
-                        color: const Color(0xFF323232), // Gray-900
-                        fontSize: 16,
-                        fontFamily: 'Pretendard',
-                        fontWeight: FontWeight.w400,
-                        height: 1.25,
+                      style: AppFonts.b1Regular.copyWith(
+                        color: AppColors.gray900,
                       ),
                     ),
                     
@@ -934,13 +903,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         context.push('/trade-report');
                       },
                       child: Container(
-                        width: 24,
-                        height: 24,
-                        padding: const EdgeInsets.all(4),
+                        width: context.w(24),
+                        height: context.h(24),
+                        padding: EdgeInsets.all(context.w(4)),
                         child: SvgPicture.asset(
                           'assets/icons/report.svg',
-                          width: 23,
-                          height: 23,
+                          width: context.w(23),
+                          height: context.h(23),
                         ),
                       ),
                     ),
@@ -952,56 +921,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  // 심볼을 회사명으로 변환하는 함수
-  String _getCompanyName(String symbol) {
-    switch (symbol.toUpperCase()) {
-      case 'FIG':
-        return 'Figma, Inc.';
-      case 'AAPL':
-        return 'Apple Inc.';
-      case 'MSFT':
-        return 'Microsoft Corporation';
-      case 'GOOGL':
-        return 'Alphabet Inc.';
-      case 'AMZN':
-        return 'Amazon.com, Inc.';
-      case 'TSLA':
-        return 'Tesla, Inc.';
-      case 'META':
-        return 'Meta Platforms, Inc.';
-      case 'NVDA':
-        return 'NVIDIA Corporation';
-      case 'NFLX':
-        return 'Netflix, Inc.';
-      case 'AMD':
-        return 'Advanced Micro Devices, Inc.';
-      case 'CRM':
-        return 'Salesforce, Inc.';
-      case 'ADBE':
-        return 'Adobe Inc.';
-      case 'PYPL':
-        return 'PayPal Holdings, Inc.';
-      case 'INTC':
-        return 'Intel Corporation';
-      case 'CSCO':
-        return 'Cisco Systems, Inc.';
-      case 'ORCL':
-        return 'Oracle Corporation';
-      case 'IBM':
-        return 'International Business Machines Corporation';
-      case 'QCOM':
-        return 'QUALCOMM Incorporated';
-      case 'TXN':
-        return 'Texas Instruments Incorporated';
-      default:
-        return '$symbol Inc.'; // 기본값
-    }
-  }
-
   Widget _buildCompanyLogo(String ticker) {
     return Container(
-      width: 40,
-      height: 40,
+      width: context.w(40),
+      height: context.h(40),
       decoration: BoxDecoration(
         color: AppColors.gray100,
         borderRadius: BorderRadius.circular(8),

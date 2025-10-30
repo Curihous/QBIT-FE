@@ -5,7 +5,7 @@ class CryptoOrderRules {
   final double minOrderSize;
   final double minTradeIncrement; // 수량 증분
   final double priceIncrement;    // 가격 증분
-  final int qtyMaxDecimals;       // 수량 최대 소수자리 (보통 9)
+  final int qtyMaxDecimals;       // 수량 최대 소수자리 
   final double minNotionalUSDT;   // 최소 체결금액 (USDT)
 
   CryptoOrderRules({

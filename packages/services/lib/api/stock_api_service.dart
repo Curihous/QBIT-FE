@@ -463,4 +463,31 @@ class StockApiService {
     }
   }
 
+  /// 암호화폐 실시간 시세 조회
+  /// GET /stocks/quote/{symbol}
+  static Future<Map<String, dynamic>?> getCryptoQuote(String symbol) async {
+    try {
+      // 심볼에서 / 제거
+      final cleanSymbol = symbol.replaceAll('/', '');
+      
+      final response = await _dio.get('/stocks/quote/$cleanSymbol');
+      
+      if (response.statusCode == 200) {
+        if (response.data is Map<String, dynamic>) {
+          logger.i('암호화폐 실시간 시세 조회 성공: ${response.data}');
+          return response.data as Map<String, dynamic>;
+        } else {
+          logger.e('응답 데이터가 Map이 아닙니다: ${response.data.runtimeType}');
+          return null;
+        }
+      } else {
+        logger.e('암호화폐 실시간 시세 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('암호화폐 실시간 시세 조회 에러: $error');
+      return null;
+    }
+  }
+
 }

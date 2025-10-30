@@ -5,7 +5,9 @@ import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/widgets/chart/candlestick_chart_v2.dart';
 import 'package:qbit_shared/widgets/chart/volume_chart_v2.dart';
 import 'package:qbit_shared/widgets/chart/rsi_indicators_v2.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
+import 'package:qbit_services/api/exchange_rate_api_service.dart';
 import 'package:qbit_services/models/candle_model.dart';
 
 class StockChartTab extends StatefulWidget {
@@ -13,6 +15,7 @@ class StockChartTab extends StatefulWidget {
   final String name;
   final String assetClass;
   final Function(String price, String change)? onPriceUpdate;
+  final Function(String priceUSD, String priceKRW)? onPriceUpdateDetailed;
 
   const StockChartTab({
     super.key,
@@ -20,6 +23,7 @@ class StockChartTab extends StatefulWidget {
     required this.name,
     required this.assetClass,
     this.onPriceUpdate,
+    this.onPriceUpdateDetailed,
   });
 
   @override
@@ -31,13 +35,75 @@ class _StockChartTabState extends State<StockChartTab> {
   CandleResponse? _candleData;
   bool _isLoading = false;
   String? _error;
+  double? _exchangeRate;
+  double? _currentRealTimePrice;
 
   final List<String> _intervals = ['30m', '1h', '4h', '1d'];
 
   @override
   void initState() {
     super.initState();
-    _loadCandleData();
+    _loadData();
+  }
+  
+  Future<void> _loadData() async {
+    if (widget.assetClass != 'crypto') return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // 환율 로드
+      _exchangeRate = await ExchangeRateApiService.getUsdToKrwRate();
+      
+      // 실시간 시세 로드
+      await _loadRealTimePrice();
+      
+      // 캔들 데이터 로드
+      await _loadCandleData();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+  
+  Future<void> _loadRealTimePrice() async {
+    try {
+      final quote = await StockApiService.getCryptoQuote(widget.symbol);
+      if (quote != null && mounted) {
+        // API 응답에서 실제로 어떤 필드명을 사용하는지 확인
+        print('=== 실시간 시세 데이터 ===');
+        print('전체 응답: $quote');
+        print('가능한 필드: lastPrice, currentPrice, price, close');
+        print('=======================');
+        
+        // 다양한 필드명 시도
+        final price = quote['lastPrice'] ?? 
+                     quote['currentPrice'] ?? 
+                     quote['price'] ?? 
+                     quote['close'];
+        
+        if (price != null) {
+          final priceValue = (price is num) ? price.toDouble() : double.tryParse(price.toString());
+          if (priceValue != null) {
+            setState(() {
+              _currentRealTimePrice = priceValue;
+            });
+            print('실시간 가격 설정: $_currentRealTimePrice');
+          }
+        } else {
+          print('가격 필드를 찾을 수 없습니다');
+        }
+      }
+    } catch (e) {
+      print('실시간 시세 로드 에러: $e');
+    }
   }
 
   Future<void> _loadCandleData() async {
@@ -49,9 +115,29 @@ class _StockChartTabState extends State<StockChartTab> {
     });
 
     try {
-      // 현재 시간과 7일 전 시간 계산
+      // 환율 로드 (암호화폐의 경우 USD를 KRW로 변환)
+      _exchangeRate = await ExchangeRateApiService.getUsdToKrwRate();
+      
+      // 현재 시간과 시간 단위에 따라 조정된 기간 계산
       final now = DateTime.now();
-      final startTime = now.subtract(const Duration(days: 7));
+      final int daysBack;
+      
+      switch (_selectedInterval) {
+        case '30m':
+        case '1h':
+          daysBack = 30; // 30일치 데이터 (더 많은 데이터로 끊김 방지)
+          break;
+        case '4h':
+          daysBack = 60; // 60일치 데이터
+          break;
+        case '1d':
+          daysBack = 90; // 90일치 데이터
+          break;
+        default:
+          daysBack = 30;
+      }
+      
+      final startTime = now.subtract(Duration(days: daysBack));
       
       final candleData = await StockApiService.getCryptoCandles(
         symbol: widget.symbol,
@@ -69,6 +155,18 @@ class _StockChartTabState extends State<StockChartTab> {
         // 가격 정보 업데이트
         if (candleData != null && candleData!.candles.isNotEmpty) {
           final latestCandle = candleData!.candles.last;
+          final firstCandle = candleData!.candles.first;
+          
+          // 디버깅: 캔들 데이터 타임스탬프 확인
+          print('=== 캔들 데이터 확인 ===');
+          print('캔들 개수: ${candleData!.candles.length}');
+          print('첫 캔들 timestamp: ${firstCandle.timestamp}');
+          print('첫 캔들 시간: ${DateTime.fromMillisecondsSinceEpoch(firstCandle.timestamp)}');
+          print('마지막 캔들 timestamp: ${latestCandle.timestamp}');
+          print('마지막 캔들 시간: ${DateTime.fromMillisecondsSinceEpoch(latestCandle.timestamp)}');
+          print('마지막 캔들 close: ${latestCandle.close}');
+          print('======================');
+          
           final price = _formatPrice(latestCandle.close);
           final change = _getPriceChange();
           widget.onPriceUpdate?.call(price, change);
@@ -89,6 +187,14 @@ class _StockChartTabState extends State<StockChartTab> {
       _selectedInterval = interval;
     });
     _loadCandleData();
+    
+    // 인터벌이 변경되면 가격 정보 업데이트
+    if (mounted && _candleData != null && _candleData!.candles.isNotEmpty) {
+      final latestCandle = _candleData!.candles.last;
+      final price = _formatPrice(latestCandle.close);
+      final change = _getPriceChange();
+      widget.onPriceUpdate?.call(price, change);
+    }
   }
 
   @override
@@ -97,14 +203,11 @@ class _StockChartTabState extends State<StockChartTab> {
       color: Colors.white,
       child: Column(
         children: [
-          // 상단 여백
-          const SizedBox(height: 16),
-          
           // 종목 정보 헤더
           _buildHeader(),
           
           // 헤더와 간격 선택 바 사이 여백
-          const SizedBox(height: 20),
+          SizedBox(height: context.h(20)),
           
           // 시간 간격 선택 바
           _buildIntervalSelector(),
@@ -116,7 +219,7 @@ class _StockChartTabState extends State<StockChartTab> {
           ),
           
           // 가로선과 차트 사이 여백
-          const SizedBox(height: 16),
+          SizedBox(height: context.h(16)),
           
           // 차트 영역
           Expanded(
@@ -128,61 +231,122 @@ class _StockChartTabState extends State<StockChartTab> {
   }
 
   Widget _buildHeader() {
+    // 현재 가격과 등락률 계산
+    final currentPrice = _getCurrentPrice();
+    final priceChange = _getPriceChange();
+    final priceChangeColor = _getPriceChangeColor();
+    
+    // 가격값 추출 (소수점 포함)
+    final priceValue = currentPrice;
+    
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-      child: Row(
+      height: 86,
+      padding: EdgeInsets.fromLTRB(context.w(20), context.h(20), context.w(20), 0),
+      child: Stack(
         children: [
-          // 종목명
-          Expanded(
+          // 종목명 (위쪽)
+          Positioned(
+            left: 0,
+            top: 0,
             child: Text(
-              widget.name,
+              widget.name.toUpperCase(),
               style: AppFonts.b1Semibold.copyWith(
                 color: AppColors.gray900,
-                fontSize: 18,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                height: 1.25,
               ),
             ),
           ),
-          // 아이콘 
-          Row(
-            children: [
-              // 화살표 아이콘 (차트 확대, 축소)
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.gray100,
-                    width: 1,
+          // 가격과 등락률 (아래쪽)
+          Positioned(
+            left: 0,
+            top: 29,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 가격
+                Text(
+                  priceValue,
+                  style: AppFonts.b1Semibold.copyWith(
+                    color: AppColors.gray900,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w400,
+                    height: 0.88,
                   ),
                 ),
-                child: Icon(
-                  Icons.open_with,
-                  size: 20,
-                  color: AppColors.gray600,
+                SizedBox(width: context.w(12)),
+                // 등락률
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 등락 아이콘 (작은 삼각형 또는 화살표)
+                    Icon(
+                      _isPriceUp() ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                      size: 8,
+                      color: priceChangeColor,
+                    ),
+                    SizedBox(width: context.w(3)),
+                    Text(
+                      priceChange,
+                      style: AppFonts.b2Regular.copyWith(
+                        color: priceChangeColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w400,
+                        height: 1.23,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          // 이동/설정 아이콘 (오른쪽)
+          Positioned(
+            right: 0,
+            top: 20,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 화살표 아이콘 (차트 확대, 축소)
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.gray100,
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.open_with,
+                    size: 20,
+                    color: AppColors.gray300,
                 ),
               ),
-              const SizedBox(width: 8),
+              SizedBox(width: context.w(8)),
               // 톱니바퀴 아이콘
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: AppColors.gray100,
-                    width: 1,
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: AppColors.gray100,
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.settings,
+                    size: 20,
+                    color: AppColors.gray300,
                   ),
                 ),
-                child: Icon(
-                  Icons.settings,
-                  size: 20,
-                  color: AppColors.gray600,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
@@ -191,7 +355,7 @@ class _StockChartTabState extends State<StockChartTab> {
 
   Widget _buildIntervalSelector() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 0),
+      padding: EdgeInsets.symmetric(horizontal: context.w(36), vertical: 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -218,7 +382,7 @@ class _StockChartTabState extends State<StockChartTab> {
               ),
             ),
           ),
-          const SizedBox(width: 17),
+          SizedBox(width: context.w(17)),
           
           // 1h
           Container(
@@ -243,7 +407,7 @@ class _StockChartTabState extends State<StockChartTab> {
               ),
             ),
           ),
-          const SizedBox(width: 17),
+          SizedBox(width: context.w(17)),
           
           // 4h
           Container(
@@ -293,7 +457,7 @@ class _StockChartTabState extends State<StockChartTab> {
               ),
             ),
           ),
-          const SizedBox(width: 17),
+          SizedBox(width: context.w(17)),
           
           // 기타 옵션
           GestureDetector(
@@ -344,14 +508,14 @@ class _StockChartTabState extends State<StockChartTab> {
               size: 48,
               color: AppColors.gray400,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: context.h(16)),
             Text(
               '차트 데이터를 불러올 수 없습니다',
               style: AppFonts.b1Regular.copyWith(
                 color: AppColors.gray600,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: context.h(8)),
             Text(
               _error!,
               style: AppFonts.b2Regular.copyWith(
@@ -374,7 +538,7 @@ class _StockChartTabState extends State<StockChartTab> {
               size: 48,
               color: AppColors.gray400,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: context.h(16)),
             Text(
               '차트 데이터가 없습니다',
               style: AppFonts.b1Regular.copyWith(
@@ -435,6 +599,7 @@ class _StockChartTabState extends State<StockChartTab> {
     return CandlestickChartV2(
       candles: _candleData!.candles,
       interval: _selectedInterval,
+      realTimePrice: _currentRealTimePrice, // 실시간 시세 전달
     );
   }
 
@@ -451,30 +616,84 @@ class _StockChartTabState extends State<StockChartTab> {
   }
 
   String _getCurrentPrice() {
-    if (_candleData == null || _candleData!.candles.isEmpty) {
-      return '--원';
+    // 실시간 시세 우선 사용
+    if (_currentRealTimePrice != null) {
+      return _formatPriceValue(_currentRealTimePrice!);
     }
-    final lastCandle = _candleData!.candles.last;
-    return '${lastCandle.close.toStringAsFixed(0)}원';
+    
+    // 없으면 캔들 데이터의 마지막 close 사용
+    if (_candleData != null && _candleData!.candles.isNotEmpty) {
+      final lastCandle = _candleData!.candles.last;
+      return _formatPriceValue(lastCandle.close);
+    }
+    
+    return '--';
+  }
+
+  String _formatPriceValue(double price) {
+    if (widget.assetClass == 'crypto') {
+      // 암호화폐: 소수점 2자리 + 쉼표 표시
+      return _formatNumberWithComma(price);
+    } else {
+      // 주식: 정수로 표시하되 필요시 소수점
+      if (price >= 1000) {
+        return _formatNumberWithComma(price);
+      } else if (price >= 1) {
+        return price.toStringAsFixed(2);
+      } else {
+        return price.toStringAsFixed(6);
+      }
+    }
+  }
+
+  String _formatNumberWithComma(double number) {
+    final parts = number.toStringAsFixed(2).split('.');
+    final integerPart = parts[0];
+    final decimalPart = parts[1];
+    
+    // 천 단위 쉼표 추가
+    final formattedInteger = integerPart.replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match m) => '${m[1]},',
+    );
+    
+    return '$formattedInteger.$decimalPart';
   }
 
   String _getPriceChange() {
-    if (_candleData == null || _candleData!.candles.length < 2) {
-      return '--%';
+    // 실시간 시세가 있으면 사용
+    double? currentPrice;
+    double? previousPrice;
+    
+    if (_currentRealTimePrice != null && _candleData != null && _candleData!.candles.isNotEmpty) {
+      currentPrice = _currentRealTimePrice;
+      previousPrice = _candleData!.candles[_candleData!.candles.length - 2].close;
+    } else if (_candleData != null && _candleData!.candles.length >= 2) {
+      final currentCandle = _candleData!.candles.last;
+      final previousCandle = _candleData!.candles[_candleData!.candles.length - 2];
+      currentPrice = currentCandle.close;
+      previousPrice = previousCandle.close;
     }
     
-    final currentCandle = _candleData!.candles.last;
-    final previousCandle = _candleData!.candles[_candleData!.candles.length - 2];
+    if (currentPrice == null || previousPrice == null || previousPrice == 0) {
+      return '-- (0.00%)';
+    }
     
-    final change = currentCandle.close - previousCandle.close;
-    final changePercent = (change / previousCandle.close) * 100;
+    final change = currentPrice - previousPrice;
+    final changePercent = (change / previousPrice) * 100;
     
     final sign = change >= 0 ? '+' : '';
-    return '$sign${changePercent.toStringAsFixed(2)}%';
+    return '$sign${change.abs().toStringAsFixed(2)} (${changePercent.abs().toStringAsFixed(2)}%)';
   }
 
   String _formatPrice(double price) {
-    // 암호화폐는 소수점까지 정확하게 표시
+    // 암호화폐의 경우 USD를 KRW로 변환
+    if (widget.assetClass == 'crypto' && _exchangeRate != null) {
+      final krwPrice = price * _exchangeRate!;
+      return '${krwPrice.toStringAsFixed(2)}원';
+    }
+    
+    // 주식의 경우 이미 KRW 단위
     if (price >= 1000) {
       return '${price.toStringAsFixed(2)}원';
     } else if (price >= 1) {
@@ -494,5 +713,17 @@ class _StockChartTabState extends State<StockChartTab> {
     
     final change = currentCandle.close - previousCandle.close;
     return change >= 0 ? AppColors.profit : AppColors.loss;
+  }
+
+  bool _isPriceUp() {
+    if (_candleData == null || _candleData!.candles.length < 2) {
+      return true;
+    }
+    
+    final currentCandle = _candleData!.candles.last;
+    final previousCandle = _candleData!.candles[_candleData!.candles.length - 2];
+    
+    final change = currentCandle.close - previousCandle.close;
+    return change >= 0;
   }
 }

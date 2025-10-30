@@ -705,7 +705,8 @@ class _TradeScreenState extends State<TradeScreen> {
             Inset.block(
               child: Stack(
                 children: [
-                  // 포트폴리오 차트 (빈 차트로 표시)
+                  // 포트폴리오 차트 
+                  // TODO: 포트폴리오 차트 추가 (백엔드 연동)
                   Container(
                     height: 125,
                     decoration: BoxDecoration(

@@ -12,6 +12,7 @@ import 'package:qbit_services/websocket/crypto_orderbook_websocket.dart';
 import 'package:qbit_shared/widgets/trade/vertical_orderbook_widget.dart';
 import 'package:qbit_services/models/stock_detail_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 
 class StockOrderTab extends StatefulWidget {
   final String symbol;
@@ -50,7 +51,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _marketAmountController = TextEditingController();
   
-  // 스크롤 컨트롤러 추가
+  // 스크롤 컨트롤러 
   final ScrollController _scrollController = ScrollController();
   
   // 포커스 노드 추가
@@ -61,6 +62,9 @@ class _StockOrderTabState extends State<StockOrderTab> {
   // 환율 관련
   double? _exchangeRate;
   double? _tickSizeInKrw;
+  
+  // 통화 전환 상태
+  bool _isShowingKRW = true; // true: 원화, false: 달러
   
   // 주문 제출 상태
   bool _isSubmittingOrder = false;
@@ -113,6 +117,31 @@ class _StockOrderTabState extends State<StockOrderTab> {
     _webSocket?.disconnect();
     _webSocket?.dispose();
     super.dispose();
+  }
+
+  /// 통화 전환 메서드
+  Future<void> _toggleCurrency() async {
+    if (widget.assetClass != 'stock' || _exchangeRate == null) return;
+    
+    final rate = _exchangeRate!;
+    
+    setState(() {
+      _isShowingKRW = !_isShowingKRW;
+      
+      if (_isShowingKRW) {
+        // 달러 -> 원화 변환
+        final usdValue = _price;
+        final krwValue = usdValue * rate;
+        _price = krwValue;
+        _priceController.text = krwValue.toStringAsFixed(0);
+      } else {
+        // 원화 -> 달러 변환
+        final krwValue = _price;
+        final usdValue = krwValue / rate;
+        _price = usdValue;
+        _priceController.text = usdValue.toStringAsFixed(2);
+      }
+    });
   }
 
   Future<void> _loadData() async {
@@ -331,9 +360,9 @@ class _StockOrderTabState extends State<StockOrderTab> {
               Text('구분: $_selectedOrderTab'),
               Text('주문타입: $_selectedOrderType'),
               if (widget.assetClass == 'crypto' && _selectedOrderType == '지정가') ...[
-                Text('수량: ${_quantityController.text}개'),
-                Text('가격: ${_priceController.text} USD'),
-                Text('총액: ${((double.tryParse(_quantityController.text) ?? 0.0) * (double.tryParse(_priceController.text) ?? 0.0)).toStringAsFixed(2)} USD'),
+                Text('수량: ${(_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizeQuantity(_quantity.toDouble()).toStringAsFixed(9)}개'),
+                Text('가격: ${(_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizePrice(_price).toStringAsFixed(2)} USD'),
+                Text('총액: ${((_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizeQuantity(_quantity.toDouble()) * (_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizePrice(_price)).toStringAsFixed(2)} USD'),
               ] else if (widget.assetClass == 'crypto' && _selectedOrderType == '시장가') ...[
                 Text('금액: ${_marketOrderAmount.toStringAsFixed(2)} USDT'),
                 Text('예상 수량: ${(_marketOrderAmount / _currentMarketPrice).toStringAsFixed(9)}개'),
@@ -403,9 +432,10 @@ class _StockOrderTabState extends State<StockOrderTab> {
           // 가격 정규화
           final normalizedPrice = rules.normalizePrice(_price);
           
-          // 수량 정규화 (사용자 입력 수량 유지)
+          // 수량 정규화 및 최소 체결금액 보장
           final normalizedQty = rules.normalizeQuantity(_quantity.toDouble());
-          final finalQty = normalizedQty;
+          final minPassingQty = rules.minPassingQtyAtPrice(normalizedPrice);
+          final finalQty = normalizedQty > minPassingQty ? normalizedQty : minPassingQty;
           
           limitPrice = normalizedPrice.toStringAsFixed(2);
           quantity = finalQty.toStringAsFixed(9);
@@ -615,16 +645,16 @@ class _StockOrderTabState extends State<StockOrderTab> {
           children: [
             Icon(
               Icons.error_outline,
-              size: 64,
+              size: context.w(64),
               color: AppColors.error,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: context.h(16)),
             Text(
               _error!,
               style: AppFonts.b1Semibold.copyWith(color: AppColors.error),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: context.h(16)),
             ElevatedButton(
               onPressed: _loadData,
               child: const Text('다시 시도'),
@@ -646,7 +676,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
           child: Stack(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 9.0),
+                padding: EdgeInsets.symmetric(horizontal: context.w(9)),
                 child: widget.assetClass == 'crypto' 
                   ? Row(
                       children: [
@@ -664,7 +694,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                             },
                           ),
                         ),
-                        const SizedBox(width: 14),
+                        SizedBox(width: context.w(14)),
                         Expanded(
                           flex: 1,
                           child: SingleChildScrollView(
@@ -709,7 +739,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                   top: 0,
                   bottom: 0,
                   child: Container(
-                    width: 1,
+                    width: context.w(1),
                     color: AppColors.gray100,
                   ),
                 ),
@@ -735,8 +765,8 @@ class _StockOrderTabState extends State<StockOrderTab> {
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      margin: EdgeInsets.symmetric(horizontal: context.w(16), vertical: context.h(8)),
+      padding: EdgeInsets.symmetric(horizontal: context.w(12), vertical: context.h(12)),
       decoration: BoxDecoration(
         color: const Color(0xFFD1E8F8), // #D1E8F8 배경색
         borderRadius: BorderRadius.circular(8),
@@ -766,7 +796,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
     final availableHeight = screenHeight - 300; // 더 많은 여유 공간 확보
     
     return Container(
-      padding: const EdgeInsets.fromLTRB(8, 16, 8, 16),
+      padding: EdgeInsets.fromLTRB(context.w(8), context.h(16), context.w(8), context.h(16)),
       child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: isCryptoSymbol ? CrossAxisAlignment.end : CrossAxisAlignment.center,
@@ -794,19 +824,19 @@ class _StockOrderTabState extends State<StockOrderTab> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: context.h(8)),
                 Container(
                   width: double.infinity,
-                  height: 1,
+                  height: context.h(1),
                   color: AppColors.gray100,
                 ),
               ],
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: context.h(20)),
             
             // 주문 타입 선택 (암호화폐만 시장가 옵션 제공)
             SizedBox(
-              width: isCryptoSymbol ? 188 : double.infinity,
+              width: isCryptoSymbol ? context.w(188) : double.infinity,
               child: widget.assetClass == 'crypto' 
                 ? GestureDetector(
                     onTap: () {
@@ -830,7 +860,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                     ),
                   ),
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: context.h(2)),
             
             // 주문가능 금액
             Text(
@@ -840,17 +870,17 @@ class _StockOrderTabState extends State<StockOrderTab> {
                 color: AppColors.gray900,
               ),
             ),
-            const SizedBox(height: 9),
+            SizedBox(height: context.h(9)),
             
             // 수량 입력 필드
             Container(
-              width: isCryptoSymbol ? 188 : double.infinity,
+              width: isCryptoSymbol ? context.w(188) : double.infinity,
               decoration: ShapeDecoration(
                 color: AppColors.gray50,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: context.w(22), vertical: context.h(12)),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -861,7 +891,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                         color: AppColors.gray900,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: context.h(6)),
                     Row(
                       children: [
                         Expanded(
@@ -878,10 +908,8 @@ class _StockOrderTabState extends State<StockOrderTab> {
                                   keyboardType: widget.assetClass == 'crypto' 
                                     ? TextInputType.numberWithOptions(decimal: true)
                                     : TextInputType.number,
-                                  style: AppFonts.b1Regular.copyWith(
+                                  style: AppFonts.b1Semibold.copyWith(
                                     color: AppColors.gray900,
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.50,
                                   ),
                                   decoration: InputDecoration(
                                     hintText: widget.assetClass == 'crypto' && _selectedOrderType == '시장가' ? 'USDT 금액' : '수량',
@@ -933,17 +961,17 @@ class _StockOrderTabState extends State<StockOrderTab> {
                 ),
               ),
             ),
-            const SizedBox(height: 9),
+            SizedBox(height: context.h(9)),
             
             // 가격 입력 필드
             Container(
-              width: isCryptoSymbol ? 188 : double.infinity,
+              width: isCryptoSymbol ? context.w(188) : double.infinity,
               decoration: ShapeDecoration(
                 color: _selectedOrderType == '시장가' ? AppColors.gray100 : AppColors.gray50,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                padding: EdgeInsets.symmetric(horizontal: context.w(22), vertical: context.h(12)),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -954,7 +982,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                         color: AppColors.gray900,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: context.h(6)),
                     Row(
                       children: [
                         Expanded(
@@ -968,10 +996,8 @@ class _StockOrderTabState extends State<StockOrderTab> {
                                     ? TextInputType.numberWithOptions(decimal: true)
                                     : TextInputType.number,
                                   enabled: _selectedOrderType != '시장가',
-                                  style: AppFonts.b1Regular.copyWith(
+                                  style: AppFonts.b1Semibold.copyWith(
                                     color: _selectedOrderType == '시장가' ? AppColors.gray400 : AppColors.gray900,
-                                    fontWeight: FontWeight.w600,
-                                    height: 1.50,
                                   ),
                                   decoration: InputDecoration(
                                     hintText: _selectedOrderType == '시장가' ? '시장가' : '가격',
@@ -991,13 +1017,68 @@ class _StockOrderTabState extends State<StockOrderTab> {
                                   },
                                 ),
                               ),
-                              Text(
-                                widget.assetClass == 'crypto' ? 'USD' : '원',
-                                style: AppFonts.b1Regular.copyWith(
-                                  color: AppColors.gray900,
-                                  fontWeight: FontWeight.w600,
+                              SizedBox(width: context.w(4)),
+                              // 통화 토글 버튼 (주식만)
+                              if (widget.assetClass == 'stock')
+                                GestureDetector(
+                                  onTap: _toggleCurrency,
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: context.w(8),
+                                      vertical: context.h(4),
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.gray100,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: context.w(6),
+                                            vertical: context.h(2),
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: _isShowingKRW ? Colors.white : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(2),
+                                          ),
+                                          child: Text(
+                                            '원',
+                                            style: AppFonts.b2Semibold.copyWith(
+                                              color: AppColors.gray900,
+                                            ),
+                                          ),
+                                        ),
+                                        SizedBox(width: context.w(2)),
+                                        Container(
+                                          padding: EdgeInsets.symmetric(
+                                            horizontal: context.w(6),
+                                            vertical: context.h(2),
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: !_isShowingKRW ? Colors.white : Colors.transparent,
+                                            borderRadius: BorderRadius.circular(2),
+                                          ),
+                                          child: Text(
+                                            r'$',
+                                            style: AppFonts.b2Semibold.copyWith(
+                                              color: AppColors.gray900,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
+                                Text(
+                                  widget.assetClass == 'crypto' ? 'USD' : '원',
+                                  style: AppFonts.b1Regular.copyWith(
+                                    color: AppColors.gray900,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -1005,10 +1086,14 @@ class _StockOrderTabState extends State<StockOrderTab> {
                           children: [
                             GestureDetector(
                               onTap: () {
-                                final tickSize = _tickSizeInKrw ?? 13.0;
+                                final tickSize = widget.assetClass == 'stock' && !_isShowingKRW 
+                                  ? ((_tickSizeInKrw ?? 13.0) / (_exchangeRate ?? 1300.0)) 
+                                  : (_tickSizeInKrw ?? 13.0);
                                 setState(() {
                                   _price = (_price - tickSize).clamp(0, double.infinity);
-                                  _priceController.text = _price.toStringAsFixed(0);
+                                  _priceController.text = widget.assetClass == 'stock' && !_isShowingKRW
+                                    ? _price.toStringAsFixed(2)
+                                    : _price.toStringAsFixed(0);
                                 });
                               },
                               child: Text(
@@ -1018,13 +1103,17 @@ class _StockOrderTabState extends State<StockOrderTab> {
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            SizedBox(width: context.w(8)),
                             GestureDetector(
                               onTap: () {
-                                final tickSize = _tickSizeInKrw ?? 13.0;
+                                final tickSize = widget.assetClass == 'stock' && !_isShowingKRW 
+                                  ? ((_tickSizeInKrw ?? 13.0) / (_exchangeRate ?? 1300.0)) 
+                                  : (_tickSizeInKrw ?? 13.0);
                                 setState(() {
                                   _price = _price + tickSize;
-                                  _priceController.text = _price.toStringAsFixed(0);
+                                  _priceController.text = widget.assetClass == 'stock' && !_isShowingKRW
+                                    ? _price.toStringAsFixed(2)
+                                    : _price.toStringAsFixed(0);
                                 });
                               },
                               child: Text(
@@ -1046,7 +1135,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
             
             // 총액
             Padding(
-              padding: EdgeInsets.only(left: isCryptoSymbol ? 8 : 0),
+              padding: EdgeInsets.only(left: isCryptoSymbol ? context.w(8) : 0),
               child: Column(
                 crossAxisAlignment: isCryptoSymbol ? CrossAxisAlignment.start : CrossAxisAlignment.center,
                 children: [
@@ -1056,7 +1145,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                       color: AppColors.gray900,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: context.h(8)),
                   Text(
                     widget.assetClass == 'crypto' 
                       ? (_selectedOrderType == '시장가' 
@@ -1066,20 +1155,19 @@ class _StockOrderTabState extends State<StockOrderTab> {
                     style: AppFonts.t1Bold.copyWith(
                       color: AppColors.gray900,
                       fontWeight: FontWeight.w600,
-                      height: 1.20,
                     ),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: (availableHeight * 0.03).clamp(8.0, 16.0)), // 반응형 간격
+            SizedBox(height: (availableHeight * 0.03).clamp(8.0, 16.0)), 
             
             // 매수/매도 버튼
             GestureDetector(
               onTap: _isSubmittingOrder ? null : _handleOrderSubmit,
               child: Container(
-                width: isCryptoSymbol ? 188 : double.infinity,
-                height: (availableHeight * 0.06).clamp(40.0, 50.0), // 반응형 높이 적용
+                width: isCryptoSymbol ? context.w(188) : double.infinity,
+                height: (availableHeight * 0.06).clamp(40.0, 50.0), 
                 decoration: BoxDecoration(
                   color: _selectedOrderTab == '매도' ? AppColors.loss : AppColors.profit,
                   borderRadius: BorderRadius.circular(8),
@@ -1091,8 +1179,6 @@ class _StockOrderTabState extends State<StockOrderTab> {
                           _selectedOrderTab == '매도' ? '매도' : '매수',
                           style: AppFonts.t1Bold.copyWith(
                             color: AppColors.white,
-                            fontWeight: FontWeight.w600,
-                            height: 1.20,
                           ),
                         ),
                 ),
@@ -1113,12 +1199,8 @@ class _StockOrderTabState extends State<StockOrderTab> {
       child: Text(
         text,
         textAlign: TextAlign.center,
-        style: TextStyle(
+        style: AppFonts.b1Regular.copyWith(
           color: isSelected ? AppColors.gray900 : AppColors.gray300,
-          fontSize: 16,
-          fontFamily: 'Pretendard',
-          fontWeight: FontWeight.w400,
-          height: 1.40,
         ),
       ),
     );
@@ -1167,14 +1249,14 @@ class _StockOrderTabState extends State<StockOrderTab> {
                     ),
                   ),
                   child: Padding(
-                    padding: EdgeInsets.all(20),
+                    padding: EdgeInsets.all(context.w(20)),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // 아이콘
                         Container(
-                          width: 50,
-                          height: 50,
+                          width: context.w(50),
+                          height: context.h(50),
                           decoration: BoxDecoration(
                             color: Color(0xFFF5F5F5),
                             borderRadius: BorderRadius.circular(12),
@@ -1182,10 +1264,10 @@ class _StockOrderTabState extends State<StockOrderTab> {
                           child: Icon(
                             Icons.check_circle,
                             color: orderType == '매수' ? AppColors.profit : AppColors.loss,
-                            size: 25,
+                            size: context.w(25),
                           ),
                         ),
-                        SizedBox(height: 16),
+                        SizedBox(height: context.h(16)),
                         // 성공 메시지
                         Text(
                           '$symbol $orderType 주문 요청 성공',
@@ -1196,10 +1278,10 @@ class _StockOrderTabState extends State<StockOrderTab> {
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        SizedBox(height: 24),
+                        SizedBox(height: context.h(24)),
                         // 주문 상세 정보
                         Container(
-                          padding: EdgeInsets.all(16),
+                          padding: EdgeInsets.all(context.w(16)),
                           decoration: BoxDecoration(
                             color: Color(0xFFF8F9FA),
                             borderRadius: BorderRadius.circular(12),

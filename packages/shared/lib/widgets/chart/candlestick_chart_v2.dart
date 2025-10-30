@@ -1,4 +1,5 @@
 import 'dart:ui' as ui;
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
@@ -8,11 +9,13 @@ import 'package:intl/intl.dart';
 class CandlestickChartV2 extends StatelessWidget {
   final List<CandleData> candles;
   final String interval;
+  final double? realTimePrice;
 
   const CandlestickChartV2({
     super.key,
     required this.candles,
     required this.interval,
+    this.realTimePrice,
   });
 
   @override
@@ -36,10 +39,10 @@ class CandlestickChartV2 extends StatelessWidget {
           Expanded(
             child: CustomPaint(
               painter: CandlestickPainter(
-                candles: _getRecentCandles(), // 전체 캔들 → 최근 캔들로 변경!
+                candles: _getRecentCandles(), // 최근 캔들만 표시 (사이즈 조절)
                 maxPrice: _getMaxPrice(),
                 minPrice: _getMinPrice(),
-                currentPrice: candles.last.close,
+                currentPrice: realTimePrice ?? candles.last.close, // 실시간 시세 우선 사용
                 interval: interval,
               ),
               child: Container(),
@@ -53,62 +56,62 @@ class CandlestickChartV2 extends StatelessWidget {
   double _getMaxPrice() {
     if (candles.isEmpty) return 0;
     
-    // 30m, 1h 차트는 현재가 기준으로 동적 범위 계산
-    if (interval == '30m' || interval == '1h') {
+    // 실시간 가격이 있으면 현재가 중심으로 범위 설정
+    if (realTimePrice != null) {
       final recentCandles = _getRecentCandles();
       final max = recentCandles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
       final min = recentCandles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
-      final range = max - min;
-      final padding = range * 0.1; // 10% 패딩
-      return max + padding;
-    }
-    
-    // 짧은 시간대는 최근 캔들들만 기준으로 auto-scale (enableAutoScaleY: true 효과)
-    if (_isShortTimeframe()) {
-      final recentCandles = _getRecentCandles();
-      final max = recentCandles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
-      final min = recentCandles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
-      final range = max - min;
+      
+      // 현재가를 포함한 전체 범위
+      final totalMax = max > realTimePrice! ? max : realTimePrice!;
+      final totalMin = min < realTimePrice! ? min : realTimePrice!;
+      final range = totalMax - totalMin;
+      
+      // 현재가를 중심으로 ± 적절한 범위
+      final centerPrice = (totalMax + totalMin) / 2;
       final padding = _getPaddingRatio();
-      return max + (range * padding);
+      
+      return centerPrice + (range * (0.5 + padding));
     }
     
-    // 긴 시간대는 전체 캔들 기준
-    final max = candles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
-    final min = candles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
+    final recentCandles = _getRecentCandles();
+    double max = recentCandles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
+    
+    final min = recentCandles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
     final range = max - min;
     final padding = _getPaddingRatio();
+    
     return max + (range * padding);
   }
 
   double _getMinPrice() {
     if (candles.isEmpty) return 0;
     
-    // 30m, 1h 차트는 현재가 기준으로 동적 범위 계산
-    if (interval == '30m' || interval == '1h') {
+    // 실시간 가격이 있으면 현재가 중심으로 범위 설정
+    if (realTimePrice != null) {
       final recentCandles = _getRecentCandles();
       final max = recentCandles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
       final min = recentCandles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
-      final range = max - min;
-      final padding = range * 0.1; // 10% 패딩
-      return min - padding;
-    }
-    
-    // 짧은 시간대는 최근 캔들들만 기준으로 auto-scale (enableAutoScaleY: true 효과)
-    if (_isShortTimeframe()) {
-      final recentCandles = _getRecentCandles();
-      final max = recentCandles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
-      final min = recentCandles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
-      final range = max - min;
+      
+      // 현재가를 포함한 전체 범위
+      final totalMax = max > realTimePrice! ? max : realTimePrice!;
+      final totalMin = min < realTimePrice! ? min : realTimePrice!;
+      final range = totalMax - totalMin;
+      
+      // 현재가를 중심으로 ± 적절한 범위
+      final centerPrice = (totalMax + totalMin) / 2;
       final padding = _getPaddingRatio();
-      return min - (range * padding);
+      
+      return centerPrice - (range * (0.5 + padding));
     }
     
-    // 긴 시간대는 전체 캔들 기준
-    final max = candles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
-    final min = candles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
+    final recentCandles = _getRecentCandles();
+    double min = recentCandles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
+    
+    final max = recentCandles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
     final range = max - min;
     final padding = _getPaddingRatio();
+    
     return min - (range * padding);
   }
   
@@ -120,26 +123,28 @@ class CandlestickChartV2 extends StatelessWidget {
   }
   
   int _getRecentCandleCount() {
+    // 화면 크기에 맞춰 동적으로 계산
+    // 일반적으로 화면 너비 360px 기준으로 계산
     switch (interval) {
       case '1m':
       case '5m':
-        return 25; // 20 → 25로 증가 (더 풍부하게!)
+        return 30; // 짧은 간격
       case '15m':
-        return 25; // 30 → 25로 조정 (15분 차트 최적화)
+        return 40;
       case '30m':
-        return 20; // 30 → 20으로 조정 (30분 차트 최적화)
+        return 24; // 24개 = 약 12시간 (10/27 6:00부터 현재까지)
       case '1h':
-        return 24; // 50 → 24로 조정 (하루치 데이터)
+        return 24; // 24개 = 24시간
       case '4h':
-        return 30; // 60 → 30으로 조정 (5일치 데이터)
+        return 21; // 21개 = 약 3.5일
       case '1d':
-        return 30; // 그대로 유지
+        return 30; // 30개 = 약 1개월
       case '1w':
         return candles.length; // 전체 데이터
       case '1M':
         return candles.length; // 전체 데이터
       default:
-        return candles.length; // 전체
+        return 50; // 기본값
     }
   }
   
@@ -155,16 +160,16 @@ class CandlestickChartV2 extends StatelessWidget {
       case '15m':
       case '30m':
       case '1h':
-        return 0.10; // 10% 패딩 (봉 주변 5~10% 여백)
+        return 0.20; // 20% 패딩으로 증가 (캔들이 범위를 벗어나지 않도록)
       case '4h':
-        return 0.10; // 10% 패딩
+        return 0.20; // 20% 패딩
       case '1d':
-        return 0.15; // 15% 패딩
+        return 0.20; // 20% 패딩
       case '1w':
       case '1M':
-        return 0.15; // 15% 패딩 (전체 데이터 기준)
+        return 0.20; // 20% 패딩
       default:
-        return 0.10;
+        return 0.20;
     }
   }
 }
@@ -189,10 +194,10 @@ class CandlestickPainter extends CustomPainter {
     if (candles.isEmpty) return;
 
     // Y축 라벨을 위한 공간 확보
-    final rightPadding = 60.0; // Y축 라벨 공간
+    final rightPadding = 70.0; // Y축 라벨 공간 증가
     final leftPadding = 16.0;
     final topPadding = 60.0; // 120 → 60으로 줄임 (시간 메뉴와 차트 사이 여백 최적화)
-    final bottomPadding = 30.0; // X축 라벨 공간
+    final bottomPadding = 0.0; // X축 라벨 숨김
     
     final chartWidth = size.width - leftPadding - rightPadding;
     // 수정: 강제로 최소 높이를 보장하던 로직 제거
@@ -214,16 +219,27 @@ class CandlestickPainter extends CustomPainter {
       ..strokeWidth = 1.0;
 
     // 고정된 캔들 너비와 간격으로 일관성 있는 차트 모양
-    final candleWidth = 8.0; // 고정 너비
-    final candleSpacing = 12.0; // 6 → 12로 적절하게 증가 (캔들 구분 가능!)
+    final candleWidth = 6.0; // 너비 축소
+    final candleSpacing = 3.0; // 간격 축소 (더 촘촘하게)
     
-    // 차트 시작 위치 계산 (중앙 정렬)
-    final totalWidth = candles.length * candleSpacing;
-    final startX = leftPadding + (chartWidth - totalWidth) / 2 + candleWidth / 2;
+    // 차트의 총 폭 계산 (마지막 캔들 뒤 간격은 제외)
+    final totalCandleWidth = (candles.length * candleWidth) + ((candles.length - 1) * candleSpacing);
+
+    // 화면보다 좁으면 수평 중앙 정렬, 넓으면 마지막 캔들이 우측에 오도록 정렬
+    double startX;
+    if (totalCandleWidth <= chartWidth) {
+      final leftover = chartWidth - totalCandleWidth;
+      startX = leftPadding + leftover / 2 + candleWidth / 2; // 중앙 정렬
+    } else {
+      startX = leftPadding + chartWidth - (candleWidth / 2) - (candles.length - 1) * (candleWidth + candleSpacing); // 우측 정렬
+      // 화면 밖으로 벗어나지 않도록 최소값 보정
+      final minStartX = leftPadding + candleWidth / 2;
+      if (startX < minStartX) startX = minStartX;
+    }
 
     for (int i = 0; i < candles.length; i++) {
       final candle = candles[i];
-      final x = startX + i * candleSpacing;
+      final x = startX + i * (candleWidth + candleSpacing);
       
       // 가격을 Y 좌표로 변환
       final highY = _priceToY(candle.high, actualChartHeight, topPadding);
@@ -265,8 +281,8 @@ class CandlestickPainter extends CustomPainter {
     // 3. 현재가 표시선 그리기
     _drawCurrentPriceLine(canvas, size, leftPadding, topPadding, chartWidth, actualChartHeight);
 
-    // 4. X축 라벨 그리기 (시간)
-    _drawXAxisLabels(canvas, size, leftPadding, topPadding, chartWidth, actualChartHeight, startX, candleSpacing, bottomPadding);
+    // TODO: X축 라벨 그리기 (시간) - 일단 숨김 (나중에 캔들 터치로 상세 정보 표시로 대체)
+    // _drawXAxisLabels(canvas, size, leftPadding, topPadding, chartWidth, actualChartHeight, startX, candleSpacing, bottomPadding);
   }
 
   void _drawGridAndYAxis(Canvas canvas, Size size, double leftPadding, double topPadding, double chartWidth, double chartHeight) {
@@ -275,12 +291,15 @@ class CandlestickPainter extends CustomPainter {
       ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
 
-    // 5개의 가격 레벨 (균등 분할)
-    final priceStep = (maxPrice - minPrice) / 4;
+    // Y축 라벨 개수와 간격 조정
+    final labelCount = 5;
+    final priceStep = (maxPrice - minPrice) / (labelCount - 1);
     
-    for (int i = 0; i <= 4; i++) {
-      final price = minPrice + (priceStep * i);
-      final y = topPadding + chartHeight - (chartHeight * i / 4);
+    for (int i = 0; i < labelCount; i++) {
+      final rawPrice = minPrice + (priceStep * i);
+      // 라벨은 실제 값 기반으로 표시 (과도한 반올림으로 동일 값 반복되는 문제 방지)
+      final price = rawPrice;
+      final y = _priceToY(price, chartHeight, topPadding);
       
       // 그리드 라인
       canvas.drawLine(
@@ -311,6 +330,7 @@ class CandlestickPainter extends CustomPainter {
   }
 
   void _drawCurrentPriceLine(Canvas canvas, Size size, double leftPadding, double topPadding, double chartWidth, double chartHeight) {
+    // 현재가 선은 항상 표시 (범위 밖이어도)
     final currentY = _priceToY(currentPrice, chartHeight, topPadding);
     
     // 민트색 점선
@@ -379,13 +399,15 @@ class CandlestickPainter extends CustomPainter {
     if (candles.isEmpty) return;
 
     // 차트 전체 폭에 균등하게 분산된 라벨 표시
-    final labelCount = interval == '30m' || interval == '15m' ? 5 : 3; // 30m/15m는 5개, 나머지는 3개
-    final step = chartWidth / (labelCount - 1);
+    final labelCount = interval == '30m' || interval == '15m' ? 8 : 
+                       interval == '1h' ? 7 :
+                       interval == '4h' ? 7 : 
+                       interval == '1d' ? 6 : 5; // 더 많은 라벨 표시
     
     for (int i = 0; i < labelCount; i++) {
-      final x = leftPadding + (i * step);
       final candleIndex = (i * (candles.length - 1) / (labelCount - 1)).round();
       final candle = candles[candleIndex];
+      final x = startX + candleIndex * (6.0 + 3.0); // 실제 캔들 위치에 맞춰 표시 (candleWidth 6.0 + candleSpacing 3.0)
       final timeText = _formatTime(candle.timestamp);
       
       final textSpan = TextSpan(
@@ -417,6 +439,34 @@ class CandlestickPainter extends CustomPainter {
         Offset(textX, size.height - bottomPadding / 2 - textPainter.height / 2), // 차트 하단 패딩 영역 중앙에 위치
       );
     }
+  }
+
+  double _roundToNiceValue(double value) {
+    if (value == 0) return 0;
+    
+    // 값의 크기에 따라 적절한 단위 결정
+    final absValue = value.abs();
+    final magnitude = absValue < 1 
+        ? 0 
+        : (math.log(absValue) / math.ln10).floor();
+    final magnitudeValue = math.pow(10, magnitude).toDouble();
+    
+    // 값의 첫 번째 자리수 추출
+    final normalizedValue = value / magnitudeValue;
+    
+    // 깔끔한 숫자로 반올림 (1, 2, 5, 10 단위)
+    double niceValue;
+    if (normalizedValue <= 1) {
+      niceValue = 1;
+    } else if (normalizedValue <= 2) {
+      niceValue = 2;
+    } else if (normalizedValue <= 5) {
+      niceValue = 5;
+    } else {
+      niceValue = 10;
+    }
+    
+    return niceValue * magnitudeValue;
   }
 
   String _formatPrice(double price) {

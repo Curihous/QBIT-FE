@@ -6,6 +6,7 @@ import 'package:qbit_shared/widgets/common/header_back.dart';
 import 'package:qbit_shared/widgets/common/button/big_black_button.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 
 class TradeReportScreen extends StatelessWidget {
   const TradeReportScreen({super.key});
@@ -25,52 +26,50 @@ class TradeReportScreen extends StatelessWidget {
         ),
         child: Stack(
           children: [
-            // 첫 번째 텍스트 - 보유 주식 전량 매도 완료
             Positioned(
-              left: 22,
-              top: 80,
+              left: context.w(22),
+              top: context.h(80),
               child: Text(
                 '보유 주식 전량 매도 완료',
                 style: AppFonts.b1Regular.copyWith(color: AppColors.gray900),
               ),
             ),
             
-            // 두 번째 텍스트 - 이번 매매, 전략적으로 어땠을까요?
             Positioned(
-              left: 22,
-              top: 110,
+              left: context.w(22),
+              top: context.h(110),
               child: SizedBox(
-                width: 342,
+                width: context.w(342),
                 child: Text(
                   '이번 매매, 전략적으로 어땠을까요?\n지금 리포트를 확인해보세요.',
                   style: AppFonts.t2Bold.copyWith(
                     color: AppColors.gray900,
-                    height: 1.6, // lineheight 조정
+                    height: 1.6, 
                   ),
                   textAlign: TextAlign.left,
                 ),
               ),
             ),
             
-            // 올빼미 리포트 캐릭터 (중앙 배치, 크기 증가)
+            // 부엉이
             Positioned(
               left: 0,
               right: 0,
-              top: 200,
+              top: context.h(200),
               child: Center(
                 child: SvgPicture.asset(
                   'assets/images/characters/owl-report.svg',
-                  width: 300,
-                  height: 300,
+                  width: context.w(300),
+                  height: context.h(300),
                 ),
               ),
             ),
             
             // AI 리포트 확인 버튼
             Positioned(
-              left: 16,
-              right: 16,
-              top: 580,
+              left: context.w(16),
+              right: context.w(16),
+              top: context.h(580),
               child: BigBlackButton(
                 text: 'AI 리포트 확인',
                 onPressed: () {

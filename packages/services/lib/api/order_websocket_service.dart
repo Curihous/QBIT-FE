@@ -173,7 +173,6 @@ class OrderWebSocketService {
         
         // CONNECTED 후 구독 요청
         await _subscribeToOrders();
-        await _subscribeToCycles();
         break;
       case 'ERROR':
         _logger.e('STOMP 에러: ${lines.skip(1).join('\n')}');
@@ -214,13 +213,15 @@ class OrderWebSocketService {
       }
       
       _logger.i('파싱된 헤더: $headers');
+      _logger.i('destination: ${headers['destination']}');
       
       // 본문 파싱
       if (bodyStartIndex < lines.length) {
         final body = lines.skip(bodyStartIndex).join('\n').trim();
         if (body.isNotEmpty) {
           final jsonData = json.decode(body);
-          _logger.d('STOMP 데이터 메시지: $jsonData');
+          _logger.i('🏷️ destination: ${headers['destination']}');
+          _logger.i('📦 본문 데이터: $jsonData');
           _messageController.add(jsonData);
         }
       }
@@ -321,19 +322,6 @@ class OrderWebSocketService {
     }
   }
 
-  // 사이클 업데이트 구독
-  Future<void> _subscribeToCycles() async {
-    try {
-      final frame = 'SUBSCRIBE\r\n'
-          'id:cycles-subscription\r\n'
-          'destination:/user/queue/trade-cycles-updates\r\n'
-          '\r\n'
-          '\x00';
-      _channel?.sink.add(frame);
-    } catch (e) {
-      _logger.e('STOMP 사이클 구독 전송 실패: $e');
-    }
-  }
 
   // 주문 상태 업데이트 스트림
   Stream<OrderUpdateMessage> get orderUpdates {

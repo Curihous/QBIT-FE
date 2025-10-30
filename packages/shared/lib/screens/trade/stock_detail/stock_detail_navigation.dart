@@ -25,86 +25,26 @@ class StockDetailNavigation extends StatefulWidget {
   State<StockDetailNavigation> createState() => _StockDetailNavigationState();
 }
 
-class _StockDetailNavigationState extends State<StockDetailNavigation> with TickerProviderStateMixin {
+class _StockDetailNavigationState extends State<StockDetailNavigation> {
   int _selectedTabIndex = 0; // 0: 차트, 1: 호가, 2: 주문, 3: 시세
-  bool _isBottomNavVisible = true;
-  late AnimationController _animationController;
-  late Animation<Offset> _slideAnimation;
   
-  // 가격 정보 상태
-  String _currentPrice = "0원";
+  // 가격 정보 상태 (차트/호가에서 사용)
+  String _currentPriceKRW = "0원";
+  String _currentPriceUSD = r"$0";
   String _priceChange = "+0.00%";
-  
-  // 통화 전환 상태
-  bool _isShowingKRW = true; // true: 원화, false: 달러
-
-  @override
-  void initState() {
-    super.initState();
-    // 암호화폐인 경우 달러를 기본값으로 설정
-    if (widget.assetClass == 'crypto') {
-      _isShowingKRW = false;
-      _currentPrice = "\$0";
-    }
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 1), // 아래에서 시작
-      end: const Offset(0, 0),   // 원래 위치
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    _animationController.forward(); // 초기 상태는 보이는 상태
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _handlePanUpdate(DragUpdateDetails details) {
-    // 아래로 드래그 (delta.dy > 0) - 네비게이션 바 숨기기
-    if (details.delta.dy > 3 && _isBottomNavVisible) {
-      setState(() {
-        _isBottomNavVisible = false;
-      });
-      _animationController.reverse();
-    }
-    // 위로 드래그 (delta.dy < 0) - 네비게이션 바 보이기
-    else if (details.delta.dy < -3 && !_isBottomNavVisible) {
-      setState(() {
-        _isBottomNavVisible = true;
-      });
-      _animationController.forward();
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: _buildCustomAppBar(),
-      body: GestureDetector(
-        onPanUpdate: _handlePanUpdate,
-        child: Stack(
-          children: [
-              Column(
-                children: [
-                  Expanded(
-                    child: _buildTabContent(),
-                  ),
-                  SlideTransition(
-                    position: _slideAnimation,
-                    child: _buildBottomTabNavigation(),
-                  ),
-                ],
-              ),
-          ],
-        ),
+      body: Column(
+        children: [
+          Expanded(
+            child: _buildTabContent(),
+          ),
+          _buildBottomTabNavigation(),
+        ],
       ),
     );
   }
@@ -118,7 +58,7 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
               : widget.symbol,
           name: widget.name,
           assetClass: widget.assetClass,
-          onPriceUpdate: updatePriceInfo,
+          onPriceUpdateDetailed: updatePriceInfoDetailed,
         );
       case 1: // 호가
         return StockOrderbookTab(
@@ -130,7 +70,7 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
         );
       case 2: // 주문
         return StockOrderTab(
-          symbol: widget.symbol, // 주문은 기존 심볼 유지 (백엔드 주문 규격 기준)
+          symbol: widget.symbol, // 주문은 기존 심볼 유지
           name: widget.name,
           assetClass: widget.assetClass,
         );
@@ -200,99 +140,29 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> with Tick
   }
 
   PreferredSizeWidget _buildCustomAppBar() {
-    return AppBar(
+    return HeaderBack(
+      title: widget.symbol,
       backgroundColor: Colors.white,
-      elevation: 0,
-      leading: IconButton(
-        icon: const Icon(
-          Icons.arrow_back_ios,
-          color: AppColors.gray900,
-        ),
-        onPressed: () => Navigator.pop(context),
-      ),
-      title: Row(
-        children: [
-          // 종목 심볼 (좌측)
-          Text(
-            widget.symbol,
-            style: AppFonts.b1Semibold.copyWith(
-              color: AppColors.gray900,
-              fontSize: 18,
-            ),
-          ),
-          const Spacer(),
-          // 가격 정보 (우측) - 탭 가능
-          GestureDetector(
-            onTap: _toggleCurrency,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  _getCurrentPrice(),
-                  style: AppFonts.b1Semibold.copyWith(
-                    color: AppColors.gray900,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  _getPriceChange(),
-                  style: AppFonts.b1Semibold.copyWith(
-                    color: _getPriceChangeColor(),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
-  String _getCurrentPrice() {
-    return _currentPrice;
-  }
-
-  String _getPriceChange() {
-    return _priceChange;
-  }
-
-  // 가격 정보 업데이트 메서드
+  // 가격 정보 업데이트 메서드 (차트/호가에서 사용)
   void updatePriceInfo(String price, String change) {
     setState(() {
-      _currentPrice = price;
+      if (price.endsWith('원')) {
+        _currentPriceKRW = price;
+      } else if (price.startsWith(r'$')) {
+        _currentPriceUSD = price;
+      }
       _priceChange = change;
     });
   }
   
-  // 통화 전환 메서드
-  void _toggleCurrency() {
+  // 가격 정보 업데이트 메서드 (USD/KRW 분리)
+  void updatePriceInfoDetailed(String priceUSD, String priceKRW) {
     setState(() {
-      _isShowingKRW = !_isShowingKRW;
-      // 실제로는 환율을 적용해서 변환해야 하지만, 여기서는 간단히 표시만 변경
-      if (_isShowingKRW) {
-        // 달러 -> 원화 변환 (예시: $100 -> 130,000원)
-        if (_currentPrice.startsWith('\$')) {
-          final dollarValue = double.tryParse(_currentPrice.substring(1)) ?? 0;
-          _currentPrice = '${(dollarValue * 1300).toStringAsFixed(0)}원';
-        }
-      } else {
-        // 원화 -> 달러 변환 (예시: 130,000원 -> $100)
-        if (_currentPrice.endsWith('원')) {
-          final krwValue = double.tryParse(_currentPrice.replaceAll(',', '').replaceAll('원', '')) ?? 0;
-          _currentPrice = '\$${(krwValue / 1300).toStringAsFixed(2)}';
-        }
-      }
+      _currentPriceUSD = priceUSD;
+      _currentPriceKRW = priceKRW;
     });
-  }
-
-  Color _getPriceChangeColor() {
-    final change = _getPriceChange();
-    if (change.startsWith('+')) {
-      return AppColors.loss; // 빨간색 (상승)
-    } else if (change.startsWith('-')) {
-      return AppColors.profit; // 파란색 (하락)
-    }
-    return AppColors.gray600;
   }
 }
