@@ -314,10 +314,11 @@ class OrderWebSocketService {
     try {
       final frame = 'SUBSCRIBE\n'
           'id:orders-subscription\n'
-          'destination:/user/queue/orders-updates\n'
+          'destination:/user/queue/orders\n'
           '\n'
           '\x00';
       _channel?.sink.add(frame);
+      _logger.i('주문 업데이트 구독 요청: /user/queue/orders');
     } catch (e) {
       _logger.e('STOMP SUBSCRIBE 전송 실패: $e');
     }
