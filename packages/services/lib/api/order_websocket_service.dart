@@ -70,6 +70,8 @@ class OrderWebSocketService {
       );
 
       _reconnectAttempts = 0;
+      // WebSocket 연결 후 안정화를 위해 잠시 대기
+      await Future.delayed(const Duration(milliseconds: 100));
       // STOMP CONNECT 프레임 송신
       await _sendStompConnect();
       _startHeartbeat();
@@ -286,19 +288,18 @@ class OrderWebSocketService {
       
       _logger.i('토큰 확인: ${token.substring(0, 20)}...');
       
-      // STOMP 프로토콜 표준에 맞게 CRLF 사용
-      final frame = 'CONNECT\r\n'
-          'accept-version:1.2\r\n'
-          'host:realtime\r\n'
-          'Authorization:Bearer $token\r\n'
-          'heart-beat:10000,10000\r\n'
-          '\r\n'
+      final frame = 'CONNECT\n'
+          'accept-version:1.2\n'
+          'host:realtime\n'
+          'Authorization:Bearer $token\n'
+          'heart-beat:10000,10000\n'
+          '\n'
           '\x00';
 
       // 디버깅 로그 - 바이트 단위 확인
       final frameBytes = frame.codeUnits;
       _logger.i('STOMP CONNECT 전송 (바이트 길이: ${frameBytes.length}):');
-      _logger.i('프레임 내용: ${frame.replaceAll('\x00', '\\x00').replaceAll('\r', '\\r').replaceAll('\n', '\\n')}');
+      _logger.i('프레임 내용: ${frame.replaceAll('\x00', '\\x00').replaceAll('\n', '\\n')}');
       _logger.i('바이트 배열: ${frameBytes.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ')}');
       
       _channel?.sink.add(frame);
@@ -311,10 +312,10 @@ class OrderWebSocketService {
   // 주문 상태 업데이트 구독
   Future<void> _subscribeToOrders() async {
     try {
-      final frame = 'SUBSCRIBE\r\n'
-          'id:orders-subscription\r\n'
-          'destination:/user/queue/orders-updates\r\n'
-          '\r\n'
+      final frame = 'SUBSCRIBE\n'
+          'id:orders-subscription\n'
+          'destination:/user/queue/orders-updates\n'
+          '\n'
           '\x00';
       _channel?.sink.add(frame);
     } catch (e) {
