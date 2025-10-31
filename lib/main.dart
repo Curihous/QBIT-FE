@@ -7,6 +7,7 @@ import 'package:qbit_shared/main.dart';
 import 'package:qbit_services/api/api_client.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/auth/auth_service.dart';
+import 'package:qbit_services/api/order_websocket_service.dart';
 
 /// 토큰 정보 출력 함수
 Future<void> printTokens() async {
@@ -176,6 +177,20 @@ void main() async {
   
   // 토큰 자동 갱신 시도
   await _attemptTokenRefresh();
+  
+  // 백엔드 토큰이 있으면 WebSocket 연결 시도
+  final backendToken = await TokenService.getAccessToken();
+  if (backendToken != null) {
+    debugPrint('백엔드 토큰 감지 - WebSocket 연결 시도');
+    try {
+      await OrderWebSocketService.instance.connect();
+      debugPrint('✅ 앱 시작 시 WebSocket 연결 성공');
+    } catch (e) {
+      debugPrint('⚠️ 앱 시작 시 WebSocket 연결 실패 (무시): $e');
+    }
+  } else {
+    debugPrint('백엔드 토큰 없음 - WebSocket 연결 건너뜀');
+  }
   
   // 개발용: 강제 로그아웃 (필요시 주석 해제)
   // await AuthService.logout();
