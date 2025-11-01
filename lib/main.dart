@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:qbit_core/config/app_config.dart';
@@ -8,6 +10,7 @@ import 'package:qbit_services/api/api_client.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/order_websocket_service.dart';
+import 'package:qbit_services/auth/google_auth_service.dart';
 
 /// 토큰 정보 출력 함수
 Future<void> printTokens() async {
@@ -49,7 +52,86 @@ Future<void> _attemptTokenRefresh() async {
   debugPrint('=== 토큰 자동 갱신 시도 ===');
   
   try {
-    // 카카오 SDK에서 토큰 확인 및 자동 갱신
+    // Google 로그인 상태 확인
+    final googleSignedIn = await GoogleAuthService.isSignedIn();
+    if (googleSignedIn) {
+      debugPrint('💡 Google 로그인 사용 중');
+      try {
+        // Google 사용자 정보 및 토큰 조회
+        final googleUser = await GoogleAuthService.getCurrentUser();
+        if (googleUser != null) {
+          final googleIdToken = googleUser['idToken'];
+          final googleAccessToken = googleUser['accessToken'];
+          
+          debugPrint('═══════════════════════════════════════════════════════════');
+          debugPrint('📝 토큰 정보 (앱 시작 시):');
+          if (googleIdToken != null && googleIdToken.toString().isNotEmpty) {
+            final idTokenStr = googleIdToken.toString();
+            // 토큰 만료 시간 확인
+            try {
+              final parts = idTokenStr.split('.');
+              if (parts.length == 3) {
+                final payload = parts[1];
+                final paddedPayload = payload.padRight((payload.length + 3) & ~3, '=');
+                final decodedBytes = base64Url.decode(paddedPayload);
+                final decodedPayload = utf8.decode(decodedBytes);
+                final payloadJson = json.decode(decodedPayload);
+                
+                if (payloadJson['exp'] != null) {
+                  final expTimestamp = payloadJson['exp'] as int;
+                  final expDate = DateTime.fromMillisecondsSinceEpoch(expTimestamp * 1000);
+                  final now = DateTime.now();
+                  final timeLeft = expDate.difference(now);
+                  
+                  if (timeLeft.isNegative) {
+                    debugPrint('⚠️ Google ID Token 만료됨 (${timeLeft.inMinutes.abs()}분 전 만료)');
+                    debugPrint('   만료 시간: ${expDate.toIso8601String()}');
+                    debugPrint('   현재 시간: ${now.toIso8601String()}');
+                  } else {
+                    debugPrint('✅ Google ID Token 유효함 (${timeLeft.inMinutes}분 ${timeLeft.inSeconds % 60}초 남음)');
+                    debugPrint('   만료 시간: ${expDate.toIso8601String()}');
+                  }
+                }
+              }
+            } catch (e) {
+              debugPrint('⚠️ 토큰 만료 시간 확인 실패: $e');
+            }
+            
+            debugPrint('🔑 Google ID Token:');
+            debugPrint('   토큰 길이: ${idTokenStr.length}자');
+            // 클립보드에 자동 복사
+            try {
+              await Clipboard.setData(ClipboardData(text: idTokenStr));
+              debugPrint('   ✅ 클립보드에 복사됨');
+            } catch (e) {
+              debugPrint('   ⚠️ 클립보드 복사 실패: $e');
+            }
+          } else {
+            debugPrint('⚠️ Google ID Token이 없습니다');
+          }
+          if (googleAccessToken != null && googleAccessToken.toString().isNotEmpty) {
+            debugPrint('🔍 Google Access Token (참고용):');
+            debugPrint('   $googleAccessToken');
+          } else {
+            debugPrint('⚠️ Google Access Token이 없습니다');
+          }
+          
+          // 백엔드 JWT 토큰도 출력
+          final backendToken = await TokenService.getAccessToken();
+          if (backendToken != null && backendToken.isNotEmpty) {
+            debugPrint('🔑 백엔드 JWT 토큰 (Authorization 헤더에 사용):');
+            debugPrint('   $backendToken');
+          }
+          debugPrint('═══════════════════════════════════════════════════════════');
+        }
+      } catch (e) {
+        debugPrint('❌ Google 토큰 조회 실패: $e');
+      }
+      debugPrint('======================');
+      return;
+    }
+    
+    // 카카오 로그인인 경우에만 카카오 SDK에서 토큰 확인 및 자동 갱신
     final hasToken = await AuthApi.instance.hasToken();
     if (hasToken) {
       debugPrint('카카오 토큰 존재 - 자동 갱신 시도');
@@ -78,7 +160,10 @@ Future<void> _attemptTokenRefresh() async {
         debugPrint('❌ 카카오 토큰 갱신 실패: $e');
       }
     } else {
-      debugPrint('❌ 카카오 토큰 없음 - 로그인 필요');
+      // 카카오 토큰이 없고 Google도 로그인 안 된 경우만 메시지 출력
+      if (!googleSignedIn) {
+        debugPrint('❌ 카카오 토큰 없음 - 로그인 필요');
+      }
     }
   } catch (e) {
     debugPrint('❌ 토큰 갱신 시도 중 오류: $e');

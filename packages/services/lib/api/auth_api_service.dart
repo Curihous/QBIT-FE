@@ -53,11 +53,29 @@ class AuthApiService {
     required String googleIdToken,
   }) async {
     try {
+      logger.i('═══════════════════════════════════════════════════════════');
+      logger.i('구글 로그인 API 호출 시작');
+      logger.i('전송할 Google ID Token 길이: ${googleIdToken.length}자');
+      logger.i('전송할 Google ID Token (처음 50자): ${googleIdToken.substring(0, googleIdToken.length > 50 ? 50 : googleIdToken.length)}...');
+      logger.i('전송할 Google ID Token (끝 50자): ...${googleIdToken.substring(googleIdToken.length > 50 ? googleIdToken.length - 50 : 0)}');
+      
+      // JWT 토큰 구조 확인 (3개의 점으로 구분되어야 함)
+      final parts = googleIdToken.split('.');
+      logger.i('JWT 토큰 구조 확인: ${parts.length}개 부분 (헤더.페이로드.서명)');
+      if (parts.length != 3) {
+        logger.e('⚠️ 경고: JWT 토큰이 올바른 형식이 아닙니다! (예상: 3개 부분, 실제: ${parts.length}개)');
+      }
+      
+      final requestData = {
+        'googleIdToken': googleIdToken,
+      };
+      
+      logger.i('요청 데이터 크기: ${googleIdToken.length}자');
+      logger.i('═══════════════════════════════════════════════════════════');
+      
       final response = await _dio.post(
         '/auth/google/login',
-        data: {
-          'googleIdToken': googleIdToken,
-        },
+        data: requestData,
       );
 
       if (response.statusCode == 200) {
@@ -70,11 +88,48 @@ class AuthApiService {
     } catch (error) {
       logger.e('구글 로그인 API 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('═══════════════════════════════════════════════════════════');
+        logger.e('❌ 구글 로그인 API 에러 상세 정보:');
+        logger.e('응답 데이터: ${error.response?.data}');
         logger.e('에러 타입: ${error.type}');
         logger.e('에러 메시지: ${error.message}');
         logger.e('요청 URL: ${error.requestOptions.uri}');
-        logger.e('응답 상태: ${error.response?.statusCode}');
+        logger.e('응답 상태 코드: ${error.response?.statusCode}');
+        logger.e('요청 헤더: ${error.requestOptions.headers}');
+        logger.e('요청 본문: ${error.requestOptions.data}');
+        
+        // 401 에러인 경우 상세 안내
+        if (error.response?.statusCode == 401) {
+          logger.e('⚠️ 401 Unauthorized 에러 발생');
+          logger.e('전송된 토큰 길이: ${googleIdToken.length}자');
+          logger.e('전송된 토큰 구조: ${googleIdToken.split('.').length}개 부분');
+          
+          // 백엔드 응답 메시지 확인
+          final responseData = error.response?.data;
+          if (responseData != null) {
+            logger.e('백엔드 에러 응답:');
+            logger.e('  $responseData');
+            
+            // 에러 메시지 파싱 시도
+            if (responseData is Map) {
+              final errorCode = responseData['errorCode'];
+              final message = responseData['message'];
+              logger.e('  에러 코드: $errorCode');
+              logger.e('  에러 메시지: $message');
+            }
+          }
+          
+          logger.e('가능한 원인:');
+          logger.e('1. 백엔드의 Google OAuth Client ID와 불일치');
+          logger.e('2. 토큰 서명 검증 실패');
+          logger.e('3. 토큰이 잘렸거나 불완전함 (위의 토큰 길이 확인)');
+          logger.e('4. 백엔드에서 토큰 검증 라이브러리 오류');
+          logger.e('해결 방법:');
+          logger.e('1. 백엔드 개발자에게 에러 로그 확인 요청');
+          logger.e('2. 백엔드 Google OAuth 설정 확인');
+          logger.e('3. 토큰이 전체가 전송되었는지 확인 (길이 확인)');
+        }
+        logger.e('═══════════════════════════════════════════════════════════');
       }
       return null;
     }

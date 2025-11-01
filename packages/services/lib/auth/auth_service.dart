@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:qbit_core/config/env_config.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
@@ -12,6 +14,44 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 final logger = Logger();
 
 class AuthService {
+  /// JWT 토큰 디코딩하여 만료 시간 확인
+  static Map<String, dynamic>? _decodeJWT(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length == 3) {
+        final payload = parts[1];
+        final paddedPayload = payload.padRight((payload.length + 3) & ~3, '=');
+        final decodedBytes = base64Url.decode(paddedPayload);
+        final decodedPayload = utf8.decode(decodedBytes);
+        return json.decode(decodedPayload) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      logger.w('JWT 디코딩 실패: $e');
+    }
+    return null;
+  }
+  
+  /// 토큰 만료 시간 및 남은 시간 계산
+  static String? _getTokenExpiryInfo(String token) {
+    try {
+      final payload = _decodeJWT(token);
+      if (payload != null && payload['exp'] != null) {
+        final expTimestamp = payload['exp'] as int;
+        final expDate = DateTime.fromMillisecondsSinceEpoch(expTimestamp * 1000);
+        final now = DateTime.now();
+        final timeLeft = expDate.difference(now);
+        
+        if (timeLeft.isNegative) {
+          return '❌ 만료됨 (${timeLeft.inMinutes.abs()}분 전 만료)';
+        } else {
+          return '✅ 유효함 (${timeLeft.inMinutes}분 ${timeLeft.inSeconds % 60}초 남음)';
+        }
+      }
+    } catch (e) {
+      logger.w('토큰 만료 시간 계산 실패: $e');
+    }
+    return null;
+  }
   /// 구글 로그인 (백엔드 연동)
   static Future<Map<String, dynamic>?> loginWithGoogle() async {
     try {
@@ -31,6 +71,14 @@ class AuthService {
       final displayName = googleResult['displayName'];
 
       logger.i('구글 로그인 결과: idToken=${googleIdToken != null ? "있음" : "없음"}, accessToken=${googleAccessToken != null ? "있음" : "없음"}');
+      
+      // 디버깅: 실제 토큰 값 출력 (처음 20자만)
+      if (googleIdToken != null) {
+        logger.i('🔍 구글 ID Token (처음 20자): ${googleIdToken.substring(0, googleIdToken.length > 20 ? 20 : googleIdToken.length)}...');
+      }
+      if (googleAccessToken != null) {
+        logger.i('🔍 구글 Access Token (처음 20자): ${googleAccessToken.substring(0, googleAccessToken.length > 20 ? 20 : googleAccessToken.length)}...');
+      }
       
       // ID 토큰이 없으면 에러
       if (googleIdToken == null || googleIdToken.isEmpty) {
@@ -68,8 +116,34 @@ class AuthService {
         logger.w('WebSocket 연결 실패 (무시): $e');
       }
 
-      // 개발용 로그 (리뷰 시 무시) - 구글 액세스 토큰 출력
-      logger.i('🔍 구글 액세스 토큰: $googleAccessToken');
+      // 개발용 로그 (리뷰 시 무시) - 테스트용 토큰 출력
+      logger.i('═══════════════════════════════════════════════════════════');
+      logger.i('📝 토큰 정보:');
+      if (googleIdToken != null && googleIdToken.isNotEmpty) {
+        final idTokenStr = googleIdToken.toString();
+        final expiryInfo = _getTokenExpiryInfo(idTokenStr);
+        logger.i('🔑 Google ID Token:');
+        logger.i('   토큰 길이: ${idTokenStr.length}자');
+        if (expiryInfo != null) {
+          logger.i('   상태: $expiryInfo');
+        }
+        // 클립보드에 자동 복사
+        try {
+          await Clipboard.setData(ClipboardData(text: idTokenStr));
+          logger.i('액세스 토큰 클립보드에 복사됨');
+        } catch (e) {
+          logger.w('   ⚠️ 클립보드 복사 실패: $e');
+        }
+      } else {
+        logger.w('⚠️ Google ID Token이 없습니다');
+      }
+      if (googleAccessToken != null && googleAccessToken.isNotEmpty) {
+        logger.i('🔍 Google Access Token (참고용):');
+        logger.i('   $googleAccessToken');
+      }
+      logger.i('🔑 백엔드 JWT 토큰:');
+      logger.i('   ${response.accessToken}');
+      logger.i('═══════════════════════════════════════════════════════════');
 
       logger.i('구글 로그인 성공');
       return {
@@ -144,8 +218,18 @@ class AuthService {
         logger.w('WebSocket 연결 실패 (무시): $e');
       }
 
-      // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
-      logger.i('🔍 카카오 액세스 토큰: $kakaoAccessToken');
+      // 개발용 로그 (리뷰 시 무시) - 테스트용 토큰 출력
+      logger.i('═══════════════════════════════════════════════════════════');
+      logger.i('📝 토큰 정보:');
+      if (kakaoAccessToken != null && kakaoAccessToken.isNotEmpty) {
+        logger.i('🔑 카카오 Access Token:');
+        logger.i('   $kakaoAccessToken');
+      } else {
+        logger.w('⚠️ 카카오 Access Token이 없습니다');
+      }
+      logger.i('🔑 백엔드 JWT 토큰:');
+      logger.i('   ${response.accessToken}');
+      logger.i('═══════════════════════════════════════════════════════════');
 
       logger.i('카카오 로그인 성공');
       return {
@@ -172,16 +256,69 @@ class AuthService {
         if (userInfo != null) {
           logger.i('백엔드에서 사용자 정보 조회 성공');
           
-          // 카카오 SDK에서 직접 액세스 토큰 가져오기
-          try {
-            final token = await TokenManagerProvider.instance.manager.getToken();
-            if (token?.accessToken != null) {
-              logger.i('🔍 카카오 액세스 토큰: ${token!.accessToken}');
-            } else {
-              logger.w('⚠️ 카카오 SDK에서 액세스 토큰이 없습니다');
+          // 로그인 타입 확인
+          final loginType = userInfo['loginType']?.toString().toUpperCase();
+          final provider = userInfo['provider']?.toString().toLowerCase();
+          
+          // 로그인 타입에 따라 토큰 정보 출력
+          if (loginType == 'KAKAO' || provider == 'kakao') {
+            try {
+              final token = await TokenManagerProvider.instance.manager.getToken();
+              if (token?.accessToken != null) {
+                logger.i('🔍 카카오 액세스 토큰: ${token!.accessToken}');
+              } else {
+                logger.w('⚠️ 카카오 SDK에서 액세스 토큰이 없습니다');
+              }
+            } catch (e) {
+              logger.w('⚠️ 카카오 SDK 토큰 조회 실패: $e');
             }
-          } catch (e) {
-            logger.w('⚠️ 카카오 SDK 토큰 조회 실패: $e');
+          } else if (loginType == 'GOOGLE' || provider == 'google') {
+            // Google 로그인인 경우 Google 토큰 정보 출력
+            try {
+              final googleUser = await GoogleAuthService.getCurrentUser();
+              if (googleUser != null) {
+                final googleIdToken = googleUser['idToken'];
+                final googleAccessToken = googleUser['accessToken'];
+                
+                logger.i('═══════════════════════════════════════════════════════════');
+                logger.i('📝 토큰 정보 (홈화면 로드 시):');
+                if (googleIdToken != null && googleIdToken.toString().isNotEmpty) {
+                  final idTokenStr = googleIdToken.toString();
+                  final expiryInfo = _getTokenExpiryInfo(idTokenStr);
+                  logger.i('🔑 Google ID Token:');
+                  logger.i('   토큰 길이: ${idTokenStr.length}자');
+                  if (expiryInfo != null) {
+                    logger.i('   상태: $expiryInfo');
+                  }
+                  // 클립보드에 자동 복사
+                  try {
+                    await Clipboard.setData(ClipboardData(text: idTokenStr));
+                    logger.i('액세스 토큰 클립보드에 복사됨');
+            
+                  } catch (e) {
+                    logger.w('   ⚠️ 클립보드 복사 실패: $e');
+                  }
+                } else {
+                  logger.w('⚠️ Google ID Token이 없습니다');
+                }
+                if (googleAccessToken != null && googleAccessToken.toString().isNotEmpty) {
+                  logger.i('🔍 Google Access Token (참고용):');
+                  logger.i('   $googleAccessToken');
+                } else {
+                  logger.w('⚠️ Google Access Token이 없습니다');
+                }
+                
+                // 백엔드 JWT 토큰도 출력
+                final backendToken = await TokenService.getAccessToken();
+                if (backendToken != null && backendToken.isNotEmpty) {
+                  logger.i('🔑 백엔드 JWT 토큰:');
+                  logger.i('   $backendToken');
+                }
+                logger.i('═══════════════════════════════════════════════════════════');
+              }
+            } catch (e) {
+              logger.w('⚠️ Google 토큰 조회 실패: $e');
+            }
           }
           
           return userInfo;
