@@ -11,6 +11,22 @@ import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/auth/google_auth_service.dart';
+import 'package:qbit_services/auth/kakao_auth_service.dart';
+
+/// 토큰 chunk로 나눠서 출력 
+void _printTokenInChunks(String token, String tokenName) {
+  const chunkSize = 700;
+  
+  final totalChunks = (token.length / chunkSize).ceil();
+  
+  debugPrint('🔑 $tokenName (총 ${token.length}자, ${totalChunks}개 청크):');
+  for (int i = 0; i < totalChunks; i++) {
+    final start = i * chunkSize;
+    final end = (start + chunkSize < token.length) ? start + chunkSize : token.length;
+    final chunk = token.substring(start, end);
+    debugPrint('   [${i + 1}/$totalChunks] $chunk');
+  }
+}
 
 /// 토큰 정보 출력 함수
 Future<void> printTokens() async {
@@ -97,8 +113,9 @@ Future<void> _attemptTokenRefresh() async {
               debugPrint('⚠️ 토큰 만료 시간 확인 실패: $e');
             }
             
-            debugPrint('🔑 Google ID Token:');
-            debugPrint('   토큰 길이: ${idTokenStr.length}자');
+            // 토큰을 chunk로 나눠서 출력 (로그 출력 제한 회피)
+            _printTokenInChunks(idTokenStr, 'Google ID Token');
+            
             // 클립보드에 자동 복사
             try {
               await Clipboard.setData(ClipboardData(text: idTokenStr));
@@ -108,19 +125,6 @@ Future<void> _attemptTokenRefresh() async {
             }
           } else {
             debugPrint('⚠️ Google ID Token이 없습니다');
-          }
-          if (googleAccessToken != null && googleAccessToken.toString().isNotEmpty) {
-            debugPrint('🔍 Google Access Token (참고용):');
-            debugPrint('   $googleAccessToken');
-          } else {
-            debugPrint('⚠️ Google Access Token이 없습니다');
-          }
-          
-          // 백엔드 JWT 토큰도 출력
-          final backendToken = await TokenService.getAccessToken();
-          if (backendToken != null && backendToken.isNotEmpty) {
-            debugPrint('🔑 백엔드 JWT 토큰 (Authorization 헤더에 사용):');
-            debugPrint('   $backendToken');
           }
           debugPrint('═══════════════════════════════════════════════════════════');
         }
@@ -146,6 +150,29 @@ Future<void> _attemptTokenRefresh() async {
         if (token?.accessToken != null) {
           debugPrint('🔑 카카오 액세스 토큰: ${token!.accessToken}');
           debugPrint('🔑 카카오 리프레시 토큰: ${token.refreshToken}');
+          
+          // 토큰 만료 시간 정보 조회
+          try {
+            final tokenInfo = await KakaoAuthService.getTokenInfo();
+            if (tokenInfo != null) {
+              final expiresIn = tokenInfo['expiresIn'] as int;
+              final expiresAt = tokenInfo['expiresAt'] as String;
+              final isExpired = tokenInfo['isExpired'] as bool;
+              final now = DateTime.now();
+              final expiryDate = DateTime.parse(expiresAt);
+              final timeLeft = expiryDate.difference(now);
+              
+              if (isExpired) {
+                debugPrint('⚠️ 카카오 액세스 토큰 만료됨 (${timeLeft.inMinutes.abs()}분 전 만료)');
+              } else {
+                debugPrint('✅ 카카오 액세스 토큰 유효함 (${timeLeft.inMinutes}분 ${timeLeft.inSeconds % 60}초 남음)');
+              }
+              debugPrint('   유효 기간: ${expiresIn}초 (${(expiresIn / 3600).toStringAsFixed(1)}시간)');
+              debugPrint('   만료 시간: $expiresAt');
+            }
+          } catch (e) {
+            debugPrint('⚠️ 토큰 만료 시간 조회 실패: $e');
+          }
         } else {
           debugPrint('❌ 카카오 토큰이 null입니다');
         }

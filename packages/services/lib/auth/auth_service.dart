@@ -280,41 +280,7 @@ class AuthService {
                 final googleIdToken = googleUser['idToken'];
                 final googleAccessToken = googleUser['accessToken'];
                 
-                logger.i('═══════════════════════════════════════════════════════════');
-                logger.i('📝 토큰 정보 (홈화면 로드 시):');
-                if (googleIdToken != null && googleIdToken.toString().isNotEmpty) {
-                  final idTokenStr = googleIdToken.toString();
-                  final expiryInfo = _getTokenExpiryInfo(idTokenStr);
-                  logger.i('🔑 Google ID Token:');
-                  logger.i('   토큰 길이: ${idTokenStr.length}자');
-                  if (expiryInfo != null) {
-                    logger.i('   상태: $expiryInfo');
-                  }
-                  // 클립보드에 자동 복사
-                  try {
-                    await Clipboard.setData(ClipboardData(text: idTokenStr));
-                    logger.i('액세스 토큰 클립보드에 복사됨');
-            
-                  } catch (e) {
-                    logger.w('   ⚠️ 클립보드 복사 실패: $e');
-                  }
-                } else {
-                  logger.w('⚠️ Google ID Token이 없습니다');
-                }
-                if (googleAccessToken != null && googleAccessToken.toString().isNotEmpty) {
-                  logger.i('🔍 Google Access Token (참고용):');
-                  logger.i('   $googleAccessToken');
-                } else {
-                  logger.w('⚠️ Google Access Token이 없습니다');
-                }
-                
-                // 백엔드 JWT 토큰도 출력
-                final backendToken = await TokenService.getAccessToken();
-                if (backendToken != null && backendToken.isNotEmpty) {
-                  logger.i('🔑 백엔드 JWT 토큰:');
-                  logger.i('   $backendToken');
-                }
-                logger.i('═══════════════════════════════════════════════════════════');
+                // 토큰 정보 출력 제거 (main.dart의 _attemptTokenRefresh에서 처리)
               }
             } catch (e) {
               logger.w('⚠️ Google 토큰 조회 실패: $e');
