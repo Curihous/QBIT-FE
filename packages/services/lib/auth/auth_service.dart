@@ -31,6 +31,21 @@ class AuthService {
     return null;
   }
   
+  /// 토큰을 chunk로 나눠서 출력 
+  static void _printTokenInChunks(String token, String tokenName) {
+    const chunkSize = 700;
+    
+    final totalChunks = (token.length / chunkSize).ceil();
+    
+    logger.i('🔑 $tokenName (총 ${token.length}자, ${totalChunks}개 청크):');
+    for (int i = 0; i < totalChunks; i++) {
+      final start = i * chunkSize;
+      final end = (start + chunkSize < token.length) ? start + chunkSize : token.length;
+      final chunk = token.substring(start, end);
+      logger.i('   [${i + 1}/$totalChunks] $chunk');
+    }
+  }
+
   /// 토큰 만료 시간 및 남은 시간 계산
   static String? _getTokenExpiryInfo(String token) {
     try {
@@ -122,11 +137,11 @@ class AuthService {
       if (googleIdToken != null && googleIdToken.isNotEmpty) {
         final idTokenStr = googleIdToken.toString();
         final expiryInfo = _getTokenExpiryInfo(idTokenStr);
-        logger.i('🔑 Google ID Token:');
-        logger.i('   토큰 길이: ${idTokenStr.length}자');
         if (expiryInfo != null) {
           logger.i('   상태: $expiryInfo');
         }
+        // 토큰을 chunk로 나눠서 출력 
+        _printTokenInChunks(idTokenStr, 'Google ID Token');
         // 클립보드에 자동 복사
         try {
           await Clipboard.setData(ClipboardData(text: idTokenStr));
@@ -137,12 +152,6 @@ class AuthService {
       } else {
         logger.w('⚠️ Google ID Token이 없습니다');
       }
-      if (googleAccessToken != null && googleAccessToken.isNotEmpty) {
-        logger.i('🔍 Google Access Token (참고용):');
-        logger.i('   $googleAccessToken');
-      }
-      logger.i('🔑 백엔드 JWT 토큰:');
-      logger.i('   ${response.accessToken}');
       logger.i('═══════════════════════════════════════════════════════════');
 
       logger.i('구글 로그인 성공');
@@ -166,7 +175,6 @@ class AuthService {
     try {
       logger.i('카카오 로그인 시작');
       
-      // 환경변수로 개발/프로덕션 플로우 구분
       final useDevLogin = EnvConfig.useDevLogin;
       
       if (useDevLogin) {
