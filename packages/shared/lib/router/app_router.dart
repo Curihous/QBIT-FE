@@ -139,7 +139,15 @@ class AppRouter {
           final symbol = Uri.decodeComponent(state.pathParameters['symbol'] ?? '');
           final name = Uri.decodeComponent(state.uri.queryParameters['name'] ?? '');
           final assetClass = Uri.decodeComponent(state.uri.queryParameters['assetClass'] ?? 'us_equity');
-          return StockDetailNavigation(symbol: symbol, name: name, assetClass: assetClass);
+          final binanceSymbol = state.uri.queryParameters['binanceSymbol'] != null
+              ? Uri.decodeComponent(state.uri.queryParameters['binanceSymbol']!)
+              : null;
+          return StockDetailNavigation(
+            symbol: symbol,
+            name: name,
+            assetClass: assetClass,
+            binanceSymbol: binanceSymbol,
+          );
         },
       ),
       GoRoute(

@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
-import 'package:qbit_services/api/stock_api_service.dart';
-import 'package:qbit_services/models/stock_model.dart';
 import 'package:qbit_services/models/orderbook_model.dart';
+import 'package:qbit_services/websocket/crypto_orderbook_websocket.dart';
 import 'package:qbit_shared/widgets/trade/orderbook_widget.dart';
 
 class StockOrderbookTab extends StatefulWidget {
   final String symbol;
   final String name;
   final String assetClass;
+  final String? binanceSymbol; // 암호화폐 WebSocket 연결용
 
   const StockOrderbookTab({
     super.key,
     required this.symbol,
     required this.name,
     required this.assetClass,
+    this.binanceSymbol,
   });
 
   @override
@@ -26,11 +27,19 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
   OrderBookModel? _orderBook;
   bool _isLoadingOrderBook = false;
   String? _error;
+  CryptoOrderBookWebSocket? _webSocket;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _webSocket?.disconnect();
+    _webSocket?.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -45,20 +54,50 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
     
     setState(() {
       _isLoadingOrderBook = true;
+      _error = null;
     });
 
     try {
-      final orderBook = await StockApiService.getCryptoOrderBook(widget.symbol);
-      if (mounted) {
-        setState(() {
-          _orderBook = orderBook;
-          _isLoadingOrderBook = false;
-        });
+      // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
+      final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
+      
+      if (binanceSymbol.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _error = 'binanceSymbol이 필요합니다';
+            _isLoadingOrderBook = false;
+          });
+        }
+        return;
       }
+      
+      // WebSocket 연결 (암호화폐 lv2 호가창 실시간 조회)
+      _webSocket = CryptoOrderBookWebSocket();
+      await _webSocket!.connect(binanceSymbol);
+      
+      // WebSocket 스트림 구독
+      _webSocket!.orderBookStream.listen((updatedOrderBook) {
+        if (mounted) {
+          setState(() {
+            _orderBook = updatedOrderBook;
+            _isLoadingOrderBook = false;
+          });
+        }
+      });
+      
+      // 초기 연결 대기 (약간의 지연 후 로딩 상태 해제)
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted && _orderBook == null) {
+          setState(() {
+            _isLoadingOrderBook = false;
+          });
+        }
+      });
     } catch (e) {
       if (mounted) {
         setState(() {
           _orderBook = null;
+          _error = '호가창 연결 실패: $e';
           _isLoadingOrderBook = false;
         });
       }
@@ -120,7 +159,7 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
       );
     }
 
-    // 암호화폐 호가창 표시
+    // 암호화폐 호가창 표시 (WebSocket 실시간 데이터)
     return OrderBookWidget(
       symbol: widget.symbol,
       orderBook: _orderBook,

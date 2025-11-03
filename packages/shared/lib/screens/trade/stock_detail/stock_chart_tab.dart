@@ -9,11 +9,13 @@ import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/api/exchange_rate_api_service.dart';
 import 'package:qbit_services/models/candle_model.dart';
+import 'package:qbit_services/websocket/crypto_market_websocket.dart';
 
 class StockChartTab extends StatefulWidget {
   final String symbol;
   final String name;
   final String assetClass;
+  final String? binanceSymbol; // 암호화폐 API 호출용
   final Function(String price, String change)? onPriceUpdate;
   final Function(String priceUSD, String priceKRW)? onPriceUpdateDetailed;
 
@@ -22,6 +24,7 @@ class StockChartTab extends StatefulWidget {
     required this.symbol,
     required this.name,
     required this.assetClass,
+    this.binanceSymbol,
     this.onPriceUpdate,
     this.onPriceUpdateDetailed,
   });
@@ -37,6 +40,7 @@ class _StockChartTabState extends State<StockChartTab> {
   String? _error;
   double? _exchangeRate;
   double? _currentRealTimePrice;
+  CryptoMarketWebSocket? _marketWebSocket; // 실시간 시장가용 WebSocket
 
   final List<String> _intervals = ['30m', '1h', '4h', '1d'];
 
@@ -44,6 +48,13 @@ class _StockChartTabState extends State<StockChartTab> {
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _marketWebSocket?.disconnect();
+    _marketWebSocket?.dispose();
+    super.dispose();
   }
   
   Future<void> _loadData() async {
@@ -74,35 +85,63 @@ class _StockChartTabState extends State<StockChartTab> {
   }
   
   Future<void> _loadRealTimePrice() async {
+    if (widget.assetClass != 'crypto') return;
+    
+    // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
+    final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
+    if (binanceSymbol.isEmpty) return;
+    
     try {
-      final quote = await StockApiService.getCryptoQuote(widget.symbol);
-      if (quote != null && mounted) {
-        // API 응답에서 실제로 어떤 필드명을 사용하는지 확인
-        print('=== 실시간 시세 데이터 ===');
-        print('전체 응답: $quote');
-        print('가능한 필드: lastPrice, currentPrice, price, close');
-        print('=======================');
+      // WebSocket 연결하여 실시간 시장가 받기
+      _marketWebSocket = CryptoMarketWebSocket();
+      await _marketWebSocket!.connect(binanceSymbol);
+      
+      // WebSocket에서 실시간 가격 받기
+      _marketWebSocket!.lastPriceStream.listen((price) {
+        print('=== 실시간 가격 수신 ===');
+        print('WebSocket에서 받은 가격: $price');
+        print('현재 _currentRealTimePrice: $_currentRealTimePrice');
+        print('=====================');
         
-        // 다양한 필드명 시도
-        final price = quote['lastPrice'] ?? 
-                     quote['currentPrice'] ?? 
-                     quote['price'] ?? 
-                     quote['close'];
-        
-        if (price != null) {
-          final priceValue = (price is num) ? price.toDouble() : double.tryParse(price.toString());
-          if (priceValue != null) {
-            setState(() {
-              _currentRealTimePrice = priceValue;
-            });
-            print('실시간 가격 설정: $_currentRealTimePrice');
+        if (mounted && price > 0) {
+          setState(() {
+            _currentRealTimePrice = price;
+          });
+          
+          print('업데이트된 가격: $_currentRealTimePrice');
+          print('포맷팅된 가격: ${_formatPriceValue(_currentRealTimePrice!)}');
+          
+          // 콜백으로 가격 정보 업데이트
+          if (_currentRealTimePrice != null) {
+            final priceStr = _formatPriceValue(_currentRealTimePrice!);
+            final changeStr = _getPriceChange();
+            widget.onPriceUpdate?.call(priceStr, changeStr);
           }
-        } else {
-          print('가격 필드를 찾을 수 없습니다');
         }
-      }
+      });
     } catch (e) {
-      print('실시간 시세 로드 에러: $e');
+      print('실시간 시세 WebSocket 연결 에러: $e');
+      // WebSocket 실패 시 REST API로 폴백 (선택적)
+      try {
+        final quote = await StockApiService.getCryptoQuote(binanceSymbol);
+        if (quote != null && mounted) {
+          final price = quote['lastPrice'] ?? 
+                       quote['currentPrice'] ?? 
+                       quote['price'] ?? 
+                       quote['close'];
+          
+          if (price != null) {
+            final priceValue = (price is num) ? price.toDouble() : double.tryParse(price.toString());
+            if (priceValue != null) {
+              setState(() {
+                _currentRealTimePrice = priceValue;
+              });
+            }
+          }
+        }
+      } catch (e2) {
+        print('REST API 폴백도 실패: $e2');
+      }
     }
   }
 
@@ -139,8 +178,20 @@ class _StockChartTabState extends State<StockChartTab> {
       
       final startTime = now.subtract(Duration(days: daysBack));
       
+      // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
+      final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
+      if (binanceSymbol.isEmpty) {
+        if (mounted) {
+          setState(() {
+            _error = 'binanceSymbol이 필요합니다';
+            _isLoading = false;
+          });
+        }
+        return;
+      }
+      
       final candleData = await StockApiService.getCryptoCandles(
-        symbol: widget.symbol,
+        binanceSymbol: binanceSymbol,
         interval: _selectedInterval,
         startTime: startTime.millisecondsSinceEpoch,
         endTime: now.millisecondsSinceEpoch,
@@ -704,6 +755,16 @@ class _StockChartTabState extends State<StockChartTab> {
   }
 
   Color _getPriceChangeColor() {
+    // 실시간 가격이 있으면 이전 캔들과 비교
+    if (_currentRealTimePrice != null && _candleData != null && _candleData!.candles.isNotEmpty) {
+      if (_candleData!.candles.length >= 2) {
+        final previousPrice = _candleData!.candles[_candleData!.candles.length - 2].close;
+        final change = _currentRealTimePrice! - previousPrice;
+        return change >= 0 ? AppColors.profit : AppColors.loss;
+      }
+    }
+    
+    // 실시간 가격이 없으면 캔들 데이터로 비교
     if (_candleData == null || _candleData!.candles.length < 2) {
       return AppColors.gray400;
     }
@@ -716,6 +777,16 @@ class _StockChartTabState extends State<StockChartTab> {
   }
 
   bool _isPriceUp() {
+    // 실시간 가격이 있으면 이전 캔들과 비교
+    if (_currentRealTimePrice != null && _candleData != null && _candleData!.candles.isNotEmpty) {
+      if (_candleData!.candles.length >= 2) {
+        final previousPrice = _candleData!.candles[_candleData!.candles.length - 2].close;
+        final change = _currentRealTimePrice! - previousPrice;
+        return change >= 0;
+      }
+    }
+    
+    // 실시간 가격이 없으면 캔들 데이터로 비교
     if (_candleData == null || _candleData!.candles.length < 2) {
       return true;
     }

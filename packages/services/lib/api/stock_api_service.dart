@@ -352,13 +352,11 @@ class StockApiService {
     return searchStocks(query, assetClass: 'crypto');
   }
 
-  /// 암호화폐 호가창 조회 (스냅샷)
-  static Future<OrderBookModel?> getCryptoOrderBook(String symbol) async {
+  /// 암호화폐 호가창 조회 (스냅샷) - 주문 페이지 초기 로드용
+  /// GET /stocks/orderbook/{binanceSymbol}
+  static Future<OrderBookModel?> getCryptoOrderBook(String binanceSymbol) async {
     try {
-      // 심볼에서 / 제거 (ETH/BTC -> ETHBTC)
-      final cleanSymbol = symbol.replaceAll('/', '');
-      
-      final response = await _dio.get('/stocks/orderbook/$cleanSymbol');
+      final response = await _dio.get('/stocks/orderbook/$binanceSymbol');
       
       if (response.statusCode == 200) {
         if (response.data is Map<String, dynamic>) {
@@ -427,18 +425,16 @@ class StockApiService {
   }
 
   /// 암호화폐 캔들 데이터 조회
+  /// GET /stocks/crypto/quote/candle/{binanceSymbol}
   static Future<CandleResponse?> getCryptoCandles({
-    required String symbol,
+    required String binanceSymbol,
     String interval = '1d',
     required int startTime,
     required int endTime,
   }) async {
     try {
-      // 심볼에서 / 제거 (ETH/BTC -> ETHBTC)
-      final cleanSymbol = symbol.replaceAll('/', '');
-      
       final response = await _dio.get(
-        '/stocks/candle/$cleanSymbol',
+        '/stocks/crypto/quote/candle/$binanceSymbol',
         queryParameters: {
           'interval': interval,
           'startTime': startTime,
@@ -459,18 +455,19 @@ class StockApiService {
       }
     } catch (error) {
       logger.e('암호화폐 캔들 데이터 조회 에러: $error');
+      if (error is DioException) {
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+        logger.e('상태코드: ${error.response?.statusCode}');
+      }
       return null;
     }
   }
 
   /// 암호화폐 실시간 시세 조회
-  /// GET /stocks/quote/{symbol}
-  static Future<Map<String, dynamic>?> getCryptoQuote(String symbol) async {
+  /// GET /stocks/crypto/quote/{binanceSymbol}
+  static Future<Map<String, dynamic>?> getCryptoQuote(String binanceSymbol) async {
     try {
-      // 심볼에서 / 제거
-      final cleanSymbol = symbol.replaceAll('/', '');
-      
-      final response = await _dio.get('/stocks/quote/$cleanSymbol');
+      final response = await _dio.get('/stocks/crypto/quote/$binanceSymbol');
       
       if (response.statusCode == 200) {
         if (response.data is Map<String, dynamic>) {

@@ -14,12 +14,10 @@ class CryptoOrderBookWebSocket {
   Stream<OrderBookModel> get orderBookStream => _orderBookController.stream;
   
   /// WebSocket 연결 시작
-  Future<void> connect(String symbol) async {
+  /// ws://15.165.205.46:8081/ws/depth/{binanceSymbol}
+  Future<void> connect(String binanceSymbol) async {
     try {
-      // 심볼에서 / 제거 (ETH/BTC -> ETHBTC)
-      final cleanSymbol = symbol.replaceAll('/', '');
-      
-      final wsUrl = 'ws://15.165.205.46:8081/ws/depth/$cleanSymbol';
+      final wsUrl = 'ws://15.165.205.46:8081/ws/depth/$binanceSymbol';
       logger.i('WebSocket 연결 시도: $wsUrl');
       
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));

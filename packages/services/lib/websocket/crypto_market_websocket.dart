@@ -17,10 +17,10 @@ class CryptoMarketWebSocket {
   Stream<double> get lastPriceStream => _lastPriceController.stream;
 
   /// WebSocket 연결 시작
-  Future<void> connect(String symbol) async {
+  /// ws://15.165.205.46:8081/ws/ticker/{binanceSymbol}
+  Future<void> connect(String binanceSymbol) async {
     try {
-      final cleanSymbol = symbol.replaceAll('/', '');
-      final wsUrl = 'ws://15.165.205.46:8081/ws/market/$cleanSymbol';
+      final wsUrl = 'ws://15.165.205.46:8081/ws/ticker/$binanceSymbol';
       logger.i('Market WS 연결 시도: $wsUrl');
 
       _channel = WebSocketChannel.connect(Uri.parse(wsUrl));
@@ -29,16 +29,26 @@ class CryptoMarketWebSocket {
         (data) {
           try {
             final jsonData = jsonDecode(data);
+            logger.d('Market WS 데이터 수신: $jsonData');
 
-            // 가능한 키들에서 가격 추출 시도
-            final dynamic priceRaw = jsonData['price'] ?? jsonData['lastPrice'] ?? jsonData['p'];
+            // 암호화폐 시세 조회 WebSocket에서 현재가(최근 체결가)는 'c' 필드 사용
+            final dynamic priceRaw = jsonData['c']; // 최근 체결가
+            
+            logger.d('추출된 가격 원본: $priceRaw');
+            
             if (priceRaw != null) {
               final price = priceRaw is num
                   ? priceRaw.toDouble()
                   : double.tryParse(priceRaw.toString());
-              if (price != null) {
+              
+              if (price != null && price > 0) {
+                logger.d('가격 파싱 성공: $price');
                 _lastPriceController.add(price);
+              } else {
+                logger.w('가격 파싱 실패 또는 음수: $price');
               }
+            } else {
+              logger.w('가격 필드를 찾을 수 없음. 전체 데이터: $jsonData');
             }
           } catch (e) {
             logger.e('Market WS 데이터 파싱 에러: $e');

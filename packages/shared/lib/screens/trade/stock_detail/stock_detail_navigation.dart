@@ -53,26 +53,27 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> {
     switch (_selectedTabIndex) {
       case 0: // 차트
         return StockChartTab(
-          symbol: widget.assetClass == 'crypto' && (widget.binanceSymbol?.isNotEmpty ?? false)
-              ? widget.binanceSymbol!
-              : widget.symbol,
+          symbol: widget.symbol,
           name: widget.name,
           assetClass: widget.assetClass,
+          binanceSymbol: widget.binanceSymbol,
           onPriceUpdateDetailed: updatePriceInfoDetailed,
         );
       case 1: // 호가
         return StockOrderbookTab(
-          symbol: widget.assetClass == 'crypto' && (widget.binanceSymbol?.isNotEmpty ?? false)
-              ? widget.binanceSymbol!
-              : widget.symbol,
+          symbol: widget.symbol,
           name: widget.name,
           assetClass: widget.assetClass,
+          binanceSymbol: widget.binanceSymbol,
         );
       case 2: // 주문
         return StockOrderTab(
-          symbol: widget.symbol, // 주문은 기존 심볼 유지
+          symbol: widget.symbol,
           name: widget.name,
           assetClass: widget.assetClass,
+          binanceSymbol: widget.assetClass == 'crypto' && (widget.binanceSymbol?.isNotEmpty ?? false)
+              ? widget.binanceSymbol
+              : null,
         );
       case 3: // 시세
         return StockMarketTab(
@@ -88,6 +89,7 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> {
           symbol: widget.symbol,
           name: widget.name,
           assetClass: widget.assetClass,
+          binanceSymbol: widget.binanceSymbol,
         );
     }
   }

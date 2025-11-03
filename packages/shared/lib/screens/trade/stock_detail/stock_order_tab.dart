@@ -9,6 +9,7 @@ import 'package:qbit_services/models/order_model.dart';
 import 'package:qbit_services/models/orderbook_model.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/websocket/crypto_orderbook_websocket.dart';
+import 'package:qbit_services/websocket/crypto_market_websocket.dart';
 import 'package:qbit_shared/widgets/trade/vertical_orderbook_widget.dart';
 import 'package:qbit_services/models/stock_detail_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,12 +19,14 @@ class StockOrderTab extends StatefulWidget {
   final String symbol;
   final String name;
   final String assetClass;
+  final String? binanceSymbol; // 암호화폐 WebSocket 연결용
 
   const StockOrderTab({
     super.key,
     required this.symbol,
     required this.name,
     required this.assetClass,
+    this.binanceSymbol,
   });
 
   @override
@@ -36,6 +39,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
   bool _isLoadingOrderBook = false;
   String? _error;
   CryptoOrderBookWebSocket? _webSocket;
+  CryptoMarketWebSocket? _marketWebSocket; // 시장가용 WebSocket
   
   // 주문 관련 상태
   int _quantity = 1;
@@ -116,6 +120,8 @@ class _StockOrderTabState extends State<StockOrderTab> {
     _marketAmountFocusNode.dispose();
     _webSocket?.disconnect();
     _webSocket?.dispose();
+    _marketWebSocket?.disconnect();
+    _marketWebSocket?.dispose();
     super.dispose();
   }
 
@@ -200,15 +206,32 @@ class _StockOrderTabState extends State<StockOrderTab> {
     }
   }
   
-  /// 현재 시장 가격 로드
+  /// 현재 시장 가격 로드 (WebSocket ticker에서 직접 가져오기)
   Future<void> _loadCurrentMarketPrice() async {
     try {
       if (widget.assetClass == 'crypto') {
-        // 암호화폐: 호가창에서 현재 가격 가져오기
-        if (_orderBook != null && _orderBook!.bids.isNotEmpty && _orderBook!.asks.isNotEmpty) {
-          final bestBid = _orderBook!.bids.first.price;
-          final bestAsk = _orderBook!.asks.first.price;
-          _currentMarketPrice = (bestBid + bestAsk) / 2; // 중간가격
+        // 암호화폐: WebSocket ticker에서 현재가 가져오기
+        // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
+        final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
+        if (binanceSymbol.isNotEmpty) {
+          _marketWebSocket = CryptoMarketWebSocket();
+          await _marketWebSocket!.connect(binanceSymbol);
+          
+          // WebSocket에서 실시간 가격 받기
+          _marketWebSocket!.lastPriceStream.listen((price) {
+            if (mounted) {
+              setState(() {
+                _currentMarketPrice = price;
+              });
+            }
+          });
+        } else {
+          // binanceSymbol이 없으면 호가창에서 계산 (fallback)
+          if (_orderBook != null && _orderBook!.bids.isNotEmpty && _orderBook!.asks.isNotEmpty) {
+            final bestBid = _orderBook!.bids.first.price;
+            final bestAsk = _orderBook!.asks.first.price;
+            _currentMarketPrice = (bestBid + bestAsk) / 2; // 중간가격
+          }
         }
       } else {
         // 주식: 현재 가격을 KRW로 설정 (환율 적용)
@@ -216,6 +239,15 @@ class _StockOrderTabState extends State<StockOrderTab> {
       }
     } catch (error) {
       print('현재 시장 가격 로드 실패: $error');
+      // 실패 시 호가창에서 계산 (fallback)
+      if (widget.assetClass == 'crypto' && 
+          _orderBook != null && 
+          _orderBook!.bids.isNotEmpty && 
+          _orderBook!.asks.isNotEmpty) {
+        final bestBid = _orderBook!.bids.first.price;
+        final bestAsk = _orderBook!.asks.first.price;
+        _currentMarketPrice = (bestBid + bestAsk) / 2;
+      }
     }
   }
 
@@ -252,7 +284,19 @@ class _StockOrderTabState extends State<StockOrderTab> {
       OrderBookModel? orderBook;
       if (widget.assetClass == 'crypto') {
         // 암호화폐 호가창 (현재 지원)
-        orderBook = await StockApiService.getCryptoOrderBook(widget.symbol)
+        // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
+        final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
+        if (binanceSymbol.isEmpty) {
+          if (mounted) {
+            setState(() {
+              _isLoadingOrderBook = false;
+              _isLoading = false;
+            });
+          }
+          return;
+        }
+        
+        orderBook = await StockApiService.getCryptoOrderBook(binanceSymbol)
             .timeout(
               const Duration(seconds: 10),
               onTimeout: () => null,
@@ -277,17 +321,21 @@ class _StockOrderTabState extends State<StockOrderTab> {
 
       // 2. WebSocket 연결 시작 
       if (widget.assetClass == 'crypto' && mounted) {
-        _webSocket = CryptoOrderBookWebSocket();
-        await _webSocket!.connect(widget.symbol);
-        
-        // WebSocket 스트림 구독
-        _webSocket!.orderBookStream.listen((updatedOrderBook) {
-          if (mounted) {
-            setState(() {
-              _orderBook = updatedOrderBook;
-            });
-          }
-        });
+        // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
+        final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
+        if (binanceSymbol.isNotEmpty) {
+          _webSocket = CryptoOrderBookWebSocket();
+          await _webSocket!.connect(binanceSymbol);
+          
+          // WebSocket 스트림 구독
+          _webSocket!.orderBookStream.listen((updatedOrderBook) {
+            if (mounted) {
+              setState(() {
+                _orderBook = updatedOrderBook;
+              });
+            }
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
