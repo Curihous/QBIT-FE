@@ -135,56 +135,64 @@ Future<void> _attemptTokenRefresh() async {
       return;
     }
     
-    // 카카오 로그인인 경우에만 카카오 SDK에서 토큰 확인 및 자동 갱신
+    // 카카오 로그인인 경우에만 카카오 SDK에서 토큰 확인 및 필요시 자동 갱신
     final hasToken = await AuthApi.instance.hasToken();
     if (hasToken) {
-      debugPrint('카카오 토큰 존재 - 자동 갱신 시도');
+      debugPrint('카카오 토큰 존재 - 상태 확인 중');
       try {
-        // UserApi.instance.me() 호출로 토큰 자동 갱신
-        final user = await UserApi.instance.me();
-        final token = await TokenManagerProvider.instance.manager.getToken();
-        
-        debugPrint('✅ 카카오 토큰 자동 갱신 성공: userId=${user.id}');
-        
-        // 토큰 출력 (개발 중에만 사용)
-        if (token?.accessToken != null) {
-          debugPrint('🔑 카카오 액세스 토큰: ${token!.accessToken}');
-          debugPrint('🔑 카카오 리프레시 토큰: ${token.refreshToken}');
+        // 먼저 토큰 만료 시간 확인 (갱신하지 않고)
+        final tokenInfo = await KakaoAuthService.getTokenInfo();
+        if (tokenInfo != null) {
+          final expiresIn = tokenInfo['expiresIn'] as int;
+          final expiresAt = tokenInfo['expiresAt'] as String;
+          final isExpired = tokenInfo['isExpired'] as bool;
+          final now = DateTime.now();
+          final expiryDate = DateTime.parse(expiresAt);
+          final timeLeft = expiryDate.difference(now);
           
-          // 토큰 만료 시간 정보 조회
-          try {
-            final tokenInfo = await KakaoAuthService.getTokenInfo();
-            if (tokenInfo != null) {
-              final expiresIn = tokenInfo['expiresIn'] as int;
-              final expiresAt = tokenInfo['expiresAt'] as String;
-              final isExpired = tokenInfo['isExpired'] as bool;
-              final now = DateTime.now();
-              final expiryDate = DateTime.parse(expiresAt);
-              final timeLeft = expiryDate.difference(now);
+          // 토큰이 만료되었거나 5분 이내로 만료 예정인 경우에만 갱신
+          final shouldRefresh = isExpired || timeLeft.inMinutes < 5;
+          
+          if (isExpired) {
+            debugPrint('⚠️ 카카오 액세스 토큰 만료됨 (${timeLeft.inMinutes.abs()}분 전 만료) - 갱신 시도');
+          } else if (shouldRefresh) {
+            debugPrint('⚠️ 카카오 액세스 토큰 곧 만료됨 (${timeLeft.inMinutes}분 남음) - 갱신 시도');
+          } else {
+            debugPrint('✅ 카카오 액세스 토큰 유효함 (${timeLeft.inMinutes}분 ${timeLeft.inSeconds % 60}초 남음) - 갱신 불필요');
+            debugPrint('   유효 기간: ${expiresIn}초 (${(expiresIn / 3600).toStringAsFixed(1)}시간)');
+            debugPrint('   만료 시간: $expiresAt');
+          }
+          
+          // 토큰이 만료되었거나 곧 만료될 때만 갱신
+          if (shouldRefresh) {
+            debugPrint('토큰 갱신 중...');
+            // UserApi.instance.me() 호출로 토큰 자동 갱신
+            final user = await UserApi.instance.me();
+            final token = await TokenManagerProvider.instance.manager.getToken();
+            
+            debugPrint('✅ 카카오 토큰 갱신 성공: userId=${user.id}');
+            
+            if (token?.accessToken != null) {
+              debugPrint('🔑 카카오 액세스 토큰: ${token!.accessToken}');
+              debugPrint('🔑 카카오 리프레시 토큰: ${token.refreshToken}');
               
-              if (isExpired) {
-                debugPrint('⚠️ 카카오 액세스 토큰 만료됨 (${timeLeft.inMinutes.abs()}분 전 만료)');
-              } else {
-                debugPrint('✅ 카카오 액세스 토큰 유효함 (${timeLeft.inMinutes}분 ${timeLeft.inSeconds % 60}초 남음)');
+              // 갱신된 토큰 정보 다시 확인
+              final refreshedTokenInfo = await KakaoAuthService.getTokenInfo();
+              if (refreshedTokenInfo != null) {
+                final refreshedExpiresIn = refreshedTokenInfo['expiresIn'] as int;
+                final refreshedExpiresAt = refreshedTokenInfo['expiresAt'] as String;
+                final refreshedTimeLeft = DateTime.parse(refreshedExpiresAt).difference(now);
+                debugPrint('   갱신 후 유효 기간: ${refreshedExpiresIn}초 (${(refreshedExpiresIn / 3600).toStringAsFixed(1)}시간)');
+                debugPrint('   갱신 후 만료 시간: $refreshedExpiresAt');
+                debugPrint('   갱신 후 남은 시간: ${refreshedTimeLeft.inMinutes}분');
               }
-              debugPrint('   유효 기간: ${expiresIn}초 (${(expiresIn / 3600).toStringAsFixed(1)}시간)');
-              debugPrint('   만료 시간: $expiresAt');
             }
-          } catch (e) {
-            debugPrint('⚠️ 토큰 만료 시간 조회 실패: $e');
           }
         } else {
-          debugPrint('❌ 카카오 토큰이 null입니다');
-        }
-        
-        
-        // 백엔드 토큰도 갱신 시도
-        if (token?.accessToken != null) {
-          debugPrint('백엔드 토큰 갱신 시도 중...');
-          // 여기서 백엔드 토큰 갱신 로직을 호출할 수 있습니다
+          debugPrint('⚠️ 토큰 정보 조회 실패');
         }
       } catch (e) {
-        debugPrint('❌ 카카오 토큰 갱신 실패: $e');
+        debugPrint('❌ 카카오 토큰 확인 실패: $e');
       }
     } else {
       // 카카오 토큰이 없고 Google도 로그인 안 된 경우만 메시지 출력
