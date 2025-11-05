@@ -9,7 +9,8 @@ part of 'order_update_message.dart';
 OrderUpdateMessage _$OrderUpdateMessageFromJson(Map<String, dynamic> json) =>
     OrderUpdateMessage(
       type: json['type'] as String,
-      orderId: json['orderId'] as String,
+      orderId: json['orderId'] as String?,
+      alpacaOrderId: json['alpacaOrderId'] as String?,
       symbol: json['symbol'] as String,
       side: json['side'] as String,
       status: json['status'] as String,
@@ -26,6 +27,7 @@ Map<String, dynamic> _$OrderUpdateMessageToJson(OrderUpdateMessage instance) =>
     <String, dynamic>{
       'type': instance.type,
       'orderId': instance.orderId,
+      'alpacaOrderId': instance.alpacaOrderId,
       'symbol': instance.symbol,
       'side': instance.side,
       'status': instance.status,

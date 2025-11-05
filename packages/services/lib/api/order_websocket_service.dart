@@ -25,13 +25,9 @@ class OrderWebSocketService {
   bool _manuallyClosed = false;
   bool _isAuthenticated = false;
   int _reconnectAttempts = 0;
-  Timer? _heartbeatTimer;
   Timer? _reconnectTimer;
 
-  Stream<dynamic> get messages => _messageController.stream.map((message) {
-    _logger.i('🔍 모든 WebSocket 메시지 수신: $message');
-    return message;
-  });
+  Stream<dynamic> get messages => _messageController.stream;
 
   Future<void> connect() async {
     if (_connecting || _channel != null) return;
@@ -53,7 +49,6 @@ class OrderWebSocketService {
       // 수신 스트림 리스닝
       _channelSub = _channel!.stream.listen(
         (event) {
-          _logger.d('WebSocket 메시지 수신: $event');
           _handleStompMessage(event);
         },
         onDone: () {
@@ -74,7 +69,6 @@ class OrderWebSocketService {
       await Future.delayed(const Duration(milliseconds: 100));
       // STOMP CONNECT 프레임 송신
       await _sendStompConnect();
-      _startHeartbeat();
     } finally {
       _connecting = false;
     }
@@ -138,34 +132,31 @@ class OrderWebSocketService {
     }
   }
 
-  void _startHeartbeat() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) {
-      if (_channel != null && !_manuallyClosed) {
-        _sendHeartbeat();
-      } else {
-        timer.cancel();
-      }
-    });
-  }
-
-  void _sendHeartbeat() {
-    try {
-      _channel?.sink.add('\n');
-      _logger.d('하트비트 전송');
-    } catch (e) {
-      _logger.e('하트비트 전송 실패: $e');
-    }
-  }
-
   // STOMP 메시지 처리
   Future<void> _handleStompMessage(dynamic event) async {
-    if (event is! String) return;
+    if (event is! String) {
+      _logger.w('WebSocket 메시지가 String이 아님: ${event.runtimeType}');
+      return;
+    }
+    
+    // 빈 메시지 체크
+    if (event.trim().isEmpty) {
+      _logger.d('빈 WebSocket 메시지 수신');
+      return;
+    }
     
     final lines = event.split('\n');
-    if (lines.isEmpty) return;
+    if (lines.isEmpty) {
+      _logger.w('메시지 라인이 비어있음');
+      return;
+    }
     
     final command = lines[0].trim();
+    
+    // command가 null이거나 빈 경우 처리
+    if (command.isEmpty) {
+      return;
+    }
     
     switch (command) {
       case 'CONNECTED':
@@ -184,17 +175,13 @@ class OrderWebSocketService {
         _handleStompDataMessage(lines);
         break;
       default:
-        _logger.d('STOMP 메시지: $command');
+        _logger.d('알 수 없는 STOMP 메시지: $command');
     }
   }
 
   // STOMP DATA 메시지 처리
   void _handleStompDataMessage(List<String> lines) {
     try {
-      _logger.i('🔔 STOMP DATA 메시지 수신!');
-      _logger.i('라인 수: ${lines.length}');
-      _logger.i('모든 라인: $lines');
-      
       // 헤더 파싱
       final headers = <String, String>{};
       int bodyStartIndex = 1;
@@ -214,26 +201,26 @@ class OrderWebSocketService {
         }
       }
       
-      _logger.i('파싱된 헤더: $headers');
-      _logger.i('destination: ${headers['destination']}');
-      
       // 본문 파싱
       if (bodyStartIndex < lines.length) {
         final body = lines.skip(bodyStartIndex).join('\n').trim();
+        
         if (body.isNotEmpty) {
-          final jsonData = json.decode(body);
-          _logger.i('🏷️ destination: ${headers['destination']}');
-          _logger.i('📦 본문 데이터: $jsonData');
-          _messageController.add(jsonData);
+          try {
+            final jsonData = json.decode(body);
+            _messageController.add(jsonData);
+          } catch (e) {
+            _logger.e('JSON 파싱 실패: $e, 본문: $body');
+          }
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       _logger.e('STOMP 메시지 파싱 실패: $e');
+      _logger.e('스택 트레이스: $stackTrace');
     }
   }
 
   void _cleanup() {
-    _heartbeatTimer?.cancel();
     _reconnectTimer?.cancel();
     _channelSub?.cancel();
     _channelSub = null;
@@ -296,12 +283,6 @@ class OrderWebSocketService {
           '\n'
           '\x00';
 
-      // 디버깅 로그 - 바이트 단위 확인
-      final frameBytes = frame.codeUnits;
-      _logger.i('STOMP CONNECT 전송 (바이트 길이: ${frameBytes.length}):');
-      _logger.i('프레임 내용: ${frame.replaceAll('\x00', '\\x00').replaceAll('\n', '\\n')}');
-      _logger.i('바이트 배열: ${frameBytes.map((b) => '0x${b.toRadixString(16).padLeft(2, '0')}').join(' ')}');
-      
       _channel?.sink.add(frame);
       
     } catch (e) {
@@ -335,9 +316,27 @@ class OrderWebSocketService {
       return false;
     }).map((message) {
       try {
-        return OrderUpdateMessage.fromJson(message as Map<String, dynamic>);
-      } catch (e) {
+        // 백엔드 메시지 구조 변환
+        // 백엔드: { type: "order_update", order: { alpacaOrderId, symbol, status, ... } }
+        // 프론트엔드: { type, orderId, symbol, status, ... }
+        final messageMap = message as Map<String, dynamic>;
+        final orderData = messageMap['order'] as Map<String, dynamic>?;
+        
+        if (orderData != null) {
+          // order 객체를 flat하게 변환
+          final flatMessage = Map<String, dynamic>.from(messageMap);
+          flatMessage.remove('order');
+          flatMessage.addAll(orderData);
+          
+          return OrderUpdateMessage.fromJson(flatMessage);
+        } else {
+          // 이미 flat한 구조인 경우
+          return OrderUpdateMessage.fromJson(messageMap);
+        }
+      } catch (e, stackTrace) {
         _logger.e('주문 업데이트 메시지 파싱 실패: $e');
+        _logger.e('메시지 내용: $message');
+        _logger.e('스택 트레이스: $stackTrace');
         throw e;
       }
     });
@@ -347,26 +346,17 @@ class OrderWebSocketService {
   Stream<TradeCycle> get tradeCycleUpdates {
     return messages.where((message) {
       if (message is Map<String, dynamic>) {
-        // 디버깅: 모든 메시지 로그 출력
-        _logger.d('수신된 웹소켓 메시지: $message');
-        _logger.d('메시지 타입: ${message['type']}');
-        _logger.d('메시지 키들: ${message.keys.toList()}');
-        
-        // TradeCycle 관련 메시지 필터링 (여러 타입 시도)
-        final isTradeCycle = message['type'] == 'trade_cycle_update' ||
+        // TradeCycle 관련 메시지 필터링
+        return message['type'] == 'trade_cycle_update' ||
                message['type'] == 'cycle_update' ||
                message['type'] == 'trade_cycle' ||
                message.containsKey('cycleId') ||
                message.containsKey('tradeCycleId') ||
-               message.containsKey('symbol') && message.containsKey('side');
-        
-        _logger.d('TradeCycle 메시지 여부: $isTradeCycle');
-        return isTradeCycle;
+               (message.containsKey('symbol') && message.containsKey('side'));
       }
       return false;
     }).map((message) {
       try {
-        _logger.i('사이클 업데이트 메시지 처리: $message');
         return TradeCycle.fromJson(message as Map<String, dynamic>);
       } catch (e) {
         _logger.e('TradeCycle 메시지 파싱 실패: $e, 메시지: $message');

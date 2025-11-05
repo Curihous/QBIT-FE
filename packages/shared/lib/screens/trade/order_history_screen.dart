@@ -11,7 +11,6 @@ import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/models/order_model.dart';
-import 'package:qbit_services/models/trade_cycle.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 
@@ -336,17 +335,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   void _connectWs() {
-    print('WebSocket 연결 시작...');
     // WebSocket 연결 및 실시간 주문 상태 업데이트 구독
     OrderWebSocketService.instance.connect();
     
-    // WebSocket 연결 상태 확인
-    print('WebSocket 연결 상태: ${OrderWebSocketService.instance.isConnected}');
-    
-    // 개별 주문 업데이트 구독
+    // 주문 업데이트 구독
     _wsSub = OrderWebSocketService.instance.orderUpdates.listen((orderUpdate) {
-      print('실시간 주문 업데이트 수신: $orderUpdate');
-      
       if (mounted) {
         setState(() {
           _wsConnected = true;
@@ -373,12 +366,14 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   // 실시간 주문 상태 업데이트 처리
   void _handleOrderUpdate(OrderUpdateMessage orderUpdate) {
     try {
-      final orderId = orderUpdate.orderId;
+      final alpacaOrderId = orderUpdate.alpacaOrderId;
       final newStatus = orderUpdate.status;
       
-      if (orderId != null && newStatus != null) {
-        // 기존 주문 목록에서 해당 주문 찾아서 상태 업데이트
-        final orderIndex = _orders.indexWhere((order) => order.orderId == orderId);
+      if (alpacaOrderId != null && newStatus != null) {
+        // 기존 주문 목록에서 alpacaOrderId로 주문 찾기
+        final orderIndex = _orders.indexWhere((order) => 
+          order.alpacaOrderId == alpacaOrderId
+        );
         
         if (orderIndex != -1) {
           final updatedOrder = OrderModel(
@@ -407,7 +402,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             _orders[orderIndex] = updatedOrder;
           });
           
-          print('주문 $orderId 상태 업데이트: ${_orders[orderIndex].status}');
+          print('주문 ${alpacaOrderId} 상태 업데이트: ${_orders[orderIndex].status}');
         }
       }
     } catch (e) {

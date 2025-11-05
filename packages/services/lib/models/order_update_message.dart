@@ -6,7 +6,8 @@ part 'order_update_message.g.dart';
 @JsonSerializable()
 class OrderUpdateMessage {
   final String type;
-  final String orderId;
+  final String? orderId;
+  final String? alpacaOrderId; 
   final String symbol;
   final String side;
   final String status;
@@ -18,7 +19,8 @@ class OrderUpdateMessage {
 
   const OrderUpdateMessage({
     required this.type,
-    required this.orderId,
+    this.orderId,
+    this.alpacaOrderId,
     required this.symbol,
     required this.side,
     required this.status,
@@ -36,7 +38,7 @@ class OrderUpdateMessage {
 
   @override
   String toString() {
-    return 'OrderUpdateMessage(type: $type, orderId: $orderId, symbol: $symbol, '
+    return 'OrderUpdateMessage(type: $type, orderId: $orderId, alpacaOrderId: $alpacaOrderId, symbol: $symbol, '
         'side: $side, status: $status, filledQuantity: $filledQuantity, '
         'filledAvgPrice: $filledAvgPrice, filledAt: $filledAt)';
   }
