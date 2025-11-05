@@ -425,21 +425,34 @@ class StockApiService {
   }
 
   /// 암호화폐 캔들 데이터 조회
-  /// GET /stocks/crypto/quote/candle/{binanceSymbol}
+  /// GET /stocks/crypto/candle/{binanceSymbol}
+  /// startTime, endTime은 optional (둘 다 없으면 최근 데이터 반환)
+  /// limit: 기본값 500, 최대 1500
   static Future<CandleResponse?> getCryptoCandles({
     required String binanceSymbol,
     String interval = '1d',
-    required int startTime,
-    required int endTime,
+    int? startTime,
+    int? endTime,
+    int? limit,
   }) async {
     try {
+      final queryParams = <String, dynamic>{
+        'interval': interval,
+      };
+      
+      if (startTime != null) {
+        queryParams['startTime'] = startTime;
+      }
+      if (endTime != null) {
+        queryParams['endTime'] = endTime;
+      }
+      if (limit != null) {
+        queryParams['limit'] = limit;
+      }
+      
       final response = await _dio.get(
-        '/stocks/crypto/quote/candle/$binanceSymbol',
-        queryParameters: {
-          'interval': interval,
-          'startTime': startTime,
-          'endTime': endTime,
-        },
+        '/stocks/crypto/candle/$binanceSymbol',
+        queryParameters: queryParams,
       );
       
       if (response.statusCode == 200) {
