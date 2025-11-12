@@ -274,6 +274,7 @@ class OrderWebSocketService {
       }
       
       _logger.i('토큰 확인: ${token.substring(0, 20)}...');
+      _logger.i('🔑 백엔드 액세스 토큰: $token');
       
       final frame = 'CONNECT\n'
           'accept-version:1.2\n'

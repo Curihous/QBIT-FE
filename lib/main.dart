@@ -168,25 +168,25 @@ Future<void> _attemptTokenRefresh() async {
             debugPrint('토큰 갱신 중...');
             // UserApi.instance.me() 호출로 토큰 자동 갱신
             final user = await UserApi.instance.me();
-            final token = await TokenManagerProvider.instance.manager.getToken();
-            
             debugPrint('✅ 카카오 토큰 갱신 성공: userId=${user.id}');
             
-            if (token?.accessToken != null) {
-              debugPrint('🔑 카카오 액세스 토큰: ${token!.accessToken}');
-              debugPrint('🔑 카카오 리프레시 토큰: ${token.refreshToken}');
-              
-              // 갱신된 토큰 정보 다시 확인
-              final refreshedTokenInfo = await KakaoAuthService.getTokenInfo();
-              if (refreshedTokenInfo != null) {
-                final refreshedExpiresIn = refreshedTokenInfo['expiresIn'] as int;
-                final refreshedExpiresAt = refreshedTokenInfo['expiresAt'] as String;
-                final refreshedTimeLeft = DateTime.parse(refreshedExpiresAt).difference(now);
-                debugPrint('   갱신 후 유효 기간: ${refreshedExpiresIn}초 (${(refreshedExpiresIn / 3600).toStringAsFixed(1)}시간)');
-                debugPrint('   갱신 후 만료 시간: $refreshedExpiresAt');
-                debugPrint('   갱신 후 남은 시간: ${refreshedTimeLeft.inMinutes}분');
-              }
+            // 갱신된 토큰 정보 다시 확인
+            final refreshedTokenInfo = await KakaoAuthService.getTokenInfo();
+            if (refreshedTokenInfo != null) {
+              final refreshedExpiresIn = refreshedTokenInfo['expiresIn'] as int;
+              final refreshedExpiresAt = refreshedTokenInfo['expiresAt'] as String;
+              final refreshedTimeLeft = DateTime.parse(refreshedExpiresAt).difference(now);
+              debugPrint('   갱신 후 유효 기간: ${refreshedExpiresIn}초 (${(refreshedExpiresIn / 3600).toStringAsFixed(1)}시간)');
+              debugPrint('   갱신 후 만료 시간: $refreshedExpiresAt');
+              debugPrint('   갱신 후 남은 시간: ${refreshedTimeLeft.inMinutes}분');
             }
+          }
+          
+          // 갱신 여부와 관계없이 현재 토큰 출력
+          final token = await TokenManagerProvider.instance.manager.getToken();
+          if (token?.accessToken != null) {
+            debugPrint('🔑 카카오 액세스 토큰: ${token!.accessToken}');
+            debugPrint('🔑 카카오 리프레시 토큰: ${token.refreshToken}');
           }
         } else {
           debugPrint('⚠️ 토큰 정보 조회 실패');
@@ -302,6 +302,7 @@ void main() async {
   final backendToken = await TokenService.getAccessToken();
   if (backendToken != null) {
     debugPrint('백엔드 토큰 감지 - WebSocket 연결 시도');
+    debugPrint('🔑 백엔드 액세스 토큰: $backendToken');
     try {
       await OrderWebSocketService.instance.connect();
       debugPrint('✅ 앱 시작 시 WebSocket 연결 성공');

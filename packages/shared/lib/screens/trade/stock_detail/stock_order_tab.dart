@@ -14,6 +14,10 @@ import 'package:qbit_shared/widgets/trade/vertical_orderbook_widget.dart';
 import 'package:qbit_services/models/stock_detail_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
+import 'package:logger/logger.dart';
+import 'package:qbit_shared/screens/trade/stock_detail/order_forms/crypto_order_form.dart';
+import 'package:qbit_shared/screens/trade/stock_detail/order_forms/stock_order_form.dart';
+import 'package:qbit_services/models/order_model.dart';
 
 class StockOrderTab extends StatefulWidget {
   final String symbol;
@@ -78,6 +82,9 @@ class _StockOrderTabState extends State<StockOrderTab> {
   
   // 종목 상세 정보
   StockDetailModel? _stockDetail;
+  
+  // Logger 인스턴스
+  final Logger logger = Logger();
 
   @override
   void initState() {
@@ -839,15 +846,8 @@ class _StockOrderTabState extends State<StockOrderTab> {
   }
 
   Widget _buildOrderForm() {
-    final isCryptoSymbol = widget.assetClass == 'crypto';
-    final screenHeight = MediaQuery.of(context).size.height;
-    final availableHeight = screenHeight - 300; // 더 많은 여유 공간 확보
-    
-    return Container(
-      padding: EdgeInsets.fromLTRB(context.w(8), context.h(16), context.w(8), context.h(16)),
-      child: Column(
+    return Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: isCryptoSymbol ? CrossAxisAlignment.end : CrossAxisAlignment.center,
           children: [
             // 매수/매도/내역 탭
             Column(
@@ -882,360 +882,228 @@ class _StockOrderTabState extends State<StockOrderTab> {
             ),
             SizedBox(height: context.h(20)),
             
-            // 주문 타입 선택 (암호화폐만 시장가 옵션 제공)
-            SizedBox(
-              width: isCryptoSymbol ? context.w(188) : double.infinity,
-              child: widget.assetClass == 'crypto' 
-                ? GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedOrderType = _selectedOrderType == '지정가' ? '시장가' : '지정가';
-                      });
-                    },
-                    child: Text(
-                      '$_selectedOrderType ▾',
-                      textAlign: isCryptoSymbol ? TextAlign.right : TextAlign.center,
-                      style: AppFonts.b2Semibold.copyWith(
-                        color: AppColors.gray900,
-                      ),
-                    ),
-                  )
-                : Text(
-                    '지정가 ▾',
-                    textAlign: isCryptoSymbol ? TextAlign.right : TextAlign.center,
-                    style: AppFonts.b2Semibold.copyWith(
-                      color: AppColors.gray900,
-                    ),
-                  ),
-            ),
-            SizedBox(height: context.h(2)),
-            
-            // 주문가능 금액
-            Text(
-              '주문가능금액',
-              textAlign: isCryptoSymbol ? TextAlign.right : TextAlign.center,
-              style: AppFonts.btn2.copyWith(
-                color: AppColors.gray900,
-              ),
-            ),
-            SizedBox(height: context.h(9)),
-            
-            // 수량 입력 필드
-            Container(
-              width: isCryptoSymbol ? context.w(188) : double.infinity,
-              decoration: ShapeDecoration(
-                color: AppColors.gray50,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: context.w(22), vertical: context.h(12)),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '수량',
-                      style: AppFonts.b2Regular.copyWith(
-                        color: AppColors.gray900,
-                      ),
-                    ),
-                    SizedBox(height: context.h(6)),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: widget.assetClass == 'crypto' && _selectedOrderType == '시장가' 
-                                    ? _marketAmountController 
-                                    : _quantityController,
-                                  focusNode: widget.assetClass == 'crypto' && _selectedOrderType == '시장가' 
-                                    ? _marketAmountFocusNode 
-                                    : _quantityFocusNode,
-                                  keyboardType: widget.assetClass == 'crypto' 
-                                    ? TextInputType.numberWithOptions(decimal: true)
-                                    : TextInputType.number,
-                                  style: AppFonts.b1Semibold.copyWith(
-                                    color: AppColors.gray900,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: widget.assetClass == 'crypto' && _selectedOrderType == '시장가' ? 'USDT 금액' : '수량',
-                                    border: InputBorder.none,
-                                    enabledBorder: InputBorder.none,
-                                    focusedBorder: InputBorder.none,
-                                    filled: false,
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  onChanged: (value) {
-                                    if (widget.assetClass == 'crypto' && _selectedOrderType == '시장가') {
-                                      final amount = double.tryParse(value) ?? 1.0;
-                                      setState(() {
-                                        _marketOrderAmount = amount;
-                                      });
-                                    } else {
-                                      final quantity = int.tryParse(value) ?? 1;
-                                      setState(() {
-                                        _quantity = quantity;
-                                      });
-                                    }
-                                  },
-                                ),
-                              ),
-                              Text(
-                                widget.assetClass == 'crypto' 
-                                  ? (_selectedOrderType == '시장가' ? 'USDT' : '개')
-                                  : '주',
-                                style: AppFonts.b1Regular.copyWith(
-                                  color: AppColors.gray900,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _setMaxQuantity,
-                          child: Text(
-                            '최대 ▾',
-                            style: AppFonts.b2Semibold.copyWith(
-                              color: AppColors.gray600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: context.h(9)),
-            
-            // 가격 입력 필드
-            Container(
-              width: isCryptoSymbol ? context.w(188) : double.infinity,
-              decoration: ShapeDecoration(
-                color: _selectedOrderType == '시장가' ? AppColors.gray100 : AppColors.gray50,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: context.w(22), vertical: context.h(12)),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '가격',
-                      style: AppFonts.b2Regular.copyWith(
-                        color: AppColors.gray900,
-                      ),
-                    ),
-                    SizedBox(height: context.h(6)),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _priceController,
-                                  focusNode: _priceFocusNode,
-                                  keyboardType: widget.assetClass == 'crypto' 
-                                    ? TextInputType.numberWithOptions(decimal: true)
-                                    : TextInputType.number,
-                                  enabled: _selectedOrderType != '시장가',
-                                  style: AppFonts.b1Semibold.copyWith(
-                                    color: _selectedOrderType == '시장가' ? AppColors.gray400 : AppColors.gray900,
-                                  ),
-                                  decoration: InputDecoration(
-                                    hintText: _selectedOrderType == '시장가' ? '시장가' : '가격',
-                                    border: InputBorder.none,
-                                    enabledBorder: InputBorder.none,
-                                    focusedBorder: InputBorder.none,
-                                    filled: false,
-                                    contentPadding: EdgeInsets.zero,
-                                  ),
-                                  onChanged: (value) {
-                                    if (_selectedOrderType != '시장가') {
-                                      final price = double.tryParse(value) ?? 0.0;
-                                      setState(() {
-                                        _price = price;
-                                      });
-                                    }
-                                  },
-                                ),
-                              ),
-                              SizedBox(width: context.w(4)),
-                              // 통화 토글 버튼 (주식만)
-                              if (widget.assetClass == 'stock')
-                                GestureDetector(
-                                  onTap: _toggleCurrency,
-                                  child: Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: context.w(8),
-                                      vertical: context.h(4),
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.gray100,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: context.w(6),
-                                            vertical: context.h(2),
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: _isShowingKRW ? Colors.white : Colors.transparent,
-                                            borderRadius: BorderRadius.circular(2),
-                                          ),
-                                          child: Text(
-                                            '원',
-                                            style: AppFonts.b2Semibold.copyWith(
-                                              color: AppColors.gray900,
-                                            ),
-                                          ),
-                                        ),
-                                        SizedBox(width: context.w(2)),
-                                        Container(
-                                          padding: EdgeInsets.symmetric(
-                                            horizontal: context.w(6),
-                                            vertical: context.h(2),
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: !_isShowingKRW ? Colors.white : Colors.transparent,
-                                            borderRadius: BorderRadius.circular(2),
-                                          ),
-                                          child: Text(
-                                            r'$',
-                                            style: AppFonts.b2Semibold.copyWith(
-                                              color: AppColors.gray900,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              else
-                                Text(
-                                  widget.assetClass == 'crypto' ? 'USD' : '원',
-                                  style: AppFonts.b1Regular.copyWith(
-                                    color: AppColors.gray900,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                final tickSize = widget.assetClass == 'stock' && !_isShowingKRW 
-                                  ? ((_tickSizeInKrw ?? 13.0) / (_exchangeRate ?? 1300.0)) 
-                                  : (_tickSizeInKrw ?? 13.0);
-                                setState(() {
-                                  _price = (_price - tickSize).clamp(0, double.infinity);
-                                  _priceController.text = widget.assetClass == 'stock' && !_isShowingKRW
-                                    ? _price.toStringAsFixed(2)
-                                    : _price.toStringAsFixed(0);
-                                });
-                              },
-                              child: Text(
-                                '−',
-                                style: AppFonts.b2Semibold.copyWith(
-                                  color: AppColors.gray600,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: context.w(8)),
-                            GestureDetector(
-                              onTap: () {
-                                final tickSize = widget.assetClass == 'stock' && !_isShowingKRW 
-                                  ? ((_tickSizeInKrw ?? 13.0) / (_exchangeRate ?? 1300.0)) 
-                                  : (_tickSizeInKrw ?? 13.0);
-                                setState(() {
-                                  _price = _price + tickSize;
-                                  _priceController.text = widget.assetClass == 'stock' && !_isShowingKRW
-                                    ? _price.toStringAsFixed(2)
-                                    : _price.toStringAsFixed(0);
-                                });
-                              },
-                              child: Text(
-                                '+',
-                                style: AppFonts.b2Semibold.copyWith(
-                                  color: AppColors.gray600,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: (availableHeight * 0.05).clamp(10.0, 20.0)), // 반응형 간격
-            
-            // 총액
-            Padding(
-              padding: EdgeInsets.only(left: isCryptoSymbol ? context.w(8) : 0),
-              child: Column(
-                crossAxisAlignment: isCryptoSymbol ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-                children: [
-                  Text(
-                    '총액',
-                    style: AppFonts.b2Regular.copyWith(
-                      color: AppColors.gray900,
-                    ),
-                  ),
-                  SizedBox(height: context.h(8)),
-                  Text(
-                    widget.assetClass == 'crypto' 
-                      ? (_selectedOrderType == '시장가' 
-                          ? '${_marketOrderAmount.toStringAsFixed(2)} USDT' 
-                          : '${((_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizeQuantity(_quantity.toDouble()) * (_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizePrice(_price)).toStringAsFixed(2)} USD')
-                      : '${(_quantity * _price).toStringAsFixed(0)}원',
-                    style: AppFonts.t1Bold.copyWith(
-                      color: AppColors.gray900,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(height: (availableHeight * 0.03).clamp(8.0, 16.0)), 
-            
-            // 매수/매도 버튼
-            GestureDetector(
-              onTap: _isSubmittingOrder ? null : _handleOrderSubmit,
-              child: Container(
-                width: isCryptoSymbol ? context.w(188) : double.infinity,
-                height: (availableHeight * 0.06).clamp(40.0, 50.0), 
-                decoration: BoxDecoration(
-                  color: _selectedOrderTab == '매도' ? AppColors.loss : AppColors.profit,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Center(
-                  child: _isSubmittingOrder
-                      ? CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          _selectedOrderTab == '매도' ? '매도' : '매수',
-                          style: AppFonts.t1Bold.copyWith(
-                            color: AppColors.white,
-                          ),
-                        ),
-                ),
-              ),
-            ),
-          ],
-        ),
+        // 주문 폼 (assetClass에 따라 분기)
+        if (widget.assetClass == 'crypto')
+          CryptoOrderForm(
+            symbol: widget.symbol,
+            selectedOrderTab: _selectedOrderTab,
+            stockDetail: _stockDetail,
+            currentMarketPrice: _currentMarketPrice,
+            onSubmit: _handleOrderSubmitFromForm,
+            onSetMaxQuantity: _setMaxQuantity,
+            isSubmitting: _isSubmittingOrder,
+          )
+        else
+          StockOrderForm(
+            symbol: widget.symbol,
+            selectedOrderTab: _selectedOrderTab,
+            exchangeRate: _exchangeRate,
+            tickSizeInKrw: _tickSizeInKrw,
+            onSubmit: _handleOrderSubmitFromForm,
+            onSetMaxQuantity: _setMaxQuantity,
+            isSubmitting: _isSubmittingOrder,
+          ),
+      ],
     );
   }
+  
+  // 주문 폼에서 호출되는 콜백
+  Future<void> _handleOrderSubmitFromForm(
+    String orderType,
+    String orderMethod,
+    String quantity,
+    String? limitPrice,
+    String apiSymbol,
+  ) async {
+    try {
+      // 주문 확인 다이얼로그
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text('주문 확인'),
+          content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+              Text('종목: ${widget.symbol}'),
+              Text('구분: $orderType'),
+              Text('주문타입: $orderMethod'),
+              if (orderMethod == '시장가') ...[
+                Text('수량: $quantity${widget.assetClass == 'crypto' ? '개' : '주'}'),
+                Text('가격: 시장가'),
+              ] else ...[
+                Text('수량: $quantity${widget.assetClass == 'crypto' ? '개' : '주'}'),
+                Text('가격: ${limitPrice ?? 'N/A'}${widget.assetClass == 'crypto' ? ' USD' : ' USD'}'),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('취소'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text('확인'),
+                        ),
+                      ],
+                    ),
+      );
+
+      if (confirmed != true) return;
+
+      // 로딩 상태 시작
+                                      setState(() {
+        _isSubmittingOrder = true;
+      });
+
+      // 주문 생성
+      final orderTypeEnum = orderMethod == '시장가' ? OrderType.market : OrderType.limit;
+      final timeInForce = widget.assetClass == 'crypto' ? TimeInForce.gtc : TimeInForce.day;
+      
+      final order = OrderRequest(
+        symbol: apiSymbol,
+        quantity: quantity,
+        side: orderType == '매도' ? OrderSide.sell : OrderSide.buy,
+        type: orderTypeEnum,
+        timeInForce: timeInForce,
+        limitPrice: limitPrice,
+      );
+
+      // 주문 요청 로그 출력
+      print('=== 주문 요청 정보 ===');
+      print('원본 심볼: ${widget.symbol}');
+      print('API 심볼: $apiSymbol');
+      print('수량: $quantity');
+      print('방향: ${orderType == '매도' ? 'sell' : 'buy'}');
+      print('타입: ${orderTypeEnum.name}');
+      print('유효기간: ${timeInForce.name}');
+      print('지정가: $limitPrice');
+      print('주문 데이터: ${order.toJson()}');
+      print('==================');
+
+      final result = await OrderApiService.createOrder(order);
+      
+      if (!mounted) return;
+      
+      if (result != null) {
+        // 주문 성공 팝업 표시
+        final displayPrice = orderMethod == '시장가' ? '시장가' : (limitPrice ?? 'N/A');
+        final displayQuantity = quantity;
+        
+        // 시장가 주문의 경우 marketOrder.currentPrice 또는 filledAvgPrice 확인
+        String displayTotalAmount;
+        if (orderMethod == '시장가') {
+          // 1. marketOrder.currentPrice 확인
+          final marketOrder = result['marketOrder'] as Map<String, dynamic>?;
+          final currentPrice = marketOrder?['currentPrice'];
+          
+          // 2. filledAvgPrice 확인 (직접 응답에 있는 경우)
+          final filledAvgPrice = result['filledAvgPrice'];
+          
+          // 3. limitOrder.totalAmount 확인 (시장가 주문이지만 totalAmount가 있는 경우)
+          final limitOrder = result['limitOrder'] as Map<String, dynamic>?;
+          final totalAmount = limitOrder?['totalAmount'];
+          
+          double? price;
+          if (currentPrice != null) {
+            price = double.tryParse(currentPrice.toString());
+          } else if (filledAvgPrice != null) {
+            price = double.tryParse(filledAvgPrice.toString());
+          }
+          
+          if (price != null && price > 0) {
+            // 체결 가격이 있으면 총액 계산
+            final qty = double.tryParse(quantity) ?? 0.0;
+            final totalUsd = price * qty;
+            
+            // 주식의 경우 환율 적용하여 원화로 표시
+            if (widget.assetClass != 'crypto' && _exchangeRate != null) {
+              final totalKrw = totalUsd * _exchangeRate!;
+              displayTotalAmount = totalKrw.toStringAsFixed(0);
+            } else {
+              displayTotalAmount = totalUsd.toStringAsFixed(2);
+            }
+          } else if (totalAmount != null) {
+            // totalAmount가 직접 있는 경우
+            final total = double.tryParse(totalAmount.toString()) ?? 0.0;
+            if (widget.assetClass != 'crypto' && _exchangeRate != null) {
+              final totalKrw = total * _exchangeRate!;
+              displayTotalAmount = totalKrw.toStringAsFixed(0);
+            } else {
+              displayTotalAmount = total.toStringAsFixed(2);
+            }
+          } else {
+            // 체결 가격이 없으면 "체결 후 확인 가능" 표시
+            displayTotalAmount = '체결 후 확인 가능';
+          }
+        } else {
+          // 지정가 주문
+          final qty = double.tryParse(quantity) ?? 0.0;
+          final price = double.tryParse(limitPrice ?? '0') ?? 0.0;
+          final total = qty * price;
+          
+          // 주식의 경우 환율 적용하여 원화로 표시
+          if (widget.assetClass != 'crypto' && _exchangeRate != null) {
+            final totalKrw = total * _exchangeRate!;
+            displayTotalAmount = totalKrw.toStringAsFixed(0);
+          } else {
+            displayTotalAmount = total.toStringAsFixed(2);
+          }
+        }
+        
+        _showOrderSuccessPopup(
+          symbol: widget.symbol,
+          orderType: orderType,
+          orderMethod: orderMethod,
+          price: displayPrice,
+          quantity: displayQuantity,
+          totalAmount: displayTotalAmount,
+          currency: widget.assetClass == 'crypto' ? 'USD' : '원',
+        );
+        
+                                setState(() {
+          _selectedOrderTab = '내역';
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('주문 접수에 실패했습니다\n잠시 후 다시 시도해주세요'),
+            backgroundColor: AppColors.loss,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      String errorMessage = '주문 처리 중 오류가 발생했습니다';
+      if (e.toString().contains('500')) {
+        errorMessage = '서버에 일시적인 문제가 발생했습니다\n잠시 후 다시 시도해주세요';
+      } else if (e.toString().contains('401')) {
+        errorMessage = '인증이 필요합니다\n로그인을 다시 해주세요';
+      } else if (e.toString().contains('403')) {
+        errorMessage = '거래 권한이 없습니다\n계정 설정을 확인해주세요';
+      } else if (e.toString().contains('timeout')) {
+        errorMessage = '요청 시간이 초과되었습니다\n네트워크를 확인해주세요';
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: AppColors.loss,
+          duration: Duration(seconds: 4),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingOrder = false;
+        });
+      }
+    }
+  }
+  
 
   Widget _buildOrderTabButton(String text, bool isSelected) {
     return GestureDetector(
@@ -1340,7 +1208,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                               SizedBox(height: 12),
                               _buildOrderDetailRow('수량', '$quantity${currency == '원' ? '주' : '개'}'),
                               SizedBox(height: 12),
-                              _buildOrderDetailRow('총액', '$totalAmount$currency'),
+                              _buildOrderDetailRow('총액', totalAmount == '체결 후 확인 가능' ? totalAmount : '$totalAmount$currency'),
                             ],
                           ),
                         ),

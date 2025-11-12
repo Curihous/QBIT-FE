@@ -53,66 +53,72 @@ class CandlestickChartV2 extends StatelessWidget {
     );
   }
 
+  /// 가격 크기에 따른 최소 표시 범위 (너무 납작해지는 것 방지)
+  double _minRangeFor(double anchor) {
+    final a = anchor.abs();
+    if (a < 1) return 0.02;          // 2센트 수준
+    if (a < 100) return a * 0.005;   // ±0.5%
+    return a * 0.003;                // ±0.3%
+  }
+
   double _getMaxPrice() {
     if (candles.isEmpty) return 0;
     
-    // 실시간 가격이 있으면 현재가 중심으로 범위 설정
-    if (realTimePrice != null) {
-      final recentCandles = _getRecentCandles();
-      final max = recentCandles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
-      final min = recentCandles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
-      
-      // 현재가를 포함한 전체 범위
-      final totalMax = max > realTimePrice! ? max : realTimePrice!;
-      final totalMin = min < realTimePrice! ? min : realTimePrice!;
-      final range = totalMax - totalMin;
-      
-      // 현재가를 중심으로 ± 적절한 범위
-      final centerPrice = (totalMax + totalMin) / 2;
-      final padding = _getPaddingRatio();
-      
-      return centerPrice + (range * (0.5 + padding));
-    }
-    
     final recentCandles = _getRecentCandles();
+    if (recentCandles.isEmpty) return 0;
+    
+    // --- realTimePrice 관련 로직 모두 제거 ---
+    // 1. 캔들 데이터 기준으로 최대/최소값 계산
     double max = recentCandles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
-    
     final min = recentCandles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
-    final range = max - min;
-    final padding = _getPaddingRatio();
     
-    return max + (range * padding);
+    // 2. 캔들 데이터의 기본 범위(range) 계산
+    final range = max - min;
+    
+    // 3. 차트가 너무 납작해지는 것을 방지하기 위한 최소 범위
+    final minRange = _minRangeFor(max); // (기존에 만드신 함수 활용)
+    
+    // 4. 실제 범위와 최소 범위 중 더 큰 값을 사용
+    final effectiveRange = math.max(range, minRange);
+    
+    // 5. 캔들 데이터의 중심점 계산
+    final center = (max + min) / 2;
+    
+    // 6. 패딩 적용 (중심점 + 유효범위/2 + 패딩)
+    // (패딩 비율은 effectiveRange 기준으로 적용)
+    final padding = _getPaddingRatio(); 
+    
+    return center + (effectiveRange / 2) + (effectiveRange * padding);
   }
 
   double _getMinPrice() {
     if (candles.isEmpty) return 0;
     
-    // 실시간 가격이 있으면 현재가 중심으로 범위 설정
-    if (realTimePrice != null) {
-      final recentCandles = _getRecentCandles();
-      final max = recentCandles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
-      final min = recentCandles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
-      
-      // 현재가를 포함한 전체 범위
-      final totalMax = max > realTimePrice! ? max : realTimePrice!;
-      final totalMin = min < realTimePrice! ? min : realTimePrice!;
-      final range = totalMax - totalMin;
-      
-      // 현재가를 중심으로 ± 적절한 범위
-      final centerPrice = (totalMax + totalMin) / 2;
-      final padding = _getPaddingRatio();
-      
-      return centerPrice - (range * (0.5 + padding));
-    }
-    
     final recentCandles = _getRecentCandles();
+    if (recentCandles.isEmpty) return 0;
+    
+    // --- realTimePrice 관련 로직 모두 제거 ---
+    // 1. 캔들 데이터 기준으로 최대/최소값 계산
+    final max = recentCandles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
     double min = recentCandles.map((c) => c.low).reduce((a, b) => a < b ? a : b);
     
-    final max = recentCandles.map((c) => c.high).reduce((a, b) => a > b ? a : b);
+    // 2. 캔들 데이터의 기본 범위(range) 계산
     final range = max - min;
+    
+    // 3. 차트가 너무 납작해지는 것을 방지하기 위한 최소 범위
+    final minRange = _minRangeFor(min); // (기존에 만드신 함수 활용)
+    
+    // 4. 실제 범위와 최소 범위 중 더 큰 값을 사용
+    final effectiveRange = math.max(range, minRange);
+    
+    // 5. 캔들 데이터의 중심점 계산
+    final center = (max + min) / 2;
+    
+    // 6. 패딩 적용 (중심점 - 유효범위/2 - 패딩)
+    // (패딩 비율은 effectiveRange 기준으로 적용)
     final padding = _getPaddingRatio();
     
-    return min - (range * padding);
+    return center - (effectiveRange / 2) - (effectiveRange * padding);
   }
   
   List<CandleData> _getRecentCandles() {
@@ -132,9 +138,9 @@ class CandlestickChartV2 extends StatelessWidget {
       case '15m':
         return 40;
       case '30m':
-        return 24; // 24개 = 약 12시간 (10/27 6:00부터 현재까지)
+        return 48; // 48개 = 약 24시간 (더 많은 캔들로 정확도 향상)
       case '1h':
-        return 24; // 24개 = 24시간
+        return 48; // 48개 = 약 2일 (더 많은 캔들로 정확도 향상)
       case '4h':
         return 21; // 21개 = 약 3.5일
       case '1d':
@@ -152,26 +158,8 @@ class CandlestickChartV2 extends StatelessWidget {
     return ['1m', '5m', '15m', '30m', '1h'].contains(interval);
   }
   
-  double _getPaddingRatio() {
-    // 시간 단위에 따라 Y축 패딩 비율 조정 (요구사항 반영)
-    switch (interval) {
-      case '1m':
-      case '5m':
-      case '15m':
-      case '30m':
-      case '1h':
-        return 0.20; // 20% 패딩으로 증가 (캔들이 범위를 벗어나지 않도록)
-      case '4h':
-        return 0.20; // 20% 패딩
-      case '1d':
-        return 0.20; // 20% 패딩
-      case '1w':
-      case '1M':
-        return 0.20; // 20% 패딩
-      default:
-        return 0.20;
-    }
-  }
+  /// Y축 패딩 비율 (20%)
+  double _getPaddingRatio() => 0.20;
 }
 
 class CandlestickPainter extends CustomPainter {
@@ -218,9 +206,10 @@ class CandlestickPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    // 고정된 캔들 너비와 간격으로 일관성 있는 차트 모양
-    final candleWidth = 6.0; // 너비 축소
-    final candleSpacing = 3.0; // 간격 축소 (더 촘촘하게)
+    // 시간 간격에 따라 캔들 너비와 간격 조정
+    final bool isShortInterval = interval == '30m' || interval == '1h';
+    final candleWidth = isShortInterval ? 4.0 : 6.0; // 30m, 1h는 더 좁게
+    final candleSpacing = isShortInterval ? 2.0 : 3.0; // 30m, 1h는 간격 더 좁게
     
     // 차트의 총 폭 계산 (마지막 캔들 뒤 간격은 제외)
     final totalCandleWidth = (candles.length * candleWidth) + ((candles.length - 1) * candleSpacing);
