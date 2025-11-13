@@ -7,7 +7,7 @@ import 'package:logger/logger.dart';
 /// 미국 주식 시세용 Polygon(Massive) WebSocket 클라이언트
 /// 기존 crypto_websocket 서비스와 유사한 사용법으로 구현했습니다.
 class UsStockMarketWebSocket {
-  static const String _wsUrl = 'wss://socket.polygon.io/stocks';
+  static const String _wsUrl = 'wss://delayed.polygon.io/stocks';
   static const Duration _baseReconnectDelay = Duration(seconds: 2);
   static const int _maxReconnectAttempts = 10;
 

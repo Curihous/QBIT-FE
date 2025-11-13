@@ -212,7 +212,10 @@ class _StockChartTabState extends State<StockChartTab> {
     _usStockWebSocket = ws;
 
     try {
-      await ws.connect(initialSymbols: [symbol]);
+      // A (Aggregate Second) 채널 사용 - 더 자주 업데이트
+      await ws.connect(initialSymbols: []);
+      ws.subscribe([symbol], trade: false, aggregateMinute: false, aggregateSecond: true, quote: false);
+      
       _usStockStreamSubscription = ws.stream.listen((event) {
         double? price;
         if (event is PolygonTrade) {

@@ -26,6 +26,7 @@ class OrderWebSocketService {
   bool _isAuthenticated = false;
   int _reconnectAttempts = 0;
   Timer? _reconnectTimer;
+  static const int _maxReconnectAttempts = 10; // 최대 재연결 시도 횟수
 
   Stream<dynamic> get messages => _messageController.stream;
 
@@ -41,6 +42,11 @@ class OrderWebSocketService {
     
     _connecting = true;
     _manuallyClosed = false;
+    // 수동 연결 시도 시 재연결 시도 횟수 리셋
+    if (_reconnectAttempts >= _maxReconnectAttempts) {
+      _logger.i('재연결 시도 횟수 리셋 (수동 연결 시도)');
+      _reconnectAttempts = 0;
+    }
 
     try {
       _logger.i('WebSocket 연결 시도: $_wsUrl');
@@ -77,9 +83,16 @@ class OrderWebSocketService {
   void _scheduleReconnect() {
     if (_reconnectTimer?.isActive == true) return;
     
+    // 최대 재연결 시도 횟수 초과 시 재연결 중단
+    if (_reconnectAttempts >= _maxReconnectAttempts) {
+      _logger.w('WebSocket 재연결 시도 횟수 초과 (최대 $_maxReconnectAttempts회). 재연결을 중단합니다.');
+      _logger.w('서버가 응답하지 않습니다. 잠시 후 수동으로 재연결을 시도해주세요.');
+      return;
+    }
+    
     _reconnectAttempts++;
     final delayMs = (1000 * (_reconnectAttempts.clamp(1, 10))).toInt();
-    _logger.i('WebSocket 재연결 시도 $_reconnectAttempts회 (${delayMs}ms 후)');
+    _logger.i('WebSocket 재연결 시도 $_reconnectAttempts/$_maxReconnectAttempts회 (${delayMs}ms 후)');
     
     _reconnectTimer = Timer(Duration(milliseconds: delayMs), () {
       if (_manuallyClosed) return;
