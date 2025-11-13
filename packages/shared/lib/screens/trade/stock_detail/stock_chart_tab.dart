@@ -157,27 +157,6 @@ class _StockChartTabState extends State<StockChartTab> {
       // 환율 로드 (암호화폐의 경우 USD를 KRW로 변환)
       _exchangeRate = await ExchangeRateApiService.getUsdToKrwRate();
       
-      // 현재 시간과 시간 단위에 따라 조정된 기간 계산
-      final now = DateTime.now();
-      final int daysBack;
-      
-      switch (_selectedInterval) {
-        case '30m':
-        case '1h':
-          daysBack = 30; // 30일치 데이터 (더 많은 데이터로 끊김 방지)
-          break;
-        case '4h':
-          daysBack = 60; // 60일치 데이터
-          break;
-        case '1d':
-          daysBack = 90; // 90일치 데이터
-          break;
-        default:
-          daysBack = 30;
-      }
-      
-      final startTime = now.subtract(Duration(days: daysBack));
-      
       // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
       final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
       if (binanceSymbol.isEmpty) {
@@ -190,11 +169,21 @@ class _StockChartTabState extends State<StockChartTab> {
         return;
       }
       
+      // 제미나이 의사코드 방식: startTime/endTime 없이 limit=500으로 최신 데이터만 요청
+      final now = DateTime.now();
+      print('=== API 요청 (제미나이 방식) ===');
+      print('현재 시간: $now');
+      print('인터벌: $_selectedInterval');
+      print('limit: 500 (최신 500개)');
+      print('startTime/endTime: 없음 (API가 최신 데이터 반환)');
+      print('============================');
+      
       final candleData = await StockApiService.getCryptoCandles(
         binanceSymbol: binanceSymbol,
         interval: _selectedInterval,
-        startTime: startTime.millisecondsSinceEpoch,
-        endTime: now.millisecondsSinceEpoch,
+        startTime: null, // 제거: API가 최신 데이터 반환
+        endTime: null,   // 제거: API가 최신 데이터 반환
+        limit: 500,      // 최신 500개 요청
       );
 
       if (mounted) {
@@ -208,15 +197,26 @@ class _StockChartTabState extends State<StockChartTab> {
           final latestCandle = candleData!.candles.last;
           final firstCandle = candleData!.candles.first;
           
-          // 디버깅: 캔들 데이터 타임스탬프 확인
-          print('=== 캔들 데이터 확인 ===');
-          print('캔들 개수: ${candleData!.candles.length}');
-          print('첫 캔들 timestamp: ${firstCandle.timestamp}');
-          print('첫 캔들 시간: ${DateTime.fromMillisecondsSinceEpoch(firstCandle.timestamp)}');
-          print('마지막 캔들 timestamp: ${latestCandle.timestamp}');
-          print('마지막 캔들 시간: ${DateTime.fromMillisecondsSinceEpoch(latestCandle.timestamp)}');
-          print('마지막 캔들 close: ${latestCandle.close}');
-          print('======================');
+          // 디버깅: API 응답 데이터 확인
+          final latestCandleTime = DateTime.fromMillisecondsSinceEpoch(latestCandle.timestamp);
+          final firstCandleTime = DateTime.fromMillisecondsSinceEpoch(firstCandle.timestamp);
+          final timeDiff = now.difference(latestCandleTime);
+          
+          print('=== API 응답 데이터 확인 ===');
+          print('API: /stocks/crypto/candle/$binanceSymbol');
+          print('인터벌: $_selectedInterval');
+          print('전체 캔들 개수 (allCandles): ${candleData!.candles.length}');
+          print('첫 캔들 시간: $firstCandleTime');
+          print('마지막 캔들 시간: $latestCandleTime');
+          print('현재 시간: $now');
+          print('시간 차이: ${timeDiff.inMinutes}분 (${timeDiff.inHours}시간)');
+          print('마지막 캔들 [O:${latestCandle.open}, H:${latestCandle.high}, L:${latestCandle.low}, C:${latestCandle.close}]');
+          print('==========================');
+          
+          // 경고: 마지막 캔들이 너무 오래된 경우
+          if (timeDiff.inHours > 2 && (_selectedInterval == '30m' || _selectedInterval == '1h')) {
+            print('⚠️ 경고: 마지막 캔들이 ${timeDiff.inHours}시간 전 데이터입니다. API가 최신 캔들을 반환하지 않았을 수 있습니다.');
+          }
           
           final price = _formatPrice(latestCandle.close);
           final change = _getPriceChange();
@@ -646,9 +646,49 @@ class _StockChartTabState extends State<StockChartTab> {
     );
   }
 
+  /// 화면에 그릴 캔들 개수를 인터벌별로 결정 (제미나이 의사코드 방식)
+  /// 화면을 꽉 채우도록 충분한 개수 사용
+  List<CandleData> _getDisplayCandles(List<CandleData> allCandles, String interval) {
+    int count = 0;
+    switch (interval) {
+      case '30m':
+        count = 48; // 최근 24시간 (화면을 꽉 채우기 위해 충분한 개수)
+        break;
+      case '1h':
+        count = 48; // 최근 2일 (화면을 꽉 채우기 위해 충분한 개수)
+        break;
+      case '4h':
+        count = 42; // 최근 7일
+        break;
+      case '1d':
+        count = 60; // 최근 2달
+        break;
+      default:
+        count = 50;
+    }
+    
+    // allCandles 리스트의 '마지막' 'count' 개수만큼 잘라서 반환
+    if (allCandles.length <= count) {
+      return allCandles;
+    }
+    return allCandles.sublist(allCandles.length - count);
+  }
+
   Widget _buildCandlestickChart() {
+    // 제미나이 의사코드 방식: displayCandles만 전달
+    final displayCandles = _getDisplayCandles(_candleData!.candles, _selectedInterval);
+    
+    print('=== displayCandles 선택 ===');
+    print('전체 캔들: ${_candleData!.candles.length}개');
+    print('화면에 그릴 캔들: ${displayCandles.length}개');
+    if (displayCandles.isNotEmpty) {
+      print('첫 캔들 시간: ${DateTime.fromMillisecondsSinceEpoch(displayCandles.first.timestamp)}');
+      print('마지막 캔들 시간: ${DateTime.fromMillisecondsSinceEpoch(displayCandles.last.timestamp)}');
+    }
+    print('========================');
+    
     return CandlestickChartV2(
-      candles: _candleData!.candles,
+      candles: displayCandles, // displayCandles만 전달
       interval: _selectedInterval,
       realTimePrice: _currentRealTimePrice, // 실시간 시세 전달
     );
