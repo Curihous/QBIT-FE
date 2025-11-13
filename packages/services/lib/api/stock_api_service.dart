@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'api_client.dart';
 import '../models/stock_model.dart';
@@ -468,6 +469,54 @@ class StockApiService {
       }
     } catch (error) {
       logger.e('암호화폐 캔들 데이터 조회 에러: $error');
+      if (error is DioException) {
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+        logger.e('상태코드: ${error.response?.statusCode}');
+      }
+      return null;
+    }
+  }
+
+  /// 미국 주식 캔들 데이터 조회
+  /// GET /stocks/us-equity/candle/{ticker}
+  static Future<CandleResponse?> getUsStockCandles({
+    required String ticker,
+    required int multiplier,
+    required String timespan,
+    required DateTime from,
+    required DateTime to,
+    bool adjusted = true,
+  }) async {
+    try {
+      final dateFormatter = DateFormat('yyyy-MM-dd');
+      final queryParams = <String, dynamic>{
+        'multiplier': multiplier,
+        'timespan': timespan,
+        'from': dateFormatter.format(from),
+        'to': dateFormatter.format(to),
+        'adjusted': adjusted,
+      };
+
+      logger.i('미국 주식 캔들 조회: $ticker, params=$queryParams');
+
+      final response = await _dio.get(
+        '/stocks/us-equity/candle/$ticker',
+        queryParameters: queryParams,
+      );
+
+      if (response.statusCode == 200) {
+        if (response.data is Map<String, dynamic>) {
+          return CandleResponse.fromJson(response.data as Map<String, dynamic>);
+        } else {
+          logger.e('미국 주식 캔들 응답이 Map이 아님: ${response.data.runtimeType}');
+          return null;
+        }
+      } else {
+        logger.e('미국 주식 캔들 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('미국 주식 캔들 조회 에러: $error');
       if (error is DioException) {
         logger.e('요청 URL: ${error.requestOptions.uri}');
         logger.e('상태코드: ${error.response?.statusCode}');

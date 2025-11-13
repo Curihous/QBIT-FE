@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/widgets/chart/candlestick_chart_v2.dart';
@@ -10,6 +13,7 @@ import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/api/exchange_rate_api_service.dart';
 import 'package:qbit_services/models/candle_model.dart';
 import 'package:qbit_services/websocket/crypto_market_websocket.dart';
+import 'package:qbit_services/websocket/us_stock_market_websocket.dart';
 
 class StockChartTab extends StatefulWidget {
   final String symbol;
@@ -41,24 +45,36 @@ class _StockChartTabState extends State<StockChartTab> {
   double? _exchangeRate;
   double? _currentRealTimePrice;
   CryptoMarketWebSocket? _marketWebSocket; // 실시간 시장가용 WebSocket
+  UsStockMarketWebSocket? _usStockWebSocket;
+  StreamSubscription<PolygonEvent>? _usStockStreamSubscription;
 
   final List<String> _intervals = ['30m', '1h', '4h', '1d'];
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    if (_isCrypto) {
+      _loadCryptoData();
+    } else if (_isUsStock) {
+      _loadUsStockInitialData();
+    }
   }
 
   @override
   void dispose() {
     _marketWebSocket?.disconnect();
     _marketWebSocket?.dispose();
+    _usStockStreamSubscription?.cancel();
+    _usStockWebSocket?.close();
+    _usStockWebSocket?.dispose();
     super.dispose();
   }
+
+  bool get _isCrypto => widget.assetClass == 'crypto';
+  bool get _isUsStock => widget.assetClass == 'us_equity' || widget.assetClass == 'stock';
   
-  Future<void> _loadData() async {
-    if (widget.assetClass != 'crypto') return;
+  Future<void> _loadCryptoData() async {
+    if (!_isCrypto) return;
 
     setState(() {
       _isLoading = true;
@@ -83,9 +99,157 @@ class _StockChartTabState extends State<StockChartTab> {
       }
     }
   }
+
+  Future<void> _loadUsStockInitialData() async {
+    try {
+      _exchangeRate ??= await ExchangeRateApiService.getUsdToKrwRate();
+    } catch (e) {
+      debugPrint('환율 조회 실패(미국 주식): $e');
+    }
+
+    await _loadUsStockCandles();
+    await _connectUsStockRealtime();
+  }
+
+  Future<void> _loadUsStockCandles() async {
+    if (!_isUsStock) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final now = DateTime.now().toUtc();
+      final config = _resolveUsIntervalConfig(_selectedInterval);
+      final fromDate = now.subtract(config.lookback);
+
+      final response = await StockApiService.getUsStockCandles(
+        ticker: widget.symbol,
+        multiplier: config.multiplier,
+        timespan: config.timespan,
+        from: fromDate,
+        to: now,
+        adjusted: true,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _candleData = response;
+        _isLoading = false;
+      });
+
+      if (response != null && response.candles.isNotEmpty) {
+        _handleRealtimePrice(response.candles.last.close);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  _UsIntervalConfig _resolveUsIntervalConfig(String interval) {
+    switch (interval) {
+      case '30m':
+        return const _UsIntervalConfig(
+          multiplier: 30,
+          timespan: 'minute',
+          lookback: Duration(days: 5),
+        );
+      case '1h':
+        return const _UsIntervalConfig(
+          multiplier: 1,
+          timespan: 'hour',
+          lookback: Duration(days: 14),
+        );
+      case '4h':
+        return const _UsIntervalConfig(
+          multiplier: 4,
+          timespan: 'hour',
+          lookback: Duration(days: 60),
+        );
+      case '1d':
+        return const _UsIntervalConfig(
+          multiplier: 1,
+          timespan: 'day',
+          lookback: Duration(days: 365),
+        );
+      default:
+        return const _UsIntervalConfig(
+          multiplier: 1,
+          timespan: 'day',
+          lookback: Duration(days: 180),
+        );
+    }
+  }
+
+  Future<void> _connectUsStockRealtime() async {
+    if (!_isUsStock) return;
+    if (_usStockWebSocket != null) return;
+
+    final apiKey = dotenv.env['POLYGON_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      debugPrint('Polygon API key is missing. Cannot connect to US stock websocket.');
+      return;
+    }
+
+    if (_exchangeRate == null) {
+      try {
+        _exchangeRate = await ExchangeRateApiService.getUsdToKrwRate();
+      } catch (e) {
+        debugPrint('환율 조회 실패: $e');
+      }
+    }
+
+    final symbol = widget.symbol.trim();
+    if (symbol.isEmpty) return;
+
+    final ws = UsStockMarketWebSocket(apiKey);
+    _usStockWebSocket = ws;
+
+    try {
+      await ws.connect(initialSymbols: [symbol]);
+      _usStockStreamSubscription = ws.stream.listen((event) {
+        double? price;
+        if (event is PolygonTrade) {
+          price = event.price;
+        } else if (event is PolygonAggregateSecond) {
+          price = event.close;
+        } else if (event is PolygonAggregateMinute) {
+          price = event.close;
+        }
+
+        if (price != null) {
+          _handleRealtimePrice(price);
+        }
+      });
+    } catch (e) {
+      debugPrint('미국 주식 실시간 시세 WebSocket 연결 실패: $e');
+    }
+  }
+
+  void _handleRealtimePrice(double price) {
+    if (!mounted) return;
+
+    setState(() {
+      _currentRealTimePrice = price;
+    });
+
+    final priceStr = _formatPriceValue(price);
+    final changeStr = _getPriceChange();
+    widget.onPriceUpdate?.call(priceStr, changeStr);
+
+    final usdLabel = _formatUsdPriceLabel(price);
+    final krwLabel = _formatKrwPriceLabel(price);
+    widget.onPriceUpdateDetailed?.call(usdLabel, krwLabel);
+  }
   
   Future<void> _loadRealTimePrice() async {
-    if (widget.assetClass != 'crypto') return;
+    if (!_isCrypto) return;
     
     // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
     final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
@@ -237,7 +401,11 @@ class _StockChartTabState extends State<StockChartTab> {
     setState(() {
       _selectedInterval = interval;
     });
-    _loadCandleData();
+    if (_isCrypto) {
+      _loadCandleData();
+    } else if (_isUsStock) {
+      _loadUsStockCandles();
+    }
     
     // 인터벌이 변경되면 가격 정보 업데이트
     if (mounted && _candleData != null && _candleData!.candles.isNotEmpty) {
@@ -751,12 +919,34 @@ class _StockChartTabState extends State<StockChartTab> {
     return '$formattedInteger.$decimalPart';
   }
 
+  String _formatUsdPriceLabel(double price) {
+    if (price >= 1000) {
+      return '\$${_formatNumberWithComma(price)}';
+    } else if (price >= 1) {
+      return '\$${price.toStringAsFixed(2)}';
+    } else {
+      return '\$${price.toStringAsFixed(4)}';
+    }
+  }
+
+  String _formatKrwPriceLabel(double price) {
+    if (_exchangeRate == null) {
+      return '--';
+    }
+    final krwValue = price * _exchangeRate!;
+    if (krwValue >= 1000) {
+      return '${_formatNumberWithComma(krwValue)}원';
+    } else {
+      return '${krwValue.toStringAsFixed(0)}원';
+    }
+  }
+
   String _getPriceChange() {
     // 실시간 시세가 있으면 사용
     double? currentPrice;
     double? previousPrice;
     
-    if (_currentRealTimePrice != null && _candleData != null && _candleData!.candles.isNotEmpty) {
+    if (_currentRealTimePrice != null && _candleData != null && _candleData!.candles.length >= 2) {
       currentPrice = _currentRealTimePrice;
       previousPrice = _candleData!.candles[_candleData!.candles.length - 2].close;
     } else if (_candleData != null && _candleData!.candles.length >= 2) {
@@ -837,4 +1027,16 @@ class _StockChartTabState extends State<StockChartTab> {
     final change = currentCandle.close - previousCandle.close;
     return change >= 0;
   }
+}
+
+class _UsIntervalConfig {
+  final int multiplier;
+  final String timespan;
+  final Duration lookback;
+
+  const _UsIntervalConfig({
+    required this.multiplier,
+    required this.timespan,
+    required this.lookback,
+  });
 }
