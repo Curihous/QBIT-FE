@@ -10,6 +10,7 @@ import 'package:qbit_shared/screens/record/record_screen.dart';
 import 'package:qbit_shared/screens/my/my_screen.dart';
 import 'package:qbit_shared/screens/trade/trade_screen.dart';
 import 'package:qbit_shared/screens/trade/order_history_screen.dart';
+import 'package:qbit_shared/screens/trade/order_detail_screen.dart';
 import 'package:qbit_shared/screens/trade/stock_search_screen.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/stock_detail_navigation.dart';
 import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
@@ -76,6 +77,14 @@ class AppRouter {
         path: '/order-history',
         name: 'order-history',
         builder: (context, state) => const OrderHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/order-detail/:orderId',
+        name: 'order-detail',
+        builder: (context, state) {
+          final orderId = int.tryParse(state.pathParameters['orderId'] ?? '0') ?? 0;
+          return OrderDetailScreen(orderId: orderId);
+        },
       ),
       GoRoute(
         path: '/auth/alpaca/callback',

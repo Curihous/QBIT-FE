@@ -95,22 +95,34 @@ String _formatDate(String dateString) {
 
 // 상태 라벨 생성 함수
 String _getStatusLabel(OrderModel order) {
-  // 디버깅: 실제 주문 상태 출력
-  print('🔍 주문 상태 체크: ${order.symbol}, status=${order.status}, filledQuantity=${order.filledQuantity}, filledAvgPrice=${order.filledAvgPrice}');
-  
   // 체결된 수량이 있으면 완료로 표시
   if (order.filledQuantity != null && order.filledQuantity != '' && order.filledQuantity != '0' && order.filledQuantity != '0E-8' && order.filledQuantity != '0.00000000') {
-    return order.side == 'buy' ? '구매 완료' : '매도 완료';
+    return order.side == 'buy' ? '매수 완료' : '매도 완료';
   }
   
   if (order.status == 'filled') {
-    return order.side == 'buy' ? '구매 완료' : '매도 완료';
+    return order.side == 'buy' ? '매수 완료' : '매도 완료';
   } else if (order.status == 'accepted' || order.status == 'pending_new') {
     return order.type == 'limit' ? '지정가 대기' : '시장가 대기';
   } else if (order.status == 'canceled') {
     return '취소됨';
   } else {
     return '처리 중';
+  }
+}
+
+Color _getStatusColor(OrderModel order) {
+  // 체결된 수량이 있으면 매수/매도 색상
+  if (order.filledQuantity != null && order.filledQuantity != '' && order.filledQuantity != '0' && order.filledQuantity != '0E-8' && order.filledQuantity != '0.00000000') {
+    return order.side == 'buy' ? AppColors.profit : AppColors.loss;
+  }
+  
+  if (order.status == 'filled') {
+    return order.side == 'buy' ? AppColors.profit : AppColors.loss;
+  } else if (order.status == 'canceled') {
+    return AppColors.gray600; // 진한 회색
+  } else {
+    return AppColors.primary; // 기본 색상 (대기 중)
   }
 }
 
@@ -690,7 +702,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     final isSelected = _selectedOrderId == order.orderId;
     
     return Container(
-      margin: EdgeInsets.only(bottom: context.h(24)),
+      margin: EdgeInsets.only(bottom: context.h(22)),
       padding: EdgeInsets.symmetric(horizontal: context.w(16)),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -722,6 +734,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               onTap: () {
                 if (isSelected) {
                   _showDeleteDialog(order);
+                } else {
+                  // 주문 상세 화면으로 이동
+                  context.push('/order-detail/${order.orderId}');
                 }
               },
               child: Column(
@@ -739,7 +754,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                   Text(
                     _getStatusLabel(order),
                     style: AppFonts.c1.copyWith(
-                      color: AppColors.primary,
+                      color: _getStatusColor(order),
                       fontSize: 13,
                       height: 1.31,
                     ),
