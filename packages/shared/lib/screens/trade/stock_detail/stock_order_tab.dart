@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
@@ -44,6 +45,8 @@ class _StockOrderTabState extends State<StockOrderTab> {
   String? _error;
   CryptoOrderBookWebSocket? _webSocket;
   CryptoMarketWebSocket? _marketWebSocket; // 시장가용 WebSocket
+  StreamSubscription<OrderBookModel>? _orderBookSubscription; // 호가창 WebSocket 구독
+  StreamSubscription<double>? _marketPriceSubscription; // 시장가 WebSocket 구독
   
   // 주문 관련 상태
   int _quantity = 1;
@@ -118,6 +121,16 @@ class _StockOrderTabState extends State<StockOrderTab> {
 
   @override
   void dispose() {
+    // WebSocket 구독 취소
+    _orderBookSubscription?.cancel();
+    _marketPriceSubscription?.cancel();
+    
+    // WebSocket 연결 해제
+    _webSocket?.disconnect();
+    _webSocket?.dispose();
+    _marketWebSocket?.disconnect();
+    _marketWebSocket?.dispose();
+    
     _quantityController.dispose();
     _priceController.dispose();
     _marketAmountController.dispose();
@@ -125,10 +138,6 @@ class _StockOrderTabState extends State<StockOrderTab> {
     _quantityFocusNode.dispose();
     _priceFocusNode.dispose();
     _marketAmountFocusNode.dispose();
-    _webSocket?.disconnect();
-    _webSocket?.dispose();
-    _marketWebSocket?.disconnect();
-    _marketWebSocket?.dispose();
     super.dispose();
   }
 
@@ -221,11 +230,17 @@ class _StockOrderTabState extends State<StockOrderTab> {
         // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
         final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
         if (binanceSymbol.isNotEmpty) {
+          // 기존 WebSocket 연결 해제 및 구독 취소
+          _marketPriceSubscription?.cancel();
+          await _marketWebSocket?.disconnect();
+          _marketWebSocket?.dispose();
+          
+          // 새로운 WebSocket 연결
           _marketWebSocket = CryptoMarketWebSocket();
           await _marketWebSocket!.connect(binanceSymbol);
           
-          // WebSocket에서 실시간 가격 받기
-          _marketWebSocket!.lastPriceStream.listen((price) {
+          // WebSocket에서 실시간 가격 받기 (구독 저장)
+          _marketPriceSubscription = _marketWebSocket!.lastPriceStream.listen((price) {
             if (mounted) {
               setState(() {
                 _currentMarketPrice = price;
@@ -234,26 +249,34 @@ class _StockOrderTabState extends State<StockOrderTab> {
           });
         } else {
           // binanceSymbol이 없으면 호가창에서 계산 (fallback)
-          if (_orderBook != null && _orderBook!.bids.isNotEmpty && _orderBook!.asks.isNotEmpty) {
+          if (mounted && _orderBook != null && _orderBook!.bids.isNotEmpty && _orderBook!.asks.isNotEmpty) {
             final bestBid = _orderBook!.bids.first.price;
             final bestAsk = _orderBook!.asks.first.price;
-            _currentMarketPrice = (bestBid + bestAsk) / 2; // 중간가격
+            setState(() {
+              _currentMarketPrice = (bestBid + bestAsk) / 2; // 중간가격
+            });
           }
         }
       } else {
         // 주식: 현재 가격을 KRW로 설정 (환율 적용)
-        _currentMarketPrice = _price;
+        if (mounted) {
+          setState(() {
+            _currentMarketPrice = _price;
+          });
+        }
       }
     } catch (error) {
       print('현재 시장 가격 로드 실패: $error');
       // 실패 시 호가창에서 계산 (fallback)
-      if (widget.assetClass == 'crypto' && 
+      if (mounted && widget.assetClass == 'crypto' && 
           _orderBook != null && 
           _orderBook!.bids.isNotEmpty && 
           _orderBook!.asks.isNotEmpty) {
         final bestBid = _orderBook!.bids.first.price;
         final bestAsk = _orderBook!.asks.first.price;
-        _currentMarketPrice = (bestBid + bestAsk) / 2;
+        setState(() {
+          _currentMarketPrice = (bestBid + bestAsk) / 2;
+        });
       }
     }
   }
@@ -331,11 +354,17 @@ class _StockOrderTabState extends State<StockOrderTab> {
         // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
         final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
         if (binanceSymbol.isNotEmpty) {
+          // 기존 WebSocket 연결 해제 및 구독 취소
+          _orderBookSubscription?.cancel();
+          await _webSocket?.disconnect();
+          _webSocket?.dispose();
+          
+          // 새로운 WebSocket 연결
           _webSocket = CryptoOrderBookWebSocket();
           await _webSocket!.connect(binanceSymbol);
           
-          // WebSocket 스트림 구독
-          _webSocket!.orderBookStream.listen((updatedOrderBook) {
+          // WebSocket 스트림 구독 (구독 저장)
+          _orderBookSubscription = _webSocket!.orderBookStream.listen((updatedOrderBook) {
             if (mounted) {
               setState(() {
                 _orderBook = updatedOrderBook;

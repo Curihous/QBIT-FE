@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
@@ -28,6 +29,7 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
   bool _isLoadingOrderBook = false;
   String? _error;
   CryptoOrderBookWebSocket? _webSocket;
+  StreamSubscription<OrderBookModel>? _orderBookSubscription; // WebSocket 구독
 
   @override
   void initState() {
@@ -37,8 +39,15 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
 
   @override
   void dispose() {
+    // WebSocket 구독 취소
+    _orderBookSubscription?.cancel();
+    _orderBookSubscription = null;
+    
+    // WebSocket 연결 해제
     _webSocket?.disconnect();
     _webSocket?.dispose();
+    _webSocket = null;
+    
     super.dispose();
   }
 
@@ -71,12 +80,19 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
         return;
       }
       
-      // WebSocket 연결 (암호화폐 lv2 호가창 실시간 조회)
+      // 기존 WebSocket 연결 해제 및 구독 취소
+      _orderBookSubscription?.cancel();
+      _orderBookSubscription = null;
+      await _webSocket?.disconnect();
+      _webSocket?.dispose();
+      _webSocket = null;
+      
+      // 새로운 WebSocket 연결 (암호화폐 lv2 호가창 실시간 조회)
       _webSocket = CryptoOrderBookWebSocket();
       await _webSocket!.connect(binanceSymbol);
       
-      // WebSocket 스트림 구독
-      _webSocket!.orderBookStream.listen((updatedOrderBook) {
+      // WebSocket 스트림 구독 (구독 저장)
+      _orderBookSubscription = _webSocket!.orderBookStream.listen((updatedOrderBook) {
         if (mounted) {
           setState(() {
             _orderBook = updatedOrderBook;
@@ -94,6 +110,13 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
         }
       });
     } catch (e) {
+      // 에러 발생 시에도 기존 연결 정리
+      _orderBookSubscription?.cancel();
+      _orderBookSubscription = null;
+      await _webSocket?.disconnect();
+      _webSocket?.dispose();
+      _webSocket = null;
+      
       if (mounted) {
         setState(() {
           _orderBook = null;
