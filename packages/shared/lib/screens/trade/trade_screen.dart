@@ -20,10 +20,14 @@ import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/models/stock_model.dart';
 import 'package:qbit_shared/models/portfolio_history.dart';
 import 'package:qbit_shared/widgets/trade/portfolio_chart_widget.dart';
+import 'package:qbit_shared/widgets/trade/portfolio_overview_chart.dart';
+import 'package:qbit_services/api/portfolio_api_service.dart';
+import 'package:qbit_services/models/portfolio_overview_model.dart';
 import 'package:qbit_services/models/asset_model.dart';
 import 'package:qbit_services/models/stock_ranking_model.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/api/api_client.dart';
+import 'package:intl/intl.dart';
 
 class TradeScreen extends StatefulWidget {
   const TradeScreen({super.key});
@@ -43,6 +47,11 @@ class _TradeScreenState extends State<TradeScreen> {
   int? _selectedStockIndex; // 선택된 종목 인덱스
   int _overseasPage = 0; // 해외 지수 페이지 인덱스
   final PageController _indicesPageController = PageController(viewportFraction: 1.0);
+  
+  // 포트폴리오 오버뷰 관련
+  PortfolioOverviewResponse? _portfolioOverview;
+  double? _selectedEquity; // 터치된 시점의 자산 가치
+  int? _selectedTimestamp; // 터치된 시점의 타임스탬프
 
   @override
   void initState() {
@@ -57,7 +66,8 @@ class _TradeScreenState extends State<TradeScreen> {
           _isAlpacaConnected = true;
         });
       }
-      _loadUserAssets(); // 연동 후 자산 데이터 다시 로드
+      await _loadUserAssets(); // 연동 후 자산 데이터 다시 로드
+      await _loadPortfolioOverview(); // 포트폴리오 오버뷰도 다시 로드
     };
   }
 
@@ -72,6 +82,11 @@ class _TradeScreenState extends State<TradeScreen> {
         _checkAlpacaConnectionStatus(),
         _loadUserAssets(),
       ]);
+      
+      // 포트폴리오 오버뷰 로드 (Alpaca 연결된 경우만)
+      if (_isAlpacaConnected) {
+        await _loadPortfolioOverview();
+      }
       
       await _loadStockRanking();
     } catch (e) {
@@ -181,6 +196,27 @@ class _TradeScreenState extends State<TradeScreen> {
           _isAlpacaConnected = false;
         });
       }
+    }
+  }
+
+  // 포트폴리오 오버뷰 데이터 로드
+  Future<void> _loadPortfolioOverview() async {
+    try {
+      final overview = await PortfolioApiService.getPortfolioOverview();
+      if (mounted && overview != null) {
+        print('포트폴리오 오버뷰 timeframe: ${overview.timeframe}');
+        setState(() {
+          _portfolioOverview = overview;
+          // 초기값: 가장 최근 데이터
+          if (overview.history.isNotEmpty) {
+            final latestPoint = overview.history.last;
+            _selectedEquity = latestPoint.equity;
+            _selectedTimestamp = latestPoint.timestamp;
+          }
+        });
+      }
+    } catch (e) {
+      print('포트폴리오 오버뷰 로드 중 에러: $e');
     }
   }
 
@@ -660,14 +696,16 @@ class _TradeScreenState extends State<TradeScreen> {
                                     ),
                                   ),
                                 ),
-                                SizedBox(height: 0),
+                                SizedBox(height: context.h(4)),
                                 SizedBox(
                                   width: 172,
                                   child: Text(
-                                    _userAssets != null 
-                                        ? '\$ ${_userAssets!.portfolioValue.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'
-                                        : '\$ --,---,---',
-                                    style: AppFonts.t1Bold.copyWith(color: AppColors.gray900),
+                                    _selectedEquity != null
+                                        ? '\$ ${_selectedEquity!.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'
+                                        : (_userAssets != null 
+                                            ? '\$ ${_userAssets!.portfolioValue.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'
+                                            : '\$ --,---,---'),
+                                    style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
                                   ),
                                 ),
                               ],
@@ -703,20 +741,26 @@ class _TradeScreenState extends State<TradeScreen> {
               ),
             ),
             Inset.block(
-              child: Stack(
-                children: [
-                  // 포트폴리오 차트 
-                  // TODO: 포트폴리오 차트 추가 (백엔드 연동)
-                  Container(
-                    height: 125,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.gray300, width: 1),
+              child: _portfolioOverview != null && _portfolioOverview!.history.isNotEmpty
+                  ? PortfolioOverviewChart(
+                      history: _portfolioOverview!.history,
+                      selectedEquity: _selectedEquity,
+                      selectedTimestamp: _selectedTimestamp,
+                      onTouch: (equity, timestamp) {
+                        setState(() {
+                          _selectedEquity = equity;
+                          _selectedTimestamp = timestamp;
+                        });
+                      },
+                    )
+                  : Container(
+                      height: 125,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.gray300, width: 1),
+                      ),
                     ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),
@@ -1219,6 +1263,14 @@ class _TradeScreenState extends State<TradeScreen> {
       return 'S&P 500';
     }
     return name;
+  }
+
+  // 타임스탬프 포맷팅 (예: "11월 15일, 오후 07:59")
+  String _formatTimestamp(int timestamp) {
+    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    final month = date.month;
+    final day = date.day;
+    return '$month월 $day일';
   }
 
   // 지수 아이템 위젯
