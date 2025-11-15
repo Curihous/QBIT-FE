@@ -196,10 +196,8 @@ class _CandlestickPainter extends CustomPainter {
 
   void _drawCandles(Canvas canvas, double chartWidth, double chartHeight) {
     final totalWidth = candles.length * _candleWidth + (candles.length - 1) * _candleSpacing;
-    final lastX = _leftPadding + chartWidth - _candleWidth / 2;
-    double startX = lastX - (candles.length - 1) * (_candleWidth + _candleSpacing);
-    final double minX = _leftPadding + _candleWidth / 2;
-    if (startX < minX) startX = minX;
+    // 왼쪽부터 시작하도록 수정
+    final double startX = _leftPadding + _candleWidth / 2;
 
     final Paint paint = Paint()..style = PaintingStyle.fill;
 
@@ -227,15 +225,50 @@ class _CandlestickPainter extends CustomPainter {
   }
 
   void _drawXAxis(Canvas canvas, Size size, double chartWidth) {
-    const int labelCount = 6;
     if (candles.length < 2) return;
 
+    // 4h 간격일 때는 균등한 간격으로 라벨 배치 (다른 간격과 동일하게)
+    if (interval == '4h') {
+      const int labelCount = 6;
+      final double step = (candles.length - 1) / (labelCount - 1);
+      final double startX = _leftPadding + _candleWidth / 2;
+
+      // 중복 날짜 제거를 위한 Set
+      Set<String> seenDates = {};
+
+      for (int i = 0; i < labelCount; i++) {
+        final int index = (step * i).round().clamp(0, candles.length - 1);
+        final candle = candles[index];
+        final x = startX + index * (_candleWidth + _candleSpacing);
+        final String label = _formatTime(candle.timestamp);
+
+        // 중복 날짜 제거
+        if (seenDates.contains(label)) continue;
+        seenDates.add(label);
+
+        final textPainter = TextPainter(
+          text: TextSpan(text: label, style: const TextStyle(fontSize: 10, color: AppColors.gray600)),
+          textDirection: ui.TextDirection.ltr,
+        )..layout();
+
+        double textX = x - textPainter.width / 2;
+        if (textX < _leftPadding) textX = _leftPadding;
+        if (textX + textPainter.width > _leftPadding + chartWidth) {
+          textX = _leftPadding + chartWidth - textPainter.width;
+        }
+
+        textPainter.paint(
+          canvas,
+          Offset(textX, size.height - _bottomPadding + (_bottomPadding - textPainter.height) / 2),
+        );
+      }
+      return;
+    }
+
+    // 다른 간격은 기존 방식 사용
+    const int labelCount = 6;
     final double step = (candles.length - 1) / (labelCount - 1);
-    final double totalWidth = candles.length * _candleWidth + (candles.length - 1) * _candleSpacing;
-    final double lastX = _leftPadding + chartWidth - _candleWidth / 2;
-    double startX = lastX - (candles.length - 1) * (_candleWidth + _candleSpacing);
-    final double minX = _leftPadding + _candleWidth / 2;
-    if (startX < minX) startX = minX;
+    final double startX = _leftPadding + _candleWidth / 2;
 
     for (int i = 0; i < labelCount; i++) {
       final int index = (step * i).round().clamp(0, candles.length - 1);
@@ -320,6 +353,9 @@ class _CandlestickPainter extends CustomPainter {
   String _formatTime(int timestamp) {
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
     switch (interval) {
+      case '4h':
+        // 4h 간격은 날짜 형식으로 표시
+        return DateFormat('MM/dd').format(date);
       case '1d':
       case '1w':
       case '1M':
