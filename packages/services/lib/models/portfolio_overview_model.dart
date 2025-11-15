@@ -4,6 +4,7 @@ class PortfolioOverviewResponse {
   final List<HistoryPoint> history; // 자산 변동 이력 데이터
   final double baseValue; // 기준 자산 가치
   final String timeframe; // 조회 기간 (예: "1D", "1M")
+  // 백엔드 데이터 간격: 1D(15Min), 1W(1H), 1M(1D), 1A(1D)
   final String fetchedAt; // 데이터 조회 시각
 
   PortfolioOverviewResponse({

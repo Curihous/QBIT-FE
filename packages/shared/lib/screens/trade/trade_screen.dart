@@ -52,6 +52,8 @@ class _TradeScreenState extends State<TradeScreen> {
   PortfolioOverviewResponse? _portfolioOverview;
   double? _selectedEquity; // 터치된 시점의 자산 가치
   int? _selectedTimestamp; // 터치된 시점의 타임스탬프
+  String _selectedPeriod = '1M'; // 선택된 기간: '1D', '1W', '1M'
+  bool _isPortfolioLoading = false; // 포트폴리오 오버뷰 로딩 상태
 
   @override
   void initState() {
@@ -200,13 +202,30 @@ class _TradeScreenState extends State<TradeScreen> {
   }
 
   // 포트폴리오 오버뷰 데이터 로드
+  // TODO: 백엔드 수정 후 기간별 그래프 출력
+  // 현재는 period 파라미터에 관계없이 동일한 데이터 범위를 반환하고 있음
+  // 백엔드에서 period(1D, 1W, 1M)에 따라 실제 조회 기간이 반영되도록 수정 필요
+  // TODO: 90초 캐싱 구현 (dio_cache_interceptor 등 활용 고려)
   Future<void> _loadPortfolioOverview() async {
+    if (mounted) {
+      setState(() {
+        _isPortfolioLoading = true;
+      });
+    }
+    
     try {
-      final overview = await PortfolioApiService.getPortfolioOverview();
+      print('포트폴리오 오버뷰 로드 시작 - period: $_selectedPeriod');
+      final overview = await PortfolioApiService.getPortfolioOverview(period: _selectedPeriod);
       if (mounted && overview != null) {
-        print('포트폴리오 오버뷰 timeframe: ${overview.timeframe}');
+        print('포트폴리오 오버뷰 조회 성공 - period: $_selectedPeriod, timeframe: ${overview.timeframe}, history 개수: ${overview.history.length}');
+        if (overview.history.isNotEmpty) {
+          print('첫 번째 데이터: timestamp=${overview.history.first.timestamp}, equity=${overview.history.first.equity}');
+          print('마지막 데이터: timestamp=${overview.history.last.timestamp}, equity=${overview.history.last.equity}');
+        }
+        
         setState(() {
           _portfolioOverview = overview;
+          _isPortfolioLoading = false;
           // 초기값: 가장 최근 데이터
           if (overview.history.isNotEmpty) {
             final latestPoint = overview.history.last;
@@ -214,9 +233,23 @@ class _TradeScreenState extends State<TradeScreen> {
             _selectedTimestamp = latestPoint.timestamp;
           }
         });
+      } else {
+        print('포트폴리오 오버뷰 조회 실패 - overview가 null (기존 데이터 유지)');
+        if (mounted) {
+          setState(() {
+            _isPortfolioLoading = false;
+          });
+        }
+        // 에러 발생 시 기존 데이터 유지 (null로 설정하지 않음)
       }
     } catch (e) {
-      print('포트폴리오 오버뷰 로드 중 에러: $e');
+      print('포트폴리오 오버뷰 로드 중 에러: $e (기존 데이터 유지)');
+      if (mounted) {
+        setState(() {
+          _isPortfolioLoading = false;
+        });
+      }
+      // 에러 발생 시 기존 데이터 유지
     }
   }
 
@@ -712,9 +745,10 @@ class _TradeScreenState extends State<TradeScreen> {
                             ),
                           ),
                         ),
+                        // 주문내역 상세 (오른쪽 상단)
                         Positioned(
                           right: 0,
-                          top: 28,
+                          top: 0,
                           child: Material(
                             color: Colors.transparent,
                             child: InkWell(
@@ -733,6 +767,21 @@ class _TradeScreenState extends State<TradeScreen> {
                             ),
                           ),
                         ),
+                        // 기간 선택 버튼 (오른쪽 하단)
+                        Positioned(
+                          right: 0,
+                          top: 28,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              _buildPeriodButton('1D', '1D'),
+                              SizedBox(width: context.w(4)),
+                              _buildPeriodButton('1W', '1W'),
+                              SizedBox(width: context.w(4)),
+                              _buildPeriodButton('1M', '1M'),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -741,9 +790,24 @@ class _TradeScreenState extends State<TradeScreen> {
               ),
             ),
             Inset.block(
-              child: _portfolioOverview != null && _portfolioOverview!.history.isNotEmpty
-                  ? PortfolioOverviewChart(
-                      history: _portfolioOverview!.history,
+              child: _isPortfolioLoading
+                  ? Container(
+                      height: 125,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.gray300, width: 1),
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    )
+                  : _portfolioOverview != null && _portfolioOverview!.history.isNotEmpty
+                      ? PortfolioOverviewChart(
+                          key: ValueKey('${_selectedPeriod}_${_portfolioOverview!.history.length}_${_portfolioOverview!.history.first.timestamp}_${_portfolioOverview!.history.last.timestamp}'), // period, 데이터 개수, 첫/마지막 timestamp로 key 생성
+                          history: _portfolioOverview!.history,
                       selectedEquity: _selectedEquity,
                       selectedTimestamp: _selectedTimestamp,
                       onTouch: (equity, timestamp) {
@@ -1273,6 +1337,40 @@ class _TradeScreenState extends State<TradeScreen> {
     return '$month월 $day일';
   }
 
+  // 기간 선택 버튼 (작고 미묘하게)
+  Widget _buildPeriodButton(String period, String label) {
+    final isSelected = _selectedPeriod == period;
+    return GestureDetector(
+      onTap: () {
+        if (_selectedPeriod == period) return; // 이미 선택된 기간이면 무시
+        print('기간 선택 버튼 클릭: $period');
+        setState(() {
+          _selectedPeriod = period;
+          // 에러 발생 시 기존 데이터를 유지하기 위해 null로 초기화하지 않음
+        });
+        _loadPortfolioOverview();
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: context.w(8),
+          vertical: context.h(4),
+        ),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.gray100 : Colors.transparent,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Text(
+          label,
+          style: AppFonts.c2.copyWith(
+            color: isSelected ? AppColors.gray900 : AppColors.gray400,
+            fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
+          ),
+        ),
+      ),
+    );
+  }
+
+>>>>>>> 5d0d740 (fix: 포트폴리오 오버뷰 API 개선)
   // 지수 아이템 위젯
   Widget _buildIndexItem(String name, String value, String change, bool isPositive) {
     return Container(
