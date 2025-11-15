@@ -35,7 +35,7 @@ class VolumeChartV2 extends StatelessWidget {
             padding: const EdgeInsets.only(left: 16),
             child: Text(
               'Vol: ${_formatVolume(totalVolume)}',
-              style: AppFonts.b2Regular.copyWith(
+              style: AppFonts.c2.copyWith(
                 color: AppColors.gray600,
               ),
             ),

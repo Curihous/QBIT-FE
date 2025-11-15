@@ -1,9 +1,12 @@
+import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:logger/logger.dart';
 import 'package:qbit_core/config/env_config.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
 import 'package:qbit_services/auth/google_auth_service.dart';
 import 'package:qbit_services/auth/alpaca_auth_service.dart';
 import 'package:qbit_services/api/auth_api_service.dart';
+import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/models/auth_models.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -11,6 +14,59 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 final logger = Logger();
 
 class AuthService {
+  /// JWT 토큰 디코딩하여 만료 시간 확인
+  static Map<String, dynamic>? _decodeJWT(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length == 3) {
+        final payload = parts[1];
+        final paddedPayload = payload.padRight((payload.length + 3) & ~3, '=');
+        final decodedBytes = base64Url.decode(paddedPayload);
+        final decodedPayload = utf8.decode(decodedBytes);
+        return json.decode(decodedPayload) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      logger.w('JWT 디코딩 실패: $e');
+    }
+    return null;
+  }
+  
+  /// 토큰을 chunk로 나눠서 출력 
+  static void _printTokenInChunks(String token, String tokenName) {
+    const chunkSize = 700;
+    
+    final totalChunks = (token.length / chunkSize).ceil();
+    
+    logger.i('🔑 $tokenName (총 ${token.length}자, ${totalChunks}개 청크):');
+    for (int i = 0; i < totalChunks; i++) {
+      final start = i * chunkSize;
+      final end = (start + chunkSize < token.length) ? start + chunkSize : token.length;
+      final chunk = token.substring(start, end);
+      logger.i('   [${i + 1}/$totalChunks] $chunk');
+    }
+  }
+
+  /// 토큰 만료 시간 및 남은 시간 계산
+  static String? _getTokenExpiryInfo(String token) {
+    try {
+      final payload = _decodeJWT(token);
+      if (payload != null && payload['exp'] != null) {
+        final expTimestamp = payload['exp'] as int;
+        final expDate = DateTime.fromMillisecondsSinceEpoch(expTimestamp * 1000);
+        final now = DateTime.now();
+        final timeLeft = expDate.difference(now);
+        
+        if (timeLeft.isNegative) {
+          return '❌ 만료됨 (${timeLeft.inMinutes.abs()}분 전 만료)';
+        } else {
+          return '✅ 유효함 (${timeLeft.inMinutes}분 ${timeLeft.inSeconds % 60}초 남음)';
+        }
+      }
+    } catch (e) {
+      logger.w('토큰 만료 시간 계산 실패: $e');
+    }
+    return null;
+  }
   /// 구글 로그인 (백엔드 연동)
   static Future<Map<String, dynamic>?> loginWithGoogle() async {
     try {
@@ -30,6 +86,14 @@ class AuthService {
       final displayName = googleResult['displayName'];
 
       logger.i('구글 로그인 결과: idToken=${googleIdToken != null ? "있음" : "없음"}, accessToken=${googleAccessToken != null ? "있음" : "없음"}');
+      
+      // 디버깅: 실제 토큰 값 출력 (처음 20자만)
+      if (googleIdToken != null) {
+        logger.i('🔍 구글 ID Token (처음 20자): ${googleIdToken.substring(0, googleIdToken.length > 20 ? 20 : googleIdToken.length)}...');
+      }
+      if (googleAccessToken != null) {
+        logger.i('🔍 구글 Access Token (처음 20자): ${googleAccessToken.substring(0, googleAccessToken.length > 20 ? 20 : googleAccessToken.length)}...');
+      }
       
       // ID 토큰이 없으면 에러
       if (googleIdToken == null || googleIdToken.isEmpty) {
@@ -60,6 +124,36 @@ class AuthService {
       // 3. 토큰 저장
       await TokenService.saveAccessToken(response.accessToken!);
 
+      // 4. WebSocket 연결 (기존 연결 끊고 새 토큰으로 재연결)
+      try {
+        await OrderWebSocketService.instance.reconnectWithNewToken();
+      } catch (e) {
+        logger.w('WebSocket 연결 실패 (무시): $e');
+      }
+
+      // 개발용 로그 (리뷰 시 무시) - 테스트용 토큰 출력
+      logger.i('═══════════════════════════════════════════════════════════');
+      logger.i('📝 토큰 정보:');
+      if (googleIdToken != null && googleIdToken.isNotEmpty) {
+        final idTokenStr = googleIdToken.toString();
+        final expiryInfo = _getTokenExpiryInfo(idTokenStr);
+        if (expiryInfo != null) {
+          logger.i('   상태: $expiryInfo');
+        }
+        // 토큰을 chunk로 나눠서 출력 
+        _printTokenInChunks(idTokenStr, 'Google ID Token');
+        // 클립보드에 자동 복사
+        try {
+          await Clipboard.setData(ClipboardData(text: idTokenStr));
+          logger.i('액세스 토큰 클립보드에 복사됨');
+        } catch (e) {
+          logger.w('   ⚠️ 클립보드 복사 실패: $e');
+        }
+      } else {
+        logger.w('⚠️ Google ID Token이 없습니다');
+      }
+      logger.i('═══════════════════════════════════════════════════════════');
+
       logger.i('구글 로그인 성공');
       return {
         'success': true,
@@ -81,7 +175,6 @@ class AuthService {
     try {
       logger.i('카카오 로그인 시작');
       
-      // 환경변수로 개발/프로덕션 플로우 구분
       final useDevLogin = EnvConfig.useDevLogin;
       
       if (useDevLogin) {
@@ -126,8 +219,25 @@ class AuthService {
       await TokenService.saveKakaoAccessToken(kakaoAccessToken);
       await TokenService.saveKakaoUserId(userId);
 
-      // 개발용 로그 (리뷰 시 무시) - 카카오 액세스 토큰 출력
-      logger.i('🔍 카카오 액세스 토큰: $kakaoAccessToken');
+      // 4. WebSocket 연결 (기존 연결 끊고 새 토큰으로 재연결)
+      try {
+        await OrderWebSocketService.instance.reconnectWithNewToken();
+      } catch (e) {
+        logger.w('WebSocket 연결 실패 (무시): $e');
+      }
+
+      // 개발용 로그 (리뷰 시 무시) - 테스트용 토큰 출력
+      logger.i('═══════════════════════════════════════════════════════════');
+      logger.i('📝 토큰 정보:');
+      if (kakaoAccessToken != null && kakaoAccessToken.isNotEmpty) {
+        logger.i('🔑 카카오 Access Token:');
+        logger.i('   $kakaoAccessToken');
+      } else {
+        logger.w('⚠️ 카카오 Access Token이 없습니다');
+      }
+      logger.i('🔑 백엔드 JWT 토큰:');
+      logger.i('   ${response.accessToken}');
+      logger.i('═══════════════════════════════════════════════════════════');
 
       logger.i('카카오 로그인 성공');
       return {
@@ -154,16 +264,35 @@ class AuthService {
         if (userInfo != null) {
           logger.i('백엔드에서 사용자 정보 조회 성공');
           
-          // 카카오 SDK에서 직접 액세스 토큰 가져오기
-          try {
-            final token = await TokenManagerProvider.instance.manager.getToken();
-            if (token?.accessToken != null) {
-              logger.i('🔍 카카오 액세스 토큰: ${token!.accessToken}');
-            } else {
-              logger.w('⚠️ 카카오 SDK에서 액세스 토큰이 없습니다');
+          // 로그인 타입 확인
+          final loginType = userInfo['loginType']?.toString().toUpperCase();
+          final provider = userInfo['provider']?.toString().toLowerCase();
+          
+          // 로그인 타입에 따라 토큰 정보 출력
+          if (loginType == 'KAKAO' || provider == 'kakao') {
+            try {
+              final token = await TokenManagerProvider.instance.manager.getToken();
+              if (token?.accessToken != null) {
+                logger.i('🔍 카카오 액세스 토큰: ${token!.accessToken}');
+              } else {
+                logger.w('⚠️ 카카오 SDK에서 액세스 토큰이 없습니다');
+              }
+            } catch (e) {
+              logger.w('⚠️ 카카오 SDK 토큰 조회 실패: $e');
             }
-          } catch (e) {
-            logger.w('⚠️ 카카오 SDK 토큰 조회 실패: $e');
+          } else if (loginType == 'GOOGLE' || provider == 'google') {
+            // Google 로그인인 경우 Google 토큰 정보 출력
+            try {
+              final googleUser = await GoogleAuthService.getCurrentUser();
+              if (googleUser != null) {
+                final googleIdToken = googleUser['idToken'];
+                final googleAccessToken = googleUser['accessToken'];
+                
+                // 토큰 정보 출력 제거 (main.dart의 _attemptTokenRefresh에서 처리)
+              }
+            } catch (e) {
+              logger.w('⚠️ Google 토큰 조회 실패: $e');
+            }
           }
           
           return userInfo;
@@ -214,7 +343,14 @@ class AuthService {
         }),
       ]);
 
-      // 3. 로컬 토큰 삭제
+      // 3. WebSocket 연결 해제 (실패해도 로그아웃은 진행)
+      try {
+        await OrderWebSocketService.instance.disconnectOnLogout();
+      } catch (e) {
+        logger.w('WebSocket 연결 해제 실패 (무시): $e');
+      }
+
+      // 4. 로컬 토큰 삭제
       await TokenService.clearAllTokens();
 
       logger.i('로그아웃 완료');

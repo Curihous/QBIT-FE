@@ -35,12 +35,24 @@ class GoogleAuthService {
   // 구글 로그인 실행
   static Future<Map<String, dynamic>?> login() async {
     try {
+      logger.i('🔍 구글 로그인 시작');
+      logger.i('🔍 webClientId: ${EnvConfig.googleWebClientId}');
+      
       // 1. 자동 로그인 시도 (이전 세션 복원)
+      logger.i('🔍 자동 로그인 시도 중...');
       GoogleSignInAccount? currentUser = await _googleSignIn.signInSilently();
+      logger.i('🔍 자동 로그인 결과: ${currentUser != null ? "성공" : "실패"}');
       
       if (currentUser == null) {
         // 2. 자동 로그인 실패 시 수동 로그인
-        currentUser = await _googleSignIn.signIn();
+        logger.i('🔍 수동 로그인 시도 중...');
+        try {
+          currentUser = await _googleSignIn.signIn();
+          logger.i('🔍 수동 로그인 결과: ${currentUser != null ? "성공" : "실패"}');
+        } catch (signInError) {
+          logger.e('🔍 수동 로그인 중 예외 발생: $signInError');
+          rethrow;
+        }
       }
       
       if (currentUser == null) {
@@ -48,9 +60,12 @@ class GoogleAuthService {
         return {'success': false, 'error': '사용자 취소'};
       }
 
+      logger.i('🔍 사용자 정보 조회 중...');
       // 인증 정보 가져오기
       final GoogleSignInAuthentication auth = await currentUser.authentication;
       
+      logger.i('🔍 구글 ID 토큰: ${auth.idToken != null ? "있음" : "없음"}');
+      logger.i('🔍 구글 액세스 토큰: ${auth.accessToken != null ? "있음" : "없음"}');
       
       return {
         'success': true,
@@ -61,8 +76,9 @@ class GoogleAuthService {
         'idToken': auth.idToken,
         'accessToken': auth.accessToken,
       };
-    } catch (error) {
+    } catch (error, stackTrace) {
       logger.e('구글 로그인 실패: $error');
+      logger.e('스택 트레이스: $stackTrace');
       return {'success': false, 'error': error.toString()};
     }
   }

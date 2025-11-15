@@ -2,6 +2,7 @@
 class StockModel {
   final String symbol;
   final String name;
+  final String? binanceSymbol;
   final double currentPrice;
   final double changeAmount;
   final double changePercentage;
@@ -21,6 +22,7 @@ class StockModel {
   StockModel({
     required this.symbol,
     required this.name,
+    this.binanceSymbol,
     this.currentPrice = 0.0,
     this.changeAmount = 0.0,
     this.changePercentage = 0.0,
@@ -41,6 +43,7 @@ class StockModel {
     return StockModel(
       symbol: json['symbol'] as String,
       name: json['name'] as String,
+      binanceSymbol: json['binanceSymbol'] as String?,
       currentPrice: (json['currentPrice'] as num?)?.toDouble() ?? 0.0,
       changeAmount: (json['changeAmount'] as num?)?.toDouble() ?? 0.0,
       changePercentage: (json['changePercentage'] as num?)?.toDouble() ?? 0.0,
@@ -62,6 +65,7 @@ class StockModel {
     return {
       'symbol': symbol,
       'name': name,
+      'binanceSymbol': binanceSymbol,
       'currentPrice': currentPrice,
       'changeAmount': changeAmount,
       'changePercentage': changePercentage,
@@ -82,6 +86,7 @@ class StockModel {
   StockModel copyWith({
     String? symbol,
     String? name,
+    String? binanceSymbol,
     double? currentPrice,
     double? changeAmount,
     double? changePercentage,
@@ -99,6 +104,7 @@ class StockModel {
     return StockModel(
       symbol: symbol ?? this.symbol,
       name: name ?? this.name,
+      binanceSymbol: binanceSymbol ?? this.binanceSymbol,
       currentPrice: currentPrice ?? this.currentPrice,
       changeAmount: changeAmount ?? this.changeAmount,
       changePercentage: changePercentage ?? this.changePercentage,

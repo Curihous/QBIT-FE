@@ -1,10 +1,12 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:qbit_core/config/env_config.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
 import 'package:qbit_services/auth/google_auth_service.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/auth_api_service.dart';
+import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/models/auth_models.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -89,14 +91,20 @@ class ApiClient {
       },
     ));
 
-    // 인터셉터 추가 (모든 로그 비활성화)
+    // 인터셉터 추가 (환경에 따라 로깅 제어)
+    final isDebugMode = kDebugMode;
     _dio.interceptors.add(LogInterceptor(
-      requestBody: false,
-      responseBody: false,
-      error: false,
-      requestHeader: false,
-      responseHeader: false,
-      logPrint: (obj) => logger.d(obj),
+      requestBody: isDebugMode,
+      responseBody: isDebugMode,
+      error: true,
+      requestHeader: isDebugMode,
+      responseHeader: isDebugMode,
+      logPrint: (obj) {
+        // Authorization 헤더 마스킹
+        final logString = obj.toString();
+        final maskedLog = _maskSensitiveHeaders(logString);
+        logger.i(maskedLog);
+      },
     ));
 
     // UTF-8 인코딩 인터셉터 추가
@@ -224,20 +232,43 @@ class ApiClient {
                     
                     if (backendResult != null) {
                       final response = KakaoLoginResponse.fromJson(backendResult);
-                      if (response.accessToken != null) {
-                        await TokenService.saveAccessToken(response.accessToken!);
-                        
-                        logger.i('카카오 백엔드 토큰 재발급 성공 - 요청 재시도');
-                        final newToken = await _getAccessToken();
-                        if (newToken != null) {
-                          logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
-                          error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                    if (response.accessToken != null) {
+                      logger.i('새 토큰 저장 시작: ${response.accessToken!.substring(0, 20)}...');
+                      await TokenService.saveAccessToken(response.accessToken!);
+                      logger.i('새 토큰 저장 완료');
+                      
+                      // 저장 완료를 위한 짧은 지연
+                      await Future.delayed(const Duration(milliseconds: 100));
+                      
+                      logger.i('카카오 백엔드 토큰 재발급 성공 - 요청 재시도');
+                      final newToken = await _getAccessToken();
+                      logger.i('저장된 토큰 조회 결과: ${newToken != null ? '성공' : '실패'}');
+                      if (newToken != null) {
+                        logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
+                        error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+                        logger.i('재시도 요청 헤더 설정 완료');
+                        try {
                           final retryResponse = await _refreshDio.fetch(error.requestOptions);
+                          logger.i('재시도 요청 성공');
+                          
+                          // WebSocket 재연결
+                          await OrderWebSocketService.instance.reconnectWithNewToken();
+                          
                           _retriedRequests.remove(requestKey);
                           handler.resolve(retryResponse);
                           return;
+                        } catch (retryError) {
+                          logger.e('재시도 요청 실패: $retryError');
+                          if (retryError is DioException) {
+                            logger.e('재시도 요청 상태코드: ${retryError.response?.statusCode}');
+                            logger.e('재시도 요청 응답: ${retryError.response?.data}');
+                          }
+                          rethrow;
                         }
+                      } else {
+                        logger.e('저장된 토큰을 조회할 수 없음');
                       }
+                    }
                     }
                   }
                 } on KakaoException catch (e) {
@@ -273,12 +304,19 @@ class ApiClient {
                     if (response.accessToken != null) {
                       await TokenService.saveAccessToken(response.accessToken!);
                       
+                      // 저장 완료를 위한 짧은 지연
+                      await Future.delayed(const Duration(milliseconds: 100));
+                      
                       logger.i('구글 백엔드 토큰 재발급 성공 - 요청 재시도');
                       final newToken = await _getAccessToken();
                       if (newToken != null) {
                         logger.i('새 토큰으로 요청 재시도: ${newToken.substring(0, 20)}...');
                         error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
                         final retryResponse = await _refreshDio.fetch(error.requestOptions);
+                        
+                        // WebSocket 재연결
+                        await OrderWebSocketService.instance.reconnectWithNewToken();
+                        
                         _retriedRequests.remove(requestKey);
                         handler.resolve(retryResponse);
                         return;
@@ -332,6 +370,68 @@ class ApiClient {
     }
   }
 
+  /// 민감한 헤더 정보 마스킹 (Authorization 등)
+  static String _maskSensitiveHeaders(String logString) {
+    // Authorization 헤더 마스킹
+    // 패턴: "Authorization: Bearer <token>" 또는 "Authorization: <token>"
+    final authPattern = RegExp(
+      r'(Authorization\s*:\s*)(Bearer\s+)?([^\s\n\r]+)',
+      caseSensitive: false,
+    );
+    
+    String masked = logString.replaceAllMapped(authPattern, (match) {
+      final prefix = match.group(1) ?? '';
+      final bearer = match.group(2) ?? '';
+      final token = match.group(3) ?? '';
+      
+      if (token.isEmpty) {
+        return prefix;
+      }
+      
+      // 토큰 마스킹 (처음 6자, 끝 4자만 표시)
+      String maskedToken;
+      if (token.length <= 10) {
+        maskedToken = '***';
+      } else {
+        final first = token.substring(0, 6);
+        final last = token.substring(token.length - 4);
+        final maskedLength = token.length - 10;
+        maskedToken = '$first${'*' * maskedLength}$last';
+      }
+      
+      return '$prefix$bearer$maskedToken';
+    });
+    
+    // Map 형태의 헤더에서도 Authorization 마스킹
+    // 패턴: "Authorization: Bearer <token>" 또는 'Authorization': 'Bearer <token>'
+    masked = masked.replaceAllMapped(
+      RegExp(r"(['\"]?Authorization['\"]?\s*[:=]\s*['\"]?)(Bearer\s+)?([^'\",\s\n\r]+)"),
+      (match) {
+        final prefix = match.group(1) ?? '';
+        final bearer = match.group(2) ?? '';
+        final token = match.group(3) ?? '';
+        
+        if (token.isEmpty) {
+          return prefix;
+        }
+        
+        String maskedToken;
+        if (token.length <= 10) {
+          maskedToken = '***';
+        } else {
+          final first = token.substring(0, 6);
+          final last = token.substring(token.length - 4);
+          final maskedLength = token.length - 10;
+          maskedToken = '$first${'*' * maskedLength}$last';
+        }
+        
+        return '$prefix$bearer$maskedToken';
+      },
+    );
+    
+    return masked;
+  }
+
   // 토큰 관리 메서드들
   static Future<String?> _getAccessToken() async {
     try {
@@ -339,7 +439,6 @@ class ApiClient {
       final token = await TokenService.getAccessToken();
           
       if (token != null) {
-        
         // JWT 토큰 디코딩하여 만료 시간 확인
         try {
           final parts = token.split('.');
@@ -359,7 +458,10 @@ class ApiClient {
               final timeLeft = expDate.difference(now);
               
               if (timeLeft.isNegative) {
-                logger.w('⚠️ 토큰이 만료되었습니다');
+                logger.w('⚠️ 토큰이 만료되었습니다 - null 반환');
+                return null; // 만료된 토큰은 null 반환
+              } else {
+                logger.i('✅ 토큰 유효 - ${timeLeft.inMinutes}분 남음');
               }
             }
           }

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
 import 'api_client.dart';
 import '../models/stock_model.dart';
@@ -352,13 +353,11 @@ class StockApiService {
     return searchStocks(query, assetClass: 'crypto');
   }
 
-  /// 암호화폐 호가창 조회 (스냅샷)
-  static Future<OrderBookModel?> getCryptoOrderBook(String symbol) async {
+  /// 암호화폐 호가창 조회 (스냅샷) - 주문 페이지 초기 로드용
+  /// GET /stocks/orderbook/{binanceSymbol}
+  static Future<OrderBookModel?> getCryptoOrderBook(String binanceSymbol) async {
     try {
-      // 심볼에서 / 제거 (ETH/BTC -> ETHBTC)
-      final cleanSymbol = symbol.replaceAll('/', '');
-      
-      final response = await _dio.get('/stocks/orderbook/$cleanSymbol');
+      final response = await _dio.get('/stocks/orderbook/$binanceSymbol');
       
       if (response.statusCode == 200) {
         if (response.data is Map<String, dynamic>) {
@@ -395,6 +394,9 @@ class StockApiService {
     try {
       logger.i('종목 상세 정보 조회 시작: $symbol');
       
+      // 현재 토큰 상태 확인
+      final currentToken = await ApiClient.debugTokenStatus();
+      
       final response = await _dio.get('/stocks/$symbol');
       
       if (response.statusCode == 200) {
@@ -416,29 +418,42 @@ class StockApiService {
       if (error is DioException) {
         logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
         logger.e('Dio 에러 데이터: ${error.response?.data}');
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+        logger.e('요청 헤더: ${error.requestOptions.headers}');
       }
       return null;
     }
   }
 
   /// 암호화폐 캔들 데이터 조회
+  /// GET /stocks/crypto/candle/{binanceSymbol}
+  /// startTime, endTime은 optional (둘 다 없으면 최근 데이터 반환)
+  /// limit: 기본값 500, 최대 1500
   static Future<CandleResponse?> getCryptoCandles({
-    required String symbol,
+    required String binanceSymbol,
     String interval = '1d',
-    required int startTime,
-    required int endTime,
+    int? startTime,
+    int? endTime,
+    int? limit,
   }) async {
     try {
-      // 심볼에서 / 제거 (ETH/BTC -> ETHBTC)
-      final cleanSymbol = symbol.replaceAll('/', '');
+      final queryParams = <String, dynamic>{
+        'interval': interval,
+      };
+      
+      if (startTime != null) {
+        queryParams['startTime'] = startTime;
+      }
+      if (endTime != null) {
+        queryParams['endTime'] = endTime;
+      }
+      if (limit != null) {
+        queryParams['limit'] = limit;
+      }
       
       final response = await _dio.get(
-        '/stocks/candle/$cleanSymbol',
-        queryParameters: {
-          'interval': interval,
-          'startTime': startTime,
-          'endTime': endTime,
-        },
+        '/stocks/crypto/candle/$binanceSymbol',
+        queryParameters: queryParams,
       );
       
       if (response.statusCode == 200) {
@@ -454,6 +469,82 @@ class StockApiService {
       }
     } catch (error) {
       logger.e('암호화폐 캔들 데이터 조회 에러: $error');
+      if (error is DioException) {
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+        logger.e('상태코드: ${error.response?.statusCode}');
+      }
+      return null;
+    }
+  }
+
+  /// 미국 주식 캔들 데이터 조회
+  /// GET /stocks/us-equity/candle/{ticker}
+  static Future<CandleResponse?> getUsStockCandles({
+    required String ticker,
+    required int multiplier,
+    required String timespan,
+    required DateTime from,
+    required DateTime to,
+    bool adjusted = true,
+  }) async {
+    try {
+      final dateFormatter = DateFormat('yyyy-MM-dd');
+      final queryParams = <String, dynamic>{
+        'multiplier': multiplier,
+        'timespan': timespan,
+        'from': dateFormatter.format(from),
+        'to': dateFormatter.format(to),
+        'adjusted': adjusted,
+      };
+
+      logger.i('미국 주식 캔들 조회: $ticker, params=$queryParams');
+
+      final response = await _dio.get(
+        '/stocks/us-equity/candle/$ticker',
+        queryParameters: queryParams,
+      );
+
+      if (response.statusCode == 200) {
+        if (response.data is Map<String, dynamic>) {
+          return CandleResponse.fromJson(response.data as Map<String, dynamic>);
+        } else {
+          logger.e('미국 주식 캔들 응답이 Map이 아님: ${response.data.runtimeType}');
+          return null;
+        }
+      } else {
+        logger.e('미국 주식 캔들 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('미국 주식 캔들 조회 에러: $error');
+      if (error is DioException) {
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+        logger.e('상태코드: ${error.response?.statusCode}');
+      }
+      return null;
+    }
+  }
+
+  /// 암호화폐 실시간 시세 조회
+  /// GET /stocks/crypto/quote/{binanceSymbol}
+  static Future<Map<String, dynamic>?> getCryptoQuote(String binanceSymbol) async {
+    try {
+      final response = await _dio.get('/stocks/crypto/quote/$binanceSymbol');
+      
+      if (response.statusCode == 200) {
+        if (response.data is Map<String, dynamic>) {
+          logger.i('암호화폐 실시간 시세 조회 성공: ${response.data}');
+          return response.data as Map<String, dynamic>;
+        } else {
+          logger.e('응답 데이터가 Map이 아닙니다: ${response.data.runtimeType}');
+          return null;
+        }
+      } else {
+        logger.e('암호화폐 실시간 시세 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('암호화폐 실시간 시세 조회 에러: $error');
       return null;
     }
   }

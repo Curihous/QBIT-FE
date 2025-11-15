@@ -29,8 +29,8 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<!-- 카카오 앱 키는 .env에서 관리, Dart에서 SDK 초기화 -->
-				<string>kakaoKAKAO_KEY_PLACEHOLDER</string>
+				<!-- 카카오 앱 키 (CodeRabbit: 클라이언트 앱에 포함되어야 하는 값이므로 하드코딩 허용) -->
+				<string>kakao2fd4280cde76fda045bf055db5875e86</string>
 			</array>
 		</dict>
 		<dict>
@@ -46,8 +46,8 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<!-- 구글 로그인용 reversed client ID (GoogleService-Info.plist에서 확인 필요) -->
-				<string>com.googleusercontent.apps.YOUR_REVERSED_CLIENT_ID</string>
+				<!-- 구글 로그인용 reversed client ID (CodeRabbit: 클라이언트 앱에 포함되어야 하는 값이므로 하드코딩 허용) -->
+				<string>com.googleusercontent.apps.778627600753-rgb07audi4to50ms0c1be1g45ovdqaof</string>
 			</array>
 		</dict>
 	</array>

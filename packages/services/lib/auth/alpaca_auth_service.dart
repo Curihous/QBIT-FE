@@ -29,19 +29,14 @@ class AlpacaAuthService {
       // 앱으로 돌아온 후 상태 확인
       await Future.delayed(const Duration(seconds: 2));
       
-      // 4. 백엔드에서 상태 확인
-      logger.i('=== 백엔드 상태 확인 시작 ===');
+      // 4. 상태 확인
+      // 실제 Alpaca 연결 상태 확인 (개발/프로덕션 모두)
       final statusResult = await _checkAlpacaStatus();
-      logger.i('상태 확인 결과: $statusResult');
-      logger.i('성공 여부: ${statusResult?['success']}');
-      logger.i('========================');
-      
-      if (statusResult?['success'] == true) {
+      if (statusResult != null && statusResult['success'] == true) {
         return {'success': true, 'message': 'Alpaca 연동이 완료되었습니다!'};
       } else {
-        final errorMsg = statusResult?['error'] ?? '연동 상태 확인 실패';
-        logger.e('상태 확인 실패: $errorMsg');
-        return {'success': false, 'error': errorMsg};
+        final errorMessage = statusResult?['error'] ?? 'Alpaca 연동 상태를 확인할 수 없습니다';
+        return {'success': false, 'error': errorMessage};
       }
     } catch (error) {
       logger.e('Alpaca 인증 시작 실패: $error');

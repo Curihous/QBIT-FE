@@ -23,9 +23,9 @@ class ExchangeRateApiService {
   static double? _cachedRate;
   static DateTime? _lastUpdate;
   static const Duration _cacheDuration = Duration(minutes: 10); // 10분 캐시
-  static const double _defaultRate = 1300.0; // 기본 환율
+  static const double _defaultRate = 1450.0; // 기본 환율 — 2025-01-15: 1450.0
 
-  /// USD/KRW 환율 조회 (페일오버 지원)
+  /// USD/KRW 환율 조회 
   static Future<double?> getUsdToKrwRate() async {
     try {
       if (_cachedRate != null && 

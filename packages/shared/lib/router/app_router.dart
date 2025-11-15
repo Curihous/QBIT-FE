@@ -9,9 +9,14 @@ import 'package:qbit_shared/screens/study/study_screen.dart';
 import 'package:qbit_shared/screens/record/record_screen.dart';
 import 'package:qbit_shared/screens/my/my_screen.dart';
 import 'package:qbit_shared/screens/trade/trade_screen.dart';
-import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
+import 'package:qbit_shared/screens/trade/order_history_screen.dart';
+import 'package:qbit_shared/screens/trade/order_detail_screen.dart';
 import 'package:qbit_shared/screens/trade/stock_search_screen.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/stock_detail_navigation.dart';
+import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
+import 'package:qbit_shared/screens/report/trade_report_screen.dart';
+import 'package:qbit_shared/screens/report/ai_report_detail_screen.dart';
+import 'package:qbit_shared/screens/cards/learning_card_detail_screen.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/api_client.dart';
@@ -69,6 +74,66 @@ class AppRouter {
         builder: (context, state) => const AlpacaAuthScreen(),
       ),
       GoRoute(
+        path: '/order-history',
+        name: 'order-history',
+        builder: (context, state) => const OrderHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/order-detail/:orderId',
+        name: 'order-detail',
+        builder: (context, state) {
+          final orderId = int.tryParse(state.pathParameters['orderId'] ?? '0') ?? 0;
+          return OrderDetailScreen(orderId: orderId);
+        },
+      ),
+      GoRoute(
+        path: '/auth/alpaca/callback',
+        name: 'alpaca-callback',
+        builder: (context, state) {
+          // 알파카 인증 콜백 처리
+          final success = state.uri.queryParameters['success'] == 'true';
+          
+          // 성공 시 투자 화면으로 이동
+          if (success) {
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (context.mounted) {
+                context.go('/trade');
+              }
+            });
+          } else {
+            // 실패 시 이전 화면으로 돌아가기
+            Future.delayed(const Duration(milliseconds: 500), () {
+              if (context.mounted) {
+                context.pop();
+              }
+            });
+          }
+          
+          // 로딩 화면 표시
+          return Scaffold(
+            backgroundColor: AppColors.background,
+            body: const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    '계좌 연동 처리 중...',
+                    style: TextStyle(
+                      color: AppColors.gray600,
+                      fontSize: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+      GoRoute(
         path: '/stock/:symbol',
         name: 'stock-search',
         builder: (context, state) {
@@ -83,7 +148,38 @@ class AppRouter {
           final symbol = Uri.decodeComponent(state.pathParameters['symbol'] ?? '');
           final name = Uri.decodeComponent(state.uri.queryParameters['name'] ?? '');
           final assetClass = Uri.decodeComponent(state.uri.queryParameters['assetClass'] ?? 'us_equity');
-          return StockDetailNavigation(symbol: symbol, name: name, assetClass: assetClass);
+          final binanceSymbol = state.uri.queryParameters['binanceSymbol'] != null
+              ? Uri.decodeComponent(state.uri.queryParameters['binanceSymbol']!)
+              : null;
+          return StockDetailNavigation(
+            symbol: symbol,
+            name: name,
+            assetClass: assetClass,
+            binanceSymbol: binanceSymbol,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/trade-report',
+        name: 'trade-report',
+        builder: (context, state) => const TradeReportScreen(),
+      ),
+      GoRoute(
+        path: '/ai-report-detail',
+        name: 'ai-report-detail',
+        builder: (context, state) => const AIReportDetailScreen(),
+      ),
+      GoRoute(
+        path: '/learning-card/:cardType',
+        name: 'learning-card',
+        builder: (context, state) {
+          final cardType = state.pathParameters['cardType'] ?? '';
+          final extractedTags = state.extra as List<String>?;
+          print('Navigating to learning card: $cardType with tags: $extractedTags');
+          return LearningCardDetailScreen(
+            cardType: cardType,
+            extractedTags: extractedTags,
+          );
         },
       ),
     ],

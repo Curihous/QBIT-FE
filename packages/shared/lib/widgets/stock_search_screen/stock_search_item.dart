@@ -20,10 +20,15 @@ class StockSearchItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        // crypto의 경우 binanceSymbol을 함께 전달하여 상세에서 사용할 수 있게 함
         final encodedSymbol = Uri.encodeComponent(stock.symbol);
+        final encodedBinance = Uri.encodeComponent(stock.binanceSymbol ?? '');
         final encodedName = Uri.encodeComponent(stock.name);
         final encodedAssetClass = Uri.encodeComponent(stock.assetClass ?? 'us_equity');
-        context.push('/stock-detail/$encodedSymbol?name=$encodedName&assetClass=$encodedAssetClass');
+        final extra = stock.binanceSymbol != null && stock.binanceSymbol!.isNotEmpty
+            ? '&binanceSymbol=$encodedBinance'
+            : '';
+        context.push('/stock-detail/$encodedSymbol?name=$encodedName&assetClass=$encodedAssetClass$extra');
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 13),

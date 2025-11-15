@@ -2,6 +2,8 @@ import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import 'package:qbit_services/api/api_client.dart';
 import 'package:qbit_services/models/order_model.dart';
+import 'package:qbit_services/models/trade_cycle_response.dart';
+import 'package:qbit_shared/models/order_history_model.dart';
 
 class OrderApiService {
   static Dio get _dio => ApiClient.instance;
@@ -49,13 +51,15 @@ class OrderApiService {
   static Future<List<Map<String, dynamic>>?> getOrders({
     String? symbol,
     String? status,
-    int limit = 100,
+    int page = 0,
+    int size = 100,
   }) async {
     try {
       logger.i('주문 내역 조회 시작');
       
       final queryParams = <String, dynamic>{
-        'limit': limit,
+        'page': page,
+        'size': size,
       };
       
       if (symbol != null) {
@@ -71,10 +75,21 @@ class OrderApiService {
         logger.i('주문 내역 조회 성공');
         logger.i('응답 데이터: ${response.data}');
         
-        if (response.data is List) {
-          return List<Map<String, dynamic>>.from(response.data);
+        final data = response.data;
+        if (data is Map<String, dynamic>) {
+          // 페이지네이션 응답 형태 처리
+          final content = data['content'];
+          if (content is List) {
+            return content.cast<Map<String, dynamic>>();
+          } else {
+            logger.e('content가 List가 아닙니다: ${content.runtimeType}');
+            return null;
+          }
+        } else if (data is List) {
+          // 직접 리스트 응답 형태 처리
+          return data.cast<Map<String, dynamic>>();
         } else {
-          logger.e('응답 데이터가 List가 아닙니다: ${response.data.runtimeType}');
+          logger.e('응답 데이터가 예상 형태가 아닙니다: ${data.runtimeType}');
           return null;
         }
       } else {
@@ -84,7 +99,12 @@ class OrderApiService {
     } catch (error) {
       logger.e('주문 내역 조회 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
+        if (error.response?.statusCode == 401) {
+          logger.e('401 에러: 권한 없음 - 로그인 확인 필요');
+        } else if (error.response?.statusCode == 403) {
+          logger.e('403 에러: 권한 없음 - Alpaca 계정 연결 확인 필요');
+        }
       }
       return null;
     }
@@ -134,6 +154,97 @@ class OrderApiService {
         logger.e('Dio 에러 상세: ${error.response?.data}');
       }
       return false;
+    }
+  }
+
+  /// 주문 내역 조회 (페이지네이션 응답)
+  static Future<Map<String, dynamic>?> getOrderHistory({
+    String? symbol,
+    String? status,
+    int page = 0,
+    int size = 100,
+  }) async {
+    try {
+      logger.i('주문 내역 조회 시작');
+      
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'size': size,
+      };
+      
+      if (symbol != null) {
+        queryParams['symbol'] = symbol;
+      }
+      if (status != null) {
+        queryParams['status'] = status;
+      }
+      
+      final response = await _dio.get('/trading/orders', queryParameters: queryParams);
+      
+      if (response.statusCode == 200) {
+        logger.i('주문 내역 조회 성공');
+        logger.i('응답 데이터: ${response.data}');
+        
+        return response.data;
+      } else {
+        logger.e('주문 내역 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('주문 내역 조회 에러: $error');
+      if (error is DioException) {
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
+        if (error.response?.statusCode == 401) {
+          logger.e('401 에러: 권한 없음 - 로그인 확인 필요');
+        } else if (error.response?.statusCode == 403) {
+          logger.e('403 에러: 권한 없음 - Alpaca 계정 연결 확인 필요');
+        }
+      }
+      return null;
+    }
+  }
+
+  /// 거래 사이클 조회
+  static Future<TradeCyclePageResponse?> getTradeCycles({
+    int page = 0,
+    int size = 10,
+  }) async {
+    try {
+      print('💡 거래 사이클 조회 시작 (page: $page, size: $size)');
+      logger.i('거래 사이클 조회 시작 (page: $page, size: $size)');
+      
+      final queryParams = <String, dynamic>{
+        'page': page,
+        'size': size,
+      };
+      
+      print('💡 거래 사이클 API 호출: /trading/trade-cycles');
+      final response = await _dio.get('/trading/trade-cycles', queryParameters: queryParams);
+      
+      print('💡 거래 사이클 API 응답 상태코드: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        print('💡 거래 사이클 조회 성공');
+        print('💡 응답 데이터: ${response.data}');
+        logger.i('거래 사이클 조회 성공');
+        logger.i('응답 데이터: ${response.data}');
+        
+        return TradeCyclePageResponse.fromJson(response.data as Map<String, dynamic>);
+      } else {
+        print('💡 거래 사이클 조회 실패: ${response.statusCode}');
+        logger.e('거래 사이클 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      print('💡 거래 사이클 조회 에러: $error');
+      logger.e('거래 사이클 조회 에러: $error');
+      if (error is DioException) {
+        print('💡 Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
+        print('💡 Dio 에러 데이터: ${error.response?.data}');
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
+        logger.e('Dio 에러 데이터: ${error.response?.data}');
+      }
+      return null;
     }
   }
 }

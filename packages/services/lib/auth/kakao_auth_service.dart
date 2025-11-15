@@ -129,8 +129,13 @@ class KakaoAuthService {
   /// 로그아웃
   static Future<bool> logout() async {
     try {
-      await UserApi.instance.logout();
-      logger.i('카카오 로그아웃 성공');
+      // 토큰이 있는 경우에만 로그아웃 호출
+      if (await AuthApi.instance.hasToken()) {
+        await UserApi.instance.logout();
+        logger.i('카카오 로그아웃 성공');
+      } else {
+        logger.i('카카오 토큰 없음 - 로그아웃 불필요');
+      }
       return true;
     } catch (error) {
       logger.e('카카오 로그아웃 실패: $error');
@@ -284,6 +289,15 @@ class KakaoAuthService {
         final token = await TokenManagerProvider.instance.manager.getToken();
         
         logger.i('카카오 토큰 자동 갱신 성공: userId=${user.id}');
+        
+        // 토큰 출력
+        if (token?.accessToken != null) {
+          logger.i('🔑 카카오 액세스 토큰: ${token!.accessToken}');
+          logger.i('🔑 카카오 리프레시 토큰: ${token.refreshToken}');
+        } else {
+          logger.w('❌ 카카오 토큰이 null입니다');
+        }
+        
         
         return {
           'success': true,

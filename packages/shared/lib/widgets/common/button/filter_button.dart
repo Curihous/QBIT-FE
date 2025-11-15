@@ -22,23 +22,23 @@ class FilterButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container( 
-        height: (height ?? 44).clamp(44.0, double.infinity), // 최소 44px 보장
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 10),
+      child: Container(
+        height: height, // 고정 높이 제거, 필요 시 외부에서 전달
+        constraints: const BoxConstraints(minHeight: 28), // 최소 28px 보장
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration( // 활성화, 비활성화별로 버튼 색 차이
-          color: isSelected ? AppColors.primaryLight : AppColors.gray30,
+          color: isSelected ? AppColors.primary : Colors.white,
           border: Border.all(
-            color: isSelected ? AppColors.primaryLight : AppColors.gray150,
+            color: isSelected ? AppColors.primary : AppColors.gray300,
             width: 1,
           ),
-          borderRadius: BorderRadius.circular(99), 
+          borderRadius: BorderRadius.circular(20), 
         ),
         child: Center(
           child: Text(
             label,
-            style: AppFonts.c1.copyWith(
-              color: isSelected ? Colors.white : AppColors.gray400,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+            style: AppFonts.b2Regular.copyWith(
+              color: isSelected ? Colors.white : AppColors.gray600,
             ),
           ),
         ),
@@ -108,6 +108,7 @@ class _FilterButtonGroupState extends State<FilterButtonGroup> {
           ? SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   for (int i = 0; i < widget.labels.length; i++) ...[
                     FilterButton(
@@ -123,6 +124,7 @@ class _FilterButtonGroupState extends State<FilterButtonGroup> {
               ),
             )
           : Row(
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 for (int i = 0; i < widget.labels.length; i++) ...[
                   FilterButton(
