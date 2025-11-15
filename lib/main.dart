@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:ui';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:qbit_core/config/app_config.dart';
@@ -13,29 +14,34 @@ import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/auth/google_auth_service.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
 
-/// 토큰 chunk로 나눠서 출력 
-void _printTokenInChunks(String token, String tokenName) {
-  const chunkSize = 700;
-  
-  final totalChunks = (token.length / chunkSize).ceil();
-  
-  debugPrint('🔑 $tokenName (총 ${token.length}자, ${totalChunks}개 청크):');
-  for (int i = 0; i < totalChunks; i++) {
-    final start = i * chunkSize;
-    final end = (start + chunkSize < token.length) ? start + chunkSize : token.length;
-    final chunk = token.substring(start, end);
-    debugPrint('   [${i + 1}/$totalChunks] $chunk');
+/// 토큰을 마스킹하여 출력 (디버그 모드에서만)
+/// 처음 6자와 마지막 4자만 표시하고 중간은 마스킹
+String _maskToken(String token) {
+  if (token.length <= 10) {
+    return '***';
   }
+  final first = token.substring(0, 6);
+  final last = token.substring(token.length - 4);
+  final maskedLength = token.length - 10;
+  return '$first${'*' * maskedLength}$last';
 }
 
-/// 토큰 정보 출력 함수
+/// 토큰 정보를 마스킹하여 출력 (디버그 모드에서만)
+void _printTokenMasked(String token, String tokenName) {
+  if (!kDebugMode) return;
+  debugPrint('🔑 $tokenName: ${_maskToken(token)} (총 ${token.length}자)');
+}
+
+/// 토큰 정보 출력 함수 (디버그 모드에서만, 마스킹된 토큰만 출력)
 Future<void> printTokens() async {
+  if (!kDebugMode) return;
+  
   debugPrint('=== 토큰 정보 ===');
   
   // 백엔드 액세스 토큰
   final backendToken = await TokenService.getAccessToken();
   if (backendToken != null) {
-    debugPrint('🔑 백엔드 액세스 토큰: $backendToken');
+    _printTokenMasked(backendToken, '백엔드 액세스 토큰');
   } else {
     debugPrint('❌ 백엔드 액세스 토큰: 없음');
   }
@@ -44,7 +50,7 @@ Future<void> printTokens() async {
   try {
     final kakaoToken = await TokenManagerProvider.instance.manager.getToken();
     if (kakaoToken?.accessToken != null) {
-      debugPrint('🔑 카카오 액세스 토큰: ${kakaoToken!.accessToken}');
+      _printTokenMasked(kakaoToken!.accessToken, '카카오 액세스 토큰');
     } else {
       debugPrint('❌ 카카오 액세스 토큰: 없음');
     }
@@ -55,7 +61,7 @@ Future<void> printTokens() async {
   // 저장된 카카오 토큰
   final storedKakaoToken = await TokenService.getKakaoAccessToken();
   if (storedKakaoToken != null) {
-    debugPrint('🔑 저장된 카카오 토큰: $storedKakaoToken');
+    _printTokenMasked(storedKakaoToken, '저장된 카카오 토큰');
   } else {
     debugPrint('❌ 저장된 카카오 토큰: 없음');
   }
@@ -65,6 +71,7 @@ Future<void> printTokens() async {
 
 /// 토큰 자동 갱신 시도
 Future<void> _attemptTokenRefresh() async {
+  if (!kDebugMode) return;
   debugPrint('=== 토큰 자동 갱신 시도 ===');
   
   try {
@@ -113,16 +120,8 @@ Future<void> _attemptTokenRefresh() async {
               debugPrint('⚠️ 토큰 만료 시간 확인 실패: $e');
             }
             
-            // 토큰을 chunk로 나눠서 출력 (로그 출력 제한 회피)
-            _printTokenInChunks(idTokenStr, 'Google ID Token');
-            
-            // 클립보드에 자동 복사
-            try {
-              await Clipboard.setData(ClipboardData(text: idTokenStr));
-              debugPrint('   ✅ 클립보드에 복사됨');
-            } catch (e) {
-              debugPrint('   ⚠️ 클립보드 복사 실패: $e');
-            }
+            // 토큰을 마스킹하여 출력 (디버그 모드에서만)
+            _printTokenMasked(idTokenStr, 'Google ID Token');
           } else {
             debugPrint('⚠️ Google ID Token이 없습니다');
           }
@@ -182,11 +181,15 @@ Future<void> _attemptTokenRefresh() async {
             }
           }
           
-          // 갱신 여부와 관계없이 현재 토큰 출력
-          final token = await TokenManagerProvider.instance.manager.getToken();
-          if (token?.accessToken != null) {
-            debugPrint('🔑 카카오 액세스 토큰: ${token!.accessToken}');
-            debugPrint('🔑 카카오 리프레시 토큰: ${token.refreshToken}');
+          // 갱신 여부와 관계없이 현재 토큰 출력 (디버그 모드에서만, 마스킹)
+          if (kDebugMode) {
+            final token = await TokenManagerProvider.instance.manager.getToken();
+            if (token?.accessToken != null) {
+              _printTokenMasked(token!.accessToken, '카카오 액세스 토큰');
+              if (token.refreshToken != null) {
+                _printTokenMasked(token.refreshToken!, '카카오 리프레시 토큰');
+              }
+            }
           }
         } else {
           debugPrint('⚠️ 토큰 정보 조회 실패');
@@ -207,9 +210,10 @@ Future<void> _attemptTokenRefresh() async {
   debugPrint('======================');
 }
 
-/// 카카오 토큰 디버깅 함수 - 터미널에서 호출 가능
+/// 카카오 토큰 디버깅 함수 - 터미널에서 호출 가능 (디버그 모드에서만)
 /// 사용법: main.dart에서 debugKakaoToken() 주석을 해제하고 Hot Reload
 Future<void> debugKakaoToken() async {
+  if (!kDebugMode) return;
   debugPrint('=== 카카오 토큰 디버깅 ===');
   
   try {
@@ -231,13 +235,15 @@ Future<void> debugKakaoToken() async {
       final token = await TokenManagerProvider.instance.manager.getToken();
       
       if (token != null) {
-        debugPrint('🔑 액세스 토큰: ${token.accessToken}');
-        debugPrint('🔑 리프레시 토큰: ${token.refreshToken}');
+        _printTokenMasked(token.accessToken, '액세스 토큰');
+        if (token.refreshToken != null) {
+          _printTokenMasked(token.refreshToken!, '리프레시 토큰');
+        }
         
         // 4. 백엔드 토큰도 확인
         final backendToken = await TokenService.getAccessToken();
         if (backendToken != null) {
-          debugPrint('🔑 백엔드 토큰: ${backendToken.substring(0, backendToken.length > 50 ? 50 : backendToken.length)}...');
+          _printTokenMasked(backendToken, '백엔드 토큰');
         } else {
           debugPrint('❌ 백엔드 토큰이 없습니다');
         }
@@ -301,16 +307,24 @@ void main() async {
   // 백엔드 토큰이 있으면 WebSocket 연결 시도
   final backendToken = await TokenService.getAccessToken();
   if (backendToken != null) {
-    debugPrint('백엔드 토큰 감지 - WebSocket 연결 시도');
-    debugPrint('🔑 백엔드 액세스 토큰: $backendToken');
+    if (kDebugMode) {
+      debugPrint('백엔드 토큰 감지 - WebSocket 연결 시도');
+      _printTokenMasked(backendToken, '백엔드 액세스 토큰');
+    }
     try {
       await OrderWebSocketService.instance.connect();
-      debugPrint('✅ 앱 시작 시 WebSocket 연결 성공');
+      if (kDebugMode) {
+        debugPrint('✅ 앱 시작 시 WebSocket 연결 성공');
+      }
     } catch (e) {
-      debugPrint('⚠️ 앱 시작 시 WebSocket 연결 실패 (무시): $e');
+      if (kDebugMode) {
+        debugPrint('⚠️ 앱 시작 시 WebSocket 연결 실패 (무시): $e');
+      }
     }
   } else {
-    debugPrint('백엔드 토큰 없음 - WebSocket 연결 건너뜀');
+    if (kDebugMode) {
+      debugPrint('백엔드 토큰 없음 - WebSocket 연결 건너뜀');
+    }
   }
   
   // 개발용: 강제 로그아웃 (필요시 주석 해제)

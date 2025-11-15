@@ -29,6 +29,14 @@ QBIT-FE/
 flutter pub get
 ```
 
+### iOS 개발 시 (최초 1회만)
+1. Firebase Console에서 `GoogleService-Info.plist` 다운로드
+2. `ios/Runner/GoogleService-Info.plist`에 복사
+3. `assets/env/.env` 파일에 `KAKAO_NATIVE_APP_KEY=your_key` 추가
+
+> **참고**: 
+> - 설정 파일들은 `.gitignore`에 포함되어 있어 각자 로컬에만 존재합니다.
+
 ### 실행
 ```bash
 # iOS 실행

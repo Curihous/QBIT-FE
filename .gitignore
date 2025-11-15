@@ -121,6 +121,9 @@ android/local.properties
 ios/Podfile.lock
 **/ios/Pods/
 **/ios/.symlinks/
+# Firebase/Google credentials (민감한 정보 포함)
+**/GoogleService-Info.plist
+!**/GoogleService-Info.plist.example
 
 # Gradle files
 .gradle/
