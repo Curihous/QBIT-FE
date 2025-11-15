@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:qbit_core/config/env_config.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
@@ -90,14 +91,20 @@ class ApiClient {
       },
     ));
 
-    // 인터셉터 추가 (요청/응답 로그 활성화)
+    // 인터셉터 추가 (환경에 따라 로깅 제어)
+    final isDebugMode = kDebugMode;
     _dio.interceptors.add(LogInterceptor(
-      requestBody: true,
-      responseBody: true,
+      requestBody: isDebugMode,
+      responseBody: isDebugMode,
       error: true,
-      requestHeader: true,
-      responseHeader: true,
-      logPrint: (obj) => logger.i(obj),
+      requestHeader: isDebugMode,
+      responseHeader: isDebugMode,
+      logPrint: (obj) {
+        // Authorization 헤더 마스킹
+        final logString = obj.toString();
+        final maskedLog = _maskSensitiveHeaders(logString);
+        logger.i(maskedLog);
+      },
     ));
 
     // UTF-8 인코딩 인터셉터 추가
@@ -361,6 +368,68 @@ class ApiClient {
     } catch (error) {
       logger.e('토큰 상태 확인 실패: $error');
     }
+  }
+
+  /// 민감한 헤더 정보 마스킹 (Authorization 등)
+  static String _maskSensitiveHeaders(String logString) {
+    // Authorization 헤더 마스킹
+    // 패턴: "Authorization: Bearer <token>" 또는 "Authorization: <token>"
+    final authPattern = RegExp(
+      r'(Authorization\s*:\s*)(Bearer\s+)?([^\s\n\r]+)',
+      caseSensitive: false,
+    );
+    
+    String masked = logString.replaceAllMapped(authPattern, (match) {
+      final prefix = match.group(1) ?? '';
+      final bearer = match.group(2) ?? '';
+      final token = match.group(3) ?? '';
+      
+      if (token.isEmpty) {
+        return prefix;
+      }
+      
+      // 토큰 마스킹 (처음 6자, 끝 4자만 표시)
+      String maskedToken;
+      if (token.length <= 10) {
+        maskedToken = '***';
+      } else {
+        final first = token.substring(0, 6);
+        final last = token.substring(token.length - 4);
+        final maskedLength = token.length - 10;
+        maskedToken = '$first${'*' * maskedLength}$last';
+      }
+      
+      return '$prefix$bearer$maskedToken';
+    });
+    
+    // Map 형태의 헤더에서도 Authorization 마스킹
+    // 패턴: "Authorization: Bearer <token>" 또는 'Authorization': 'Bearer <token>'
+    masked = masked.replaceAllMapped(
+      RegExp(r"(['\"]?Authorization['\"]?\s*[:=]\s*['\"]?)(Bearer\s+)?([^'\",\s\n\r]+)"),
+      (match) {
+        final prefix = match.group(1) ?? '';
+        final bearer = match.group(2) ?? '';
+        final token = match.group(3) ?? '';
+        
+        if (token.isEmpty) {
+          return prefix;
+        }
+        
+        String maskedToken;
+        if (token.length <= 10) {
+          maskedToken = '***';
+        } else {
+          final first = token.substring(0, 6);
+          final last = token.substring(token.length - 4);
+          final maskedLength = token.length - 10;
+          maskedToken = '$first${'*' * maskedLength}$last';
+        }
+        
+        return '$prefix$bearer$maskedToken';
+      },
+    );
+    
+    return masked;
   }
 
   // 토큰 관리 메서드들

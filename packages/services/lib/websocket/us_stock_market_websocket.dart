@@ -21,6 +21,10 @@ class UsStockMarketWebSocket {
   bool _connecting = false;
   bool _manuallyClosed = false;
   int _reconnectAttempts = 0;
+  
+  // 구독한 심볼 추적 (재연결 시 복원용)
+  final Set<String> _subscribedSymbols = {};
+  final Map<String, SubscriptionOptions> _subscriptionOptions = {};
 
   UsStockMarketWebSocket(this.apiKey);
 
@@ -221,8 +225,8 @@ abstract class PolygonEvent {
 
   static DateTime parseTimestamp(dynamic value) {
     if (value is int) {
-      // Polygon은 나노초 기준 타임스탬프 → ms 로 변환
-      return DateTime.fromMillisecondsSinceEpoch(value ~/ 1000000);
+      // Polygon은 밀리초 기준 타임스탬프
+      return DateTime.fromMillisecondsSinceEpoch(value);
     }
     return DateTime.now();
   }

@@ -89,6 +89,8 @@ class EnvConfig {
         return 'info';
       case 'USE_DEV_LOGIN':
         return 'false';
+      case 'WEBSOCKET_URL':
+        return 'ws://15.165.205.46:8081/ws/websocket';
       default:
         return '';
     }
@@ -120,6 +122,9 @@ class EnvConfig {
 
   /// 백엔드 API 설정
   static String get backendUrl => getValue('BACKEND_URL');
+  
+  /// WebSocket URL 설정 (기본값: ws://15.165.205.46:8081/ws/websocket)
+  static String get websocketUrl => getValue('WEBSOCKET_URL');
 
   /// 카카오 로그인 설정 (네이티브 앱 키만 필요)
   static String get kakaoNativeAppKey => getValue('KAKAO_NATIVE_APP_KEY');

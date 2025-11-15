@@ -9,6 +9,8 @@ import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qbit_services/auth/auth_service.dart';
+import 'package:qbit_services/storage/token_service.dart';
+import 'package:kakao_flutter_sdk_auth/kakao_flutter_sdk_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -73,6 +75,7 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeLocaleAndSetDate();
       _loadUserData();
+      _printTokens();
     });
   }
 
@@ -136,6 +139,41 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
         _userNickname = '';
       });
     }
+  }
+
+  // 토큰 정보 출력
+  Future<void> _printTokens() async {
+    debugPrint('=== 토큰 정보 ===');
+    
+    // 백엔드 액세스 토큰
+    final backendToken = await TokenService.getAccessToken();
+    if (backendToken != null) {
+      debugPrint('🔑 백엔드 액세스 토큰: $backendToken');
+    } else {
+      debugPrint('❌ 백엔드 액세스 토큰: 없음');
+    }
+    
+    // 카카오 액세스 토큰 (SDK에서 직접)
+    try {
+      final kakaoToken = await TokenManagerProvider.instance.manager.getToken();
+      if (kakaoToken?.accessToken != null) {
+        debugPrint('🔑 카카오 액세스 토큰: ${kakaoToken!.accessToken}');
+      } else {
+        debugPrint('❌ 카카오 액세스 토큰: 없음');
+      }
+    } catch (e) {
+      debugPrint('❌ 카카오 액세스 토큰 조회 실패: $e');
+    }
+    
+    // 저장된 카카오 토큰
+    final storedKakaoToken = await TokenService.getKakaoAccessToken();
+    if (storedKakaoToken != null) {
+      debugPrint('🔑 저장된 카카오 토큰: $storedKakaoToken');
+    } else {
+      debugPrint('❌ 저장된 카카오 토큰: 없음');
+    }
+    
+    debugPrint('================');
   }
 
   @override

@@ -268,15 +268,18 @@ class _StockOrderTabState extends State<StockOrderTab> {
     } catch (error) {
       print('현재 시장 가격 로드 실패: $error');
       // 실패 시 호가창에서 계산 (fallback)
-      if (mounted && widget.assetClass == 'crypto' && 
-          _orderBook != null && 
-          _orderBook!.bids.isNotEmpty && 
-          _orderBook!.asks.isNotEmpty) {
-        final bestBid = _orderBook!.bids.first.price;
-        final bestAsk = _orderBook!.asks.first.price;
-        setState(() {
-          _currentMarketPrice = (bestBid + bestAsk) / 2;
-        });
+      if (mounted) {
+        if (widget.assetClass == 'crypto' && 
+            _orderBook != null && 
+            _orderBook!.bids.isNotEmpty && 
+            _orderBook!.asks.isNotEmpty) {
+          final bestBid = _orderBook!.bids.first.price;
+          final bestAsk = _orderBook!.asks.first.price;
+          setState(() {
+            _currentMarketPrice = (bestBid + bestAsk) / 2;
+          });
+        }
+        // fallback이 실패한 경우에는 기존 값 유지 (setState 불필요)
       }
     }
   }

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:web_socket_channel/status.dart' as status;
+import 'package:qbit_core/config/env_config.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/models/order_model.dart';
 import 'package:qbit_services/auth/auth_service.dart';
@@ -15,7 +16,9 @@ class OrderWebSocketService {
   static final OrderWebSocketService instance = OrderWebSocketService._internal();
 
   final Logger _logger = Logger();
-  final String _wsUrl = 'ws://15.165.205.46:8081/ws/websocket';
+  
+  /// WebSocket URL (환경 변수에서 가져오거나 기본값 사용)
+  String get _wsUrl => EnvConfig.websocketUrl;
 
   WebSocketChannel? _channel;
   StreamSubscription? _channelSub;
@@ -286,8 +289,16 @@ class OrderWebSocketService {
         return;
       }
       
-      _logger.i('토큰 확인: ${token.substring(0, 20)}...');
-      _logger.i('🔑 백엔드 액세스 토큰: $token');
+      if (kDebugMode) {
+        _logger.i('토큰 확인: ${token.substring(0, 20)}...');
+        // 개발 모드에서만 토큰 마스킹하여 로깅
+        final maskedToken = token.length > 10 
+            ? '${token.substring(0, 6)}${'*' * (token.length - 10)}${token.substring(token.length - 4)}'
+            : '***';
+        _logger.i('🔑 백엔드 액세스 토큰: $maskedToken (총 ${token.length}자)');
+      } else {
+        _logger.i('백엔드 액세스 토큰 확인됨 (길이: ${token.length}자)');
+      }
       
       final frame = 'CONNECT\n'
           'accept-version:1.2\n'

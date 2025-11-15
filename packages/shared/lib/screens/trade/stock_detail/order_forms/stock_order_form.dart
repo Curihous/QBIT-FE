@@ -128,9 +128,12 @@ class _StockOrderFormState extends State<StockOrderForm> {
       // 시장가 주문: limitPrice는 null
       limitPrice = null;
     } else {
-      // 지정가 주문: KRW를 USD로 변환
+      // 지정가 주문: 통화에 따라 적절히 변환
       final exchangeRate = widget.exchangeRate ?? 1300.0;
-      final priceInUsd = _price / exchangeRate;
+      final priceInKrw = _isShowingKRW ? _price : (_price * exchangeRate);
+      final priceInUsd = _isShowingKRW ? (_price / exchangeRate) : _price;
+      
+      // API는 USD를 기대하므로 USD로 변환
       limitPrice = priceInUsd.toStringAsFixed(2);
     }
     
@@ -431,7 +434,12 @@ class _StockOrderFormState extends State<StockOrderForm> {
               Text(
                 _selectedOrderType == '시장가' 
                     ? '시장가' 
-                    : '${(_quantity * _price).toStringAsFixed(0)}원',
+                    : () {
+                        final exchangeRate = widget.exchangeRate ?? 1300.0;
+                        final priceInKrw = _isShowingKRW ? _price : (_price * exchangeRate);
+                        final totalInKrw = _quantity * priceInKrw;
+                        return '${totalInKrw.toStringAsFixed(0)}원';
+                      }(),
                 style: AppFonts.t1Bold.copyWith(
                   color: AppColors.gray900,
                   fontWeight: FontWeight.w600,

@@ -10,7 +10,7 @@ import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/api/order_websocket_service.dart';
-import 'package:qbit_services/models/order_model.dart';
+import 'package:qbit_services/models/trade_cycle_response.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 
@@ -95,34 +95,63 @@ String _formatDate(String dateString) {
 
 // 상태 라벨 생성 함수
 String _getStatusLabel(OrderModel order) {
-  // 체결된 수량이 있으면 완료로 표시
-  if (order.filledQuantity != null && order.filledQuantity != '' && order.filledQuantity != '0' && order.filledQuantity != '0E-8' && order.filledQuantity != '0.00000000') {
-    return order.side == 'buy' ? '매수 완료' : '매도 완료';
+  final status = (order.status ?? '').toLowerCase();
+  final filledQuantity = double.tryParse(order.filledQuantity ?? '0') ?? 0.0;
+  final quantity = double.tryParse(order.quantity ?? '0') ?? 0.0;
+  
+  // 취소된 경우
+  if (status == 'canceled' || status == 'cancelled') {
+    return '취소됨';
   }
   
-  if (order.status == 'filled') {
-    return order.side == 'buy' ? '매수 완료' : '매도 완료';
-  } else if (order.status == 'accepted' || order.status == 'pending_new') {
+  // 체결 수량 기반 판단
+  if (filledQuantity > 0) {
+    if (filledQuantity >= quantity) {
+      // 완전 체결
+      return order.side == 'buy' ? '매수 완료' : '매도 완료';
+    } else {
+      // 부분 체결
+      return order.side == 'buy' ? '매수 부분체결' : '매도 부분체결';
+    }
+  }
+  
+  // 상태 기반 판단
+  if (status == 'filled' || status == 'partially_filled') {
+    if (status == 'partially_filled') {
+      return order.side == 'buy' ? '매수 부분체결' : '매도 부분체결';
+    } else {
+      return order.side == 'buy' ? '매수 완료' : '매도 완료';
+    }
+  } else if (status == 'accepted' || status == 'pending_new' || status == 'new') {
     return order.type == 'limit' ? '지정가 대기' : '시장가 대기';
-  } else if (order.status == 'canceled') {
-    return '취소됨';
   } else {
     return '처리 중';
   }
 }
 
 Color _getStatusColor(OrderModel order) {
-  // 체결된 수량이 있으면 매수/매도 색상
-  if (order.filledQuantity != null && order.filledQuantity != '' && order.filledQuantity != '0' && order.filledQuantity != '0E-8' && order.filledQuantity != '0.00000000') {
+  final status = (order.status ?? '').toLowerCase();
+  final filledQuantity = double.tryParse(order.filledQuantity ?? '0') ?? 0.0;
+  final quantity = double.tryParse(order.quantity ?? '0') ?? 0.0;
+  
+  // 취소된 경우
+  if (status == 'canceled' || status == 'cancelled') {
+    return AppColors.gray600; // 진한 회색
+  }
+  
+  // 체결 수량 기반 판단
+  if (filledQuantity > 0) {
+    // 완전 체결 또는 부분 체결 모두 매수/매도 색상 사용
     return order.side == 'buy' ? AppColors.profit : AppColors.loss;
   }
   
-  if (order.status == 'filled') {
+  // 상태 기반 판단
+  if (status == 'filled' || status == 'partially_filled') {
     return order.side == 'buy' ? AppColors.profit : AppColors.loss;
-  } else if (order.status == 'canceled') {
-    return AppColors.gray600; // 진한 회색
-  } else {
+  } else if (status == 'accepted' || status == 'pending_new' || status == 'new') {
     return AppColors.primary; // 기본 색상 (대기 중)
+  } else {
+    return AppColors.primary; // 기본 색상 (처리 중)
   }
 }
 
@@ -180,25 +209,6 @@ String _formatQuantityAndPrice(OrderModel order) {
   }
 }
 
-class CycleItem {
-  final String dateRange;    // "25.03.17-25.10.20"
-  final String companyName;  // "Apple Inc. Common Stock"
-  final String ticker;       // "AAPL"
-  final String? logoUrl;     // 로고 URL
-  final DateTime? buyDate;   // 매수 날짜
-  final DateTime? sellDate;  // 매도 날짜
-
-  const CycleItem({
-    required this.dateRange,
-    required this.companyName,
-    required this.ticker,
-    this.logoUrl,
-    this.buyDate,
-    this.sellDate,
-  });
-}
-
-// 사이클 데이터는 웹소켓을 통해 실시간으로 받아옴
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -210,7 +220,7 @@ class OrderHistoryScreen extends StatefulWidget {
 class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   bool _isLoading = false;
   List<OrderModel> _orders = [];
-  List<CycleItem> _cycleData = [];
+  List<TradeCycleResponseDto> _cycleData = [];
   StreamSubscription? _wsSub;
   bool _wsConnected = false;
   
@@ -225,6 +235,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   void initState() {
     super.initState();
     _fetchOrders();
+    _fetchTradeCycles();
     _connectWs();
   }
 
@@ -239,9 +250,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           _orders = response?['content']?.map<OrderModel>((json) => OrderModel.fromJson(json)).toList() ?? [];
           _isLoading = false;
         });
-        
-        // 주문 내역 로드 후 사이클 데이터 생성
-        _loadCycleData();
       }
     } catch (error) {
       print('주문 내역 조회 실패: $error');
@@ -253,97 +261,41 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     }
   }
 
-  // 사이클 데이터 로드 
-  void _loadCycleData() {
-    // 매수와 매도 쌍을 찾아서 사이클 생성
-    final cycles = <String, List<OrderModel>>{};
-    
-    // 1. 매수 주문 수집 (side == 'buy'이고 filled) - 모두 수집
-    final buyOrders = <String, List<OrderModel>>{};
-    for (final order in _orders) {
-      if (order.side == 'buy' && 
-          (order.status == 'filled' || 
-           (order.filledQuantity != null && 
-            order.filledQuantity != '' && 
-            order.filledQuantity != '0' && 
-            order.filledQuantity != '0E-8' && 
-            order.filledQuantity != '0.00000000'))) {
-        if (!buyOrders.containsKey(order.symbol)) {
-          buyOrders[order.symbol] = [];
-        }
-        buyOrders[order.symbol]!.add(order);
-      }
-    }
-    
-    // 2. 매도 주문 수집 (side == 'sell'이고 filled) - 모두 수집
-    final sellOrders = <String, List<OrderModel>>{};
-    for (final order in _orders) {
-      if (order.side == 'sell' && 
-          (order.status == 'filled' || 
-           (order.filledQuantity != null && 
-            order.filledQuantity != '' && 
-            order.filledQuantity != '0' && 
-            order.filledQuantity != '0E-8' && 
-            order.filledQuantity != '0.00000000'))) {
-        if (!sellOrders.containsKey(order.symbol)) {
-          sellOrders[order.symbol] = [];
-        }
-        sellOrders[order.symbol]!.add(order);
-      }
-    }
-    
-    // 3. 매수와 매도 모두 있는 심볼의 모든 가능한 쌍 생성
-    final cycleItems = <CycleItem>[];
-    
-    for (final symbol in buyOrders.keys) {
-      if (sellOrders.containsKey(symbol)) {
-        final buys = buyOrders[symbol]!;
-        final sells = sellOrders[symbol]!;
-        
-        // 각 매수에 대해 그 이후의 매도와 매칭
-        for (final buyOrder in buys) {
-          final buyDate = buyOrder.filledAt != null 
-              ? DateTime.parse(buyOrder.filledAt!)
-              : DateTime.parse(buyOrder.createdAt);
-          
-          // 매수 이후의 매도만 찾기
-          for (final sellOrder in sells) {
-            final sellDate = sellOrder.filledAt != null 
-                ? DateTime.parse(sellOrder.filledAt!)
-                : DateTime.parse(sellOrder.createdAt);
-            
-            // 매도가 매수 이후여야 함
-            if (sellDate.isAfter(buyDate)) {
-              cycleItems.add(CycleItem(
-                dateRange: '${buyDate.year.toString().substring(2)}.${buyDate.month.toString().padLeft(2, '0')}.${buyDate.day.toString().padLeft(2, '0')}-${sellDate.year.toString().substring(2)}.${sellDate.month.toString().padLeft(2, '0')}.${sellDate.day.toString().padLeft(2, '0')}',
-                companyName: symbol,
-                ticker: symbol,
-                buyDate: buyDate,
-                sellDate: sellDate,
-              ));
-            }
-          }
-        }
-      }
-    }
-    
-    print('매수 주문 수: ${buyOrders.values.fold<int>(0, (sum, list) => sum + list.length)}');
-    print('매도 주문 수: ${sellOrders.values.fold<int>(0, (sum, list) => sum + list.length)}');
-    print('생성된 사이클 수: ${cycleItems.length}');
-    
-    // 사이클 아이템 생성
-    setState(() {
-      _cycleData = cycleItems
-        ..sort((a, b) {
-          // 매도 날짜가 가장 최신인 순으로 정렬
-          if (a.sellDate == null && b.sellDate == null) return 0;
-          if (a.sellDate == null) return 1;
-          if (b.sellDate == null) return -1;
-          return b.sellDate!.compareTo(a.sellDate!);
-        });
+  // 거래 사이클 데이터 로드
+  Future<void> _fetchTradeCycles() async {
+    print('💡💡💡 _fetchTradeCycles 호출됨');
+    try {
+      print('💡 거래 사이클 조회 시작');
+      final response = await OrderApiService.getTradeCycles(page: 0, size: 100);
+      print('💡 API 응답 받음: ${response != null ? "성공" : "null"}');
       
-      print('사이클 데이터 로드 완료: ${_cycleData.length}개');
-    });
+      if (mounted && response != null) {
+        print('💡 거래 사이클 응답 받음: ${response.content.length}개');
+        if (response.content.isNotEmpty) {
+          final first = response.content.first;
+          print('💡 첫 번째 사이클: symbol=${first.symbol}, tradeCycleId=${first.tradeCycleId}');
+          print('💡 손익률: ${first.profitLossRate}, 손익금액: ${first.profitLossAmount}');
+          print('💡 시작일: ${first.startDate}, 종료일: ${first.endDate}');
+        }
+        setState(() {
+          _cycleData = response.content
+            ..sort((a, b) {
+              // 종료일이 가장 최신인 순으로 정렬
+              return b.endDate.compareTo(a.endDate);
+            });
+        });
+        print('💡 사이클 데이터 업데이트 완료: ${_cycleData.length}개');
+        if (_cycleData.isNotEmpty) {
+          print('💡 업데이트된 첫 번째 사이클: ${_cycleData.first.symbol}, 손익률: ${_cycleData.first.profitLossRate}');
+        }
+      } else {
+        print('💡 거래 사이클 응답이 null입니다 (mounted: $mounted)');
+      }
+    } catch (error, stackTrace) {
+      print('💡 거래 사이클 조회 실패: $error');
+      print('💡 에러 타입: ${error.runtimeType}');
+      print('💡 에러 스택: $stackTrace');
+    }
   }
 
   void _connectWs() {
@@ -362,7 +314,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         
         // 주문이 완료되면 사이클 데이터 다시 로드
         if (orderUpdate.status?.toUpperCase() == 'FILLED') {
-          _loadCycleData();
+          _fetchTradeCycles();
         }
       }
     }, onError: (error) {
@@ -379,7 +331,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   void _handleOrderUpdate(OrderUpdateMessage orderUpdate) {
     try {
       final alpacaOrderId = orderUpdate.alpacaOrderId;
-      final newStatus = orderUpdate.status;
+      // 상태를 소문자로 정규화하여 일관성 유지
+      final newStatus = orderUpdate.status?.toLowerCase();
       
       if (alpacaOrderId != null && newStatus != null) {
         // 기존 주문 목록에서 alpacaOrderId로 주문 찾기
@@ -799,6 +752,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   Widget _buildCycleList() {
+    print('💡 _buildCycleList 호출됨 - _isLoading: $_isLoading, _cycleData.length: ${_cycleData.length}');
+    
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(
@@ -808,6 +763,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     }
 
     if (_cycleData.isEmpty) {
+      print('💡 사이클 데이터가 비어있습니다');
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -830,101 +786,162 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       );
     }
 
+    print('💡 사이클 리스트 빌드 시작 - ${_cycleData.length}개 아이템');
     return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+      padding: EdgeInsets.zero,
       itemCount: _cycleData.length,
       itemBuilder: (context, index) {
         final cycle = _cycleData[index];
+        print('💡 사이클 아이템 $index: ${cycle.symbol}, 손익률: ${cycle.profitLossRate}, 손익금액: ${cycle.profitLossAmount}');
         return _buildCycleItem(cycle);
       },
     );
   }
 
-  Widget _buildCycleItem(CycleItem cycle) {
-    String dateRangeText = cycle.dateRange;
+  Widget _buildCycleItem(TradeCycleResponseDto cycle) {
+    // 날짜 범위 포맷팅
+    final startDate = cycle.startDate;
+    final endDate = cycle.endDate;
+    final dateRangeText = '${startDate.year.toString().substring(2)}.${startDate.month.toString().padLeft(2, '0')}.${startDate.day.toString().padLeft(2, '0')}-${endDate.year.toString().substring(2)}.${endDate.month.toString().padLeft(2, '0')}.${endDate.day.toString().padLeft(2, '0')}';
+    
+    // 손익률 포맷팅
+    final profitLossRate = cycle.profitLossRate;
+    // -0.03 같은 경우 -0.0%가 되지 않도록 처리
+    String profitLossRateText;
+    if (profitLossRate.abs() < 0.05) {
+      // 0.05 미만이면 소수점 둘째 자리까지 표시
+      profitLossRateText = '${profitLossRate >= 0 ? '+' : ''}${profitLossRate.toStringAsFixed(2)}%';
+    } else {
+      profitLossRateText = '${profitLossRate >= 0 ? '+' : ''}${profitLossRate.toStringAsFixed(1)}%';
+    }
+    
+    // 손익 금액 포맷팅
+    final profitLossAmount = cycle.profitLossAmount;
+    final profitLossAmountText = '\$${profitLossAmount.toStringAsFixed(2)}';
+    
+    // 손익률 색상 (양수: 빨간색, 음수: 파란색)
+    final profitLossColor = profitLossRate >= 0 ? AppColors.loss : AppColors.profit;
+    
+    print('💡 _buildCycleItem - symbol: ${cycle.symbol}, rate: $profitLossRate, amount: $profitLossAmount');
+    print('💡 포맷팅된 텍스트: $profitLossRateText · $profitLossAmountText');
     
     return Container(
       width: double.infinity,
-      height: context.h(89),
-      child: Stack(
+      margin: EdgeInsets.only(bottom: context.h(18)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // 날짜 범위
-          Positioned(
-            left: 0,
-            top: 0,
-            child: Text(
-              dateRangeText,
+          Padding(
+            padding: EdgeInsets.only(left: context.w(16), bottom: context.h(2)),
+            child: SizedBox(
+              width: context.w(104),
+              height: context.h(18),
+              child: Text(
+                dateRangeText,
                 style: AppFonts.c1.copyWith(
                   color: AppColors.gray600,
+                  fontSize: 13,
                   height: 1.23,
                 ),
+              ),
             ),
           ),
           
           // 메인 컨텐츠 영역
-          Positioned(
-            left: 0,
-            top: context.h(25),
-            right: 0,
+          Container(
+            width: double.infinity,
+            height: context.h(65),
+            padding: EdgeInsets.symmetric(horizontal: context.w(16)),
             child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // 회사 로고 (원형)
-                    Container(
-                      width: context.w(44),
-                      height: context.h(44),
-                      decoration: const ShapeDecoration(
-                        color: AppColors.secondaryBG,
-                        shape: OvalBorder(),
-                      ),
-                      child: Center(
-                        child: cycle.logoUrl != null
-                            ? ClipOval(
-                                child: Image.network(
-                                  cycle.logoUrl!,
-                                  width: context.w(44),
-                                  height: context.h(44),
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return _buildCompanyLogo(cycle.ticker);
-                                  },
-                                ),
-                              )
-                            : _buildCompanyLogo(cycle.ticker),
-                      ),
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 회사 로고 (원형)
+                Container(
+                  width: context.w(44),
+                  height: context.h(44),
+                  margin: EdgeInsets.only(top: context.h(11)),
+                  decoration: const ShapeDecoration(
+                    color: AppColors.secondaryBG,
+                    shape: OvalBorder(),
+                  ),
+                  child: Center(
+                    child: cycle.logoUrl != null && cycle.logoUrl!.isNotEmpty
+                        ? ClipOval(
+                            child: Image.network(
+                              cycle.logoUrl!,
+                              width: context.w(44),
+                              height: context.h(44),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return _buildCompanyLogo(cycle.symbol);
+                              },
+                            ),
+                          )
+                        : _buildCompanyLogo(cycle.symbol),
+                  ),
+                ),
+                
+                SizedBox(width: context.w(14)),
+                
+                // 심볼명과 손익률/금액을 세로로 배치
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: context.h(13)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 심볼명
+                        Text(
+                          cycle.symbol,
+                          style: AppFonts.b1Semibold.copyWith(
+                            color: AppColors.gray900,
+                            fontSize: 16,
+                            height: 1.25,
+                          ),
+                        ),
+                        
+                        SizedBox(height: context.h(5)),
+                        
+                        // 손익률 및 손익 금액
+                        Text(
+                          '$profitLossRateText · $profitLossAmountText',
+                          style: AppFonts.c1.copyWith(
+                            color: profitLossColor,
+                            fontSize: 13,
+                            height: 1.23,
+                          ),
+                        ),
+                      ],
                     ),
-                    
-                    SizedBox(width: context.w(12)),
-                    
-                    // 회사 정보 (심볼명만 표시)
-                    Text(
-                      cycle.ticker,
-                      style: AppFonts.b1Regular.copyWith(
-                        color: AppColors.gray900,
-                      ),
-                    ),
-                    
-                    // 분석 아이콘
-                    const Spacer(),
-                    GestureDetector(
-                      onTap: () {
-                        context.push('/trade-report');
-                      },
-                      child: Container(
+                  ),
+                ),
+                
+                // 리포트 아이콘
+                Padding(
+                  padding: EdgeInsets.only(top: context.h(11)),
+                  child: GestureDetector(
+                    onTap: () {
+                      context.push('/trade-report');
+                    },
+                    child: Container(
+                      width: context.w(32),
+                      height: context.h(32),
+                      padding: EdgeInsets.all(context.w(4)),
+                      child: SvgPicture.asset(
+                        'assets/icons/report.svg',
                         width: context.w(24),
                         height: context.h(24),
-                        padding: EdgeInsets.all(context.w(4)),
-                        child: SvgPicture.asset(
-                          'assets/icons/report.svg',
-                          width: context.w(23),
-                          height: context.h(23),
-                        ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
+              ],
+            ),
           ),
         ],
       ),
@@ -932,6 +949,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   Widget _buildCompanyLogo(String ticker) {
+    // 빈 문자열 가드: ticker가 비어있으면 '?' 사용
+    final safeTicker = ticker.isNotEmpty ? ticker : '?';
+    final initial = safeTicker.substring(0, 1).toUpperCase();
+    
     return Container(
       width: context.w(40),
       height: context.h(40),
@@ -941,7 +962,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       ),
       child: Center(
         child: Text(
-          ticker.substring(0, 1).toUpperCase(),
+          initial,
           style: AppFonts.b1Semibold.copyWith(
             color: AppColors.gray600,
           ),

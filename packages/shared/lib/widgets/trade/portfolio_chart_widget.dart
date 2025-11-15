@@ -37,7 +37,17 @@ class PortfolioChartWidget extends StatelessWidget {
     final maxEquity = equityValues.reduce((a, b) => a > b ? a : b);
     
     // 약간의 여백 추가
-    final yAxisPadding = (maxEquity - minEquity) * 0.1;
+    // minEquity == maxEquity인 경우를 처리하여 0 범위 방지
+    double yAxisPadding;
+    if (maxEquity == minEquity) {
+      // 동일한 값일 때 최소 범위 보장 (값의 1% 또는 최소 1.0)
+      yAxisPadding = (minEquity * 0.01).abs();
+      if (yAxisPadding < 1.0) {
+        yAxisPadding = 1.0;
+      }
+    } else {
+      yAxisPadding = (maxEquity - minEquity) * 0.1;
+    }
     final yMin = minEquity - yAxisPadding;
     final yMax = maxEquity + yAxisPadding;
 
@@ -56,7 +66,14 @@ class PortfolioChartWidget extends StatelessWidget {
               show: true,
               drawVerticalLine: true,
               drawHorizontalLine: true,
-              horizontalInterval: (yMax - yMin) / 4, // 4개 구간으로 나누기
+              // horizontalInterval이 0이 되지 않도록 최소값 보장
+              horizontalInterval: () {
+                final range = yMax - yMin;
+                final calculatedInterval = range / 4;
+                // 최소 간격 보장 (0.01 또는 범위의 1%)
+                final minInterval = range > 0 ? (range * 0.01).abs() : 0.01;
+                return calculatedInterval > minInterval ? calculatedInterval : minInterval;
+              }(),
               verticalInterval: 1,
               getDrawingHorizontalLine: (value) {
                 return FlLine(

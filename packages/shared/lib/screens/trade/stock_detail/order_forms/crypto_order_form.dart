@@ -106,6 +106,17 @@ class _CryptoOrderFormState extends State<CryptoOrderForm> {
     String apiSymbol = widget.symbol;
     
     if (_selectedOrderType == '시장가') {
+      // 시장가 정보 검증
+      if (widget.currentMarketPrice <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('시장가 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요'),
+            backgroundColor: AppColors.loss,
+          ),
+        );
+        return;
+      }
+      
       // 암호화폐 시장가: USDT 금액 기반으로 수량 계산
       final rules = widget.stockDetail?.toOrderRules() ?? OrderRules.crypto(
         minOrderSize: 0.000223249,

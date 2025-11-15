@@ -7,6 +7,7 @@ import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/api/exchange_rate_api_service.dart';
 import 'package:intl/intl.dart';
+import 'package:logger/logger.dart';
 
 /// 주문 상세 화면
 class OrderDetailScreen extends StatefulWidget {
@@ -25,6 +26,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   bool _isLoading = true;
   Map<String, dynamic>? _orderDetail;
   double? _exchangeRate;
+  final Logger _logger = Logger();
 
   @override
   void initState() {
@@ -46,7 +48,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         });
       }
     } catch (error) {
-      print('주문 상세 조회 실패: $error');
+      _logger.e('주문 상세 조회 실패: $error');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -65,7 +67,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         });
       }
     } catch (error) {
-      print('환율 조회 실패: $error');
+      _logger.e('환율 조회 실패: $error');
     }
   }
 
@@ -415,10 +417,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             SizedBox(height: context.h(24)),
           ],
           
-          _buildInfoRow('매수완료', _formatDateTime(order['createdAt'])),
+          _buildInfoRow(
+            '주문 시각',
+            _formatDateTime(order['createdAt']),
+          ),
           SizedBox(height: context.h(16)),
           _buildInfoRow(
-            '매수 금액',
+            '주문 단가',
             _formatPriceWithKrw(_getPrice(order)),
           ),
           SizedBox(height: context.h(16)),
@@ -443,13 +448,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             ),
           ],
           
-          // 체결 완료된 경우 체결 시각 표시
+          // 체결 완료된 경우 완료 시각 표시
           if (status == 'filled' && order['filledAt'] != null) ...[
             SizedBox(height: context.h(24)),
             Divider(color: AppColors.gray200, thickness: 1),
             SizedBox(height: context.h(16)),
             _buildInfoRow(
-              '체결 시각',
+              side == 'buy' ? '매수완료' : '매도완료',
               _formatDateTime(order['filledAt']),
             ),
           ],
@@ -482,48 +487,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  Widget _buildTargetProfitButton() {
-    return GestureDetector(
-      onTap: () {
-        // 목표 수익률 설정 기능 (추후 구현)
-        print('목표 수익률 설정');
-      },
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(vertical: context.h(16)),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.gray300),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              '주문접수 내역',
-              style: AppFonts.b2Semibold.copyWith(
-                color: AppColors.gray600,
-              ),
-            ),
-            SizedBox(width: context.w(8)),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: context.w(16),
-              color: AppColors.gray600,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ========== 다이얼로그 ==========
 
   void _showCancelDialog(Map<String, dynamic> order) {
+    final side = order['side'] as String?;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text(
-          '판매를 취소할까요?',
+          side == 'buy' ? '매수를 취소할까요?' : '판매를 취소할까요?',
           style: AppFonts.b1Semibold.copyWith(color: AppColors.gray900),
         ),
         content: Text(
@@ -580,7 +552,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         }
       }
     } catch (e) {
-      print('주문 취소 에러: $e');
+      _logger.e('주문 취소 에러: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

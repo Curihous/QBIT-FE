@@ -1093,7 +1093,9 @@ class _TradeScreenState extends State<TradeScreen> {
   // 해외 주요 지수 섹션
   Widget _buildOverseasIndicesSection() {
     final items = _overseasIndices;
-    final pageCount = (items.length / 2).ceil().clamp(1, 10);
+    // pageCount를 int로 명시적으로 캐스팅 (clamp가 num을 반환하므로)
+    final int rawPageCount = (items.length / 2).ceil();
+    final int pageCount = rawPageCount.clamp(1, 10) as int;
     return Container(
       margin: const EdgeInsets.only(top: 8, bottom: 9),
       child: Column(
@@ -1348,6 +1350,7 @@ class _TradeScreenState extends State<TradeScreen> {
 
   @override
   void dispose() {
+    _indicesPageController.dispose();
     super.dispose();
   }
 }

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logger/logger.dart';
 import 'api_client.dart';
 
@@ -53,25 +54,32 @@ class AuthApiService {
     required String googleIdToken,
   }) async {
     try {
-      logger.i('═══════════════════════════════════════════════════════════');
       logger.i('구글 로그인 API 호출 시작');
-      logger.i('전송할 Google ID Token 길이: ${googleIdToken.length}자');
-      logger.i('전송할 Google ID Token (처음 50자): ${googleIdToken.substring(0, googleIdToken.length > 50 ? 50 : googleIdToken.length)}...');
-      logger.i('전송할 Google ID Token (끝 50자): ...${googleIdToken.substring(googleIdToken.length > 50 ? googleIdToken.length - 50 : 0)}');
       
-      // JWT 토큰 구조 확인 (3개의 점으로 구분되어야 함)
-      final parts = googleIdToken.split('.');
-      logger.i('JWT 토큰 구조 확인: ${parts.length}개 부분 (헤더.페이로드.서명)');
-      if (parts.length != 3) {
-        logger.e('⚠️ 경고: JWT 토큰이 올바른 형식이 아닙니다! (예상: 3개 부분, 실제: ${parts.length}개)');
+      // 개발 모드에서만 토큰 내용 로깅
+      if (kDebugMode) {
+        logger.i('═══════════════════════════════════════════════════════════');
+        logger.i('전송할 Google ID Token 길이: ${googleIdToken.length}자');
+        logger.i('전송할 Google ID Token (처음 50자): ${googleIdToken.substring(0, googleIdToken.length > 50 ? 50 : googleIdToken.length)}...');
+        logger.i('전송할 Google ID Token (끝 50자): ...${googleIdToken.substring(googleIdToken.length > 50 ? googleIdToken.length - 50 : 0)}');
+        
+        // JWT 토큰 구조 확인 (3개의 점으로 구분되어야 함)
+        final parts = googleIdToken.split('.');
+        logger.i('JWT 토큰 구조 확인: ${parts.length}개 부분 (헤더.페이로드.서명)');
+        if (parts.length != 3) {
+          logger.e('⚠️ 경고: JWT 토큰이 올바른 형식이 아닙니다! (예상: 3개 부분, 실제: ${parts.length}개)');
+        }
+        
+        logger.i('요청 데이터 크기: ${googleIdToken.length}자');
+        logger.i('═══════════════════════════════════════════════════════════');
+      } else {
+        // 프로덕션에서는 민감하지 않은 메타데이터만 로깅
+        logger.i('Google ID Token 수신됨 (길이: ${googleIdToken.length}자)');
       }
       
       final requestData = {
         'googleIdToken': googleIdToken,
       };
-      
-      logger.i('요청 데이터 크기: ${googleIdToken.length}자');
-      logger.i('═══════════════════════════════════════════════════════════');
       
       final response = await _dio.post(
         '/auth/google/login',
@@ -101,8 +109,12 @@ class AuthApiService {
         // 401 에러인 경우 상세 안내
         if (error.response?.statusCode == 401) {
           logger.e('⚠️ 401 Unauthorized 에러 발생');
-          logger.e('전송된 토큰 길이: ${googleIdToken.length}자');
-          logger.e('전송된 토큰 구조: ${googleIdToken.split('.').length}개 부분');
+          if (kDebugMode) {
+            logger.e('전송된 토큰 길이: ${googleIdToken.length}자');
+            logger.e('전송된 토큰 구조: ${googleIdToken.split('.').length}개 부분');
+          } else {
+            logger.e('전송된 토큰 길이: ${googleIdToken.length}자');
+          }
           
           // 백엔드 응답 메시지 확인
           final responseData = error.response?.data;
