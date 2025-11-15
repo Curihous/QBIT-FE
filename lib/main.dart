@@ -14,25 +14,13 @@ import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/auth/google_auth_service.dart';
 import 'package:qbit_services/auth/kakao_auth_service.dart';
 
-/// 토큰을 마스킹하여 출력 (디버그 모드에서만)
-/// 처음 6자와 마지막 4자만 표시하고 중간은 마스킹
-String _maskToken(String token) {
-  if (token.length <= 10) {
-    return '***';
-  }
-  final first = token.substring(0, 6);
-  final last = token.substring(token.length - 4);
-  final maskedLength = token.length - 10;
-  return '$first${'*' * maskedLength}$last';
-}
-
-/// 토큰 정보를 마스킹하여 출력 (디버그 모드에서만)
-void _printTokenMasked(String token, String tokenName) {
+/// 토큰 정보를 그대로 출력 (디버그 모드에서만)
+void _printTokenRaw(String token, String tokenName) {
   if (!kDebugMode) return;
-  debugPrint('🔑 $tokenName: ${_maskToken(token)} (총 ${token.length}자)');
+  debugPrint('🔑 $tokenName: $token (총 ${token.length}자)');
 }
 
-/// 토큰 정보 출력 함수 (디버그 모드에서만, 마스킹된 토큰만 출력)
+/// 토큰 정보 출력 함수 (디버그 모드에서만)
 Future<void> printTokens() async {
   if (!kDebugMode) return;
   
@@ -41,7 +29,7 @@ Future<void> printTokens() async {
   // 백엔드 액세스 토큰
   final backendToken = await TokenService.getAccessToken();
   if (backendToken != null) {
-    _printTokenMasked(backendToken, '백엔드 액세스 토큰');
+    _printTokenRaw(backendToken, '백엔드 액세스 토큰');
   } else {
     debugPrint('❌ 백엔드 액세스 토큰: 없음');
   }
@@ -50,7 +38,7 @@ Future<void> printTokens() async {
   try {
     final kakaoToken = await TokenManagerProvider.instance.manager.getToken();
     if (kakaoToken?.accessToken != null) {
-      _printTokenMasked(kakaoToken!.accessToken, '카카오 액세스 토큰');
+      _printTokenRaw(kakaoToken!.accessToken, '카카오 액세스 토큰');
     } else {
       debugPrint('❌ 카카오 액세스 토큰: 없음');
     }
@@ -61,7 +49,7 @@ Future<void> printTokens() async {
   // 저장된 카카오 토큰
   final storedKakaoToken = await TokenService.getKakaoAccessToken();
   if (storedKakaoToken != null) {
-    _printTokenMasked(storedKakaoToken, '저장된 카카오 토큰');
+    _printTokenRaw(storedKakaoToken, '저장된 카카오 토큰');
   } else {
     debugPrint('❌ 저장된 카카오 토큰: 없음');
   }
@@ -121,7 +109,7 @@ Future<void> _attemptTokenRefresh() async {
             }
             
             // 토큰을 마스킹하여 출력 (디버그 모드에서만)
-            _printTokenMasked(idTokenStr, 'Google ID Token');
+            _printTokenRaw(idTokenStr, 'Google ID Token');
           } else {
             debugPrint('⚠️ Google ID Token이 없습니다');
           }
@@ -185,9 +173,9 @@ Future<void> _attemptTokenRefresh() async {
           if (kDebugMode) {
             final token = await TokenManagerProvider.instance.manager.getToken();
             if (token?.accessToken != null) {
-              _printTokenMasked(token!.accessToken, '카카오 액세스 토큰');
-              if (token.refreshToken != null) {
-                _printTokenMasked(token.refreshToken!, '카카오 리프레시 토큰');
+              _printTokenRaw(token!.accessToken, '카카오 액세스 토큰');
+              if (token?.refreshToken != null) {
+                _printTokenRaw(token!.refreshToken!, '카카오 리프레시 토큰');
               }
             }
           }
@@ -235,15 +223,15 @@ Future<void> debugKakaoToken() async {
       final token = await TokenManagerProvider.instance.manager.getToken();
       
       if (token != null) {
-        _printTokenMasked(token.accessToken, '액세스 토큰');
+        _printTokenRaw(token.accessToken, '액세스 토큰');
         if (token.refreshToken != null) {
-          _printTokenMasked(token.refreshToken!, '리프레시 토큰');
+          _printTokenRaw(token.refreshToken!, '리프레시 토큰');
         }
         
         // 4. 백엔드 토큰도 확인
         final backendToken = await TokenService.getAccessToken();
         if (backendToken != null) {
-          _printTokenMasked(backendToken, '백엔드 토큰');
+          _printTokenRaw(backendToken, '백엔드 토큰');
         } else {
           debugPrint('❌ 백엔드 토큰이 없습니다');
         }
@@ -309,7 +297,7 @@ void main() async {
   if (backendToken != null) {
     if (kDebugMode) {
       debugPrint('백엔드 토큰 감지 - WebSocket 연결 시도');
-      _printTokenMasked(backendToken, '백엔드 액세스 토큰');
+      _printTokenRaw(backendToken, '백엔드 액세스 토큰');
     }
     try {
       await OrderWebSocketService.instance.connect();

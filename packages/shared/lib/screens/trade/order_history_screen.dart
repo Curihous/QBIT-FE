@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qbit_shared/widgets/common/header_back.dart';
@@ -7,11 +8,13 @@ import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/stock_detail_navigation.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
+import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/api/order_websocket_service.dart';
+import 'package:qbit_services/models/order_update_message.dart';
 import 'package:qbit_services/models/trade_cycle_response.dart';
-import 'package:go_router/go_router.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 
 // OrderModel - API 응답 데이터 모델
@@ -230,6 +233,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   
   // 삭제 관련 상태
   int? _selectedOrderId;
+  final Map<String, Uint8List?> _logoCache = {};
+  final Map<String, Future<Uint8List?>> _logoRequestCache = {};
 
   @override
   void initState() {
@@ -869,19 +874,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     shape: OvalBorder(),
                   ),
                   child: Center(
-                    child: cycle.logoUrl != null && cycle.logoUrl!.isNotEmpty
-                        ? ClipOval(
-                            child: Image.network(
-                              cycle.logoUrl!,
-                              width: context.w(44),
-                              height: context.h(44),
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return _buildCompanyLogo(cycle.symbol);
-                              },
-                            ),
-                          )
-                        : _buildCompanyLogo(cycle.symbol),
+                    child: _buildCycleLogo(context, cycle.logoUrl, cycle.symbol),
                   ),
                 ),
                 
@@ -946,6 +939,74 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildCycleLogo(BuildContext context, String? logoUrl, String symbol) {
+    if (logoUrl == null || logoUrl.isEmpty) {
+      return _buildCompanyLogo(symbol);
+    }
+
+    return FutureBuilder<Uint8List?>(
+      future: _getLogoBytes(logoUrl),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildCompanyLogo(symbol);
+        }
+
+        final bytes = snapshot.data;
+        if (bytes != null) {
+          return ClipOval(
+            child: Image.memory(
+              bytes,
+              width: context.w(44),
+              height: context.h(44),
+              fit: BoxFit.cover,
+            ),
+          );
+        }
+
+        return _buildCompanyLogo(symbol);
+      },
+    );
+  }
+
+  Future<Uint8List?> _getLogoBytes(String url) {
+    if (_logoCache.containsKey(url)) {
+      return Future.value(_logoCache[url]);
+    }
+
+    if (_logoRequestCache.containsKey(url)) {
+      return _logoRequestCache[url]!;
+    }
+
+    final future = _fetchLogoBytes(url);
+    _logoRequestCache[url] = future;
+    future.then((bytes) {
+      _logoCache[url] = bytes;
+      _logoRequestCache.remove(url);
+    });
+    return future;
+  }
+
+  Future<Uint8List?> _fetchLogoBytes(String url) async {
+    try {
+      final uri = Uri.tryParse(url);
+      if (uri == null) {
+        debugPrint('잘못된 로고 URL: $url');
+        return null;
+      }
+
+      final response = await http.get(uri);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response.bodyBytes;
+      }
+
+      debugPrint('회사 로고 로드 실패 ($url): ${response.statusCode}');
+      return null;
+    } catch (error) {
+      debugPrint('회사 로고 로드 중 오류 ($url): $error');
+      return null;
+    }
   }
 
   Widget _buildCompanyLogo(String ticker) {

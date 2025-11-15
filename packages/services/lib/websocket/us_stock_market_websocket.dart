@@ -24,7 +24,6 @@ class UsStockMarketWebSocket {
   
   // 구독한 심볼 추적 (재연결 시 복원용)
   final Set<String> _subscribedSymbols = {};
-  final Map<String, SubscriptionOptions> _subscriptionOptions = {};
 
   UsStockMarketWebSocket(this.apiKey);
 

@@ -50,7 +50,7 @@ class CandlestickChartV2 extends StatelessWidget {
           size: Size(width, height),
           painter: _CandlestickPainter(
             candles: visibleCandles,
-            interval: interval,
+                interval: interval,
             currentPrice: realTimePrice,
             minPrice: bounds.min,
             maxPrice: bounds.max,
@@ -58,8 +58,8 @@ class CandlestickChartV2 extends StatelessWidget {
         );
       },
     );
-  }
-
+    }
+    
   List<CandleData> _selectVisibleCandles(int maxFit) {
     if (candles.isEmpty) return const [];
     final int maxVisible = math.max(1, maxFit);
@@ -151,7 +151,7 @@ class _CandlestickPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) return;
-
+    
     final chartWidth = size.width - _leftPadding - _rightPadding;
     final chartHeight = size.height - _topPadding - _bottomPadding;
     if (chartWidth <= 0 || chartHeight <= 0) return;
@@ -168,17 +168,17 @@ class _CandlestickPainter extends CustomPainter {
     final Paint gridPaint = Paint()
       ..color = AppColors.gray100
       ..strokeWidth = 1;
-
+    
     for (int i = 0; i < labelCount; i++) {
       final price = minPrice + priceStep * i;
       final y = _priceToY(price, chartHeight);
-
+      
       canvas.drawLine(
         Offset(_leftPadding, y),
         Offset(_leftPadding + chartWidth, y),
         gridPaint,
       );
-
+      
       final textPainter = TextPainter(
         text: TextSpan(
           text: _formatPrice(price),
@@ -246,19 +246,19 @@ class _CandlestickPainter extends CustomPainter {
         if (seenDates.contains(label)) continue;
         seenDates.add(label);
 
-        final textPainter = TextPainter(
+    final textPainter = TextPainter(
           text: TextSpan(text: label, style: const TextStyle(fontSize: 10, color: AppColors.gray600)),
-          textDirection: ui.TextDirection.ltr,
+      textDirection: ui.TextDirection.ltr,
         )..layout();
-
+    
         double textX = x - textPainter.width / 2;
         if (textX < _leftPadding) textX = _leftPadding;
         if (textX + textPainter.width > _leftPadding + chartWidth) {
           textX = _leftPadding + chartWidth - textPainter.width;
         }
 
-        textPainter.paint(
-          canvas,
+    textPainter.paint(
+      canvas,
           Offset(textX, size.height - _bottomPadding + (_bottomPadding - textPainter.height) / 2),
         );
       }
@@ -269,24 +269,24 @@ class _CandlestickPainter extends CustomPainter {
     const int labelCount = 6;
     final double step = (candles.length - 1) / (labelCount - 1);
     final double startX = _leftPadding + _candleWidth / 2;
-
+    
     for (int i = 0; i < labelCount; i++) {
       final int index = (step * i).round().clamp(0, candles.length - 1);
       final candle = candles[index];
       final x = startX + index * (_candleWidth + _candleSpacing);
       final String label = _formatTime(candle.timestamp);
-
+      
       final textPainter = TextPainter(
         text: TextSpan(text: label, style: const TextStyle(fontSize: 10, color: AppColors.gray600)),
         textDirection: ui.TextDirection.ltr,
       )..layout();
-
+      
       double textX = x - textPainter.width / 2;
       if (textX < _leftPadding) textX = _leftPadding;
       if (textX + textPainter.width > _leftPadding + chartWidth) {
         textX = _leftPadding + chartWidth - textPainter.width;
       }
-
+      
       textPainter.paint(
         canvas,
         Offset(textX, size.height - _bottomPadding + (_bottomPadding - textPainter.height) / 2),
@@ -359,9 +359,9 @@ class _CandlestickPainter extends CustomPainter {
       case '1d':
       case '1w':
       case '1M':
-        return DateFormat('MM/dd').format(date);
+      return DateFormat('MM/dd').format(date);
       default:
-        return DateFormat('HH:mm').format(date);
+      return DateFormat('HH:mm').format(date);
     }
   }
 

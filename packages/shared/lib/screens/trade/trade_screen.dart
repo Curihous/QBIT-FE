@@ -1372,7 +1372,6 @@ class _TradeScreenState extends State<TradeScreen> {
     );
   }
 
->>>>>>> 5d0d740 (fix: 포트폴리오 오버뷰 API 개선)
   // 지수 아이템 위젯
   Widget _buildIndexItem(String name, String value, String change, bool isPositive) {
     return Container(
