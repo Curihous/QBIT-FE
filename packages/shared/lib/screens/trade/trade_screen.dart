@@ -808,23 +808,23 @@ class _TradeScreenState extends State<TradeScreen> {
                       ? PortfolioOverviewChart(
                           key: ValueKey('${_selectedPeriod}_${_portfolioOverview!.history.length}_${_portfolioOverview!.history.first.timestamp}_${_portfolioOverview!.history.last.timestamp}'), // period, 데이터 개수, 첫/마지막 timestamp로 key 생성
                           history: _portfolioOverview!.history,
-                      selectedEquity: _selectedEquity,
-                      selectedTimestamp: _selectedTimestamp,
-                      onTouch: (equity, timestamp) {
-                        setState(() {
-                          _selectedEquity = equity;
-                          _selectedTimestamp = timestamp;
-                        });
-                      },
-                    )
-                  : Container(
-                      height: 125,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.gray300, width: 1),
-                      ),
-                    ),
+                          selectedEquity: _selectedEquity,
+                          selectedTimestamp: _selectedTimestamp,
+                          onTouch: (equity, timestamp) {
+                            setState(() {
+                              _selectedEquity = equity;
+                              _selectedTimestamp = timestamp;
+                            });
+                          },
+                        )
+                      : Container(
+                          height: 125,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.gray300, width: 1),
+                          ),
+                        ),
             ),
           ],
         ),

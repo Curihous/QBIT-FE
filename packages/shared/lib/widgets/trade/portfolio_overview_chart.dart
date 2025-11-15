@@ -7,6 +7,10 @@ import 'package:qbit_shared/utils/responsive_utils.dart';
 
 /// 포트폴리오 오버뷰 그래프 위젯
 /// 터치 시 해당 시점의 자산 가치를 상단에 표시
+/// 
+/// TODO: 백엔드 수정 후 기간별 그래프 출력
+/// 현재는 period 파라미터에 관계없이 동일한 데이터 범위를 반환하고 있음
+/// 백엔드에서 period(1D, 1W, 1M)에 따라 실제 조회 기간이 반영되도록 수정 필요
 class PortfolioOverviewChart extends StatefulWidget {
   final List<HistoryPoint> history; // 자산 변동 이력 데이터
   final double? selectedEquity; // 선택된 시점의 자산 가치
@@ -57,12 +61,16 @@ class _PortfolioOverviewChartState extends State<PortfolioOverviewChart> {
   }
 
   /// Y축 범위 계산 
+  /// 모든 값이 동일한 경우를 처리하여 fl_chart 크래시 방지
   ({double min, double max}) _calculateYRange() {
     final equityValues = widget.history.map((e) => e.equity).toList();
     final minEquity = equityValues.reduce((a, b) => a < b ? a : b);
     final maxEquity = equityValues.reduce((a, b) => a > b ? a : b);
     
-    final yAxisPadding = (maxEquity - minEquity) * 0.1;
+    // 모든 값이 동일한 경우 처리 (range가 0이면 fl_chart 크래시 발생)
+    final range = maxEquity - minEquity;
+    final yAxisPadding = range > 0 ? range * 0.1 : maxEquity * 0.1;
+    
     final yMin = (minEquity - yAxisPadding).clamp(0.0, double.infinity);
     final yMax = maxEquity + yAxisPadding;
     
@@ -128,7 +136,7 @@ class _PortfolioOverviewChartState extends State<PortfolioOverviewChart> {
             ],
             lineTouchData: LineTouchData(
               enabled: true,
-              touchSpotThreshold: 20,
+              touchSpotThreshold: 20, // 터치 감지 반경 (픽셀)
               getTouchLineStart: (data, index) => double.infinity, // 터치 세로선 숨기기
               getTouchLineEnd: (data, index) => double.infinity, // 터치 세로선 숨기기
               touchTooltipData: LineTouchTooltipData(
