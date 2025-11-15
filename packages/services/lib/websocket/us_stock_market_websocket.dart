@@ -252,6 +252,12 @@ class PolygonAggregateSecond extends PolygonEvent {
   final double low;
   final double close;
   final int volume;
+  final int? accumulatedVolume; // av: 오늘의 누적 거래량
+  final double? vwap; // vw: 틱의 거래량 가중 평균 가격
+  final double? dailyVwap; // a: 오늘의 거래량 가중 평균 가격
+  final int? averageTradeSize; // z: 평균 거래 크기
+  final DateTime? startTime; // s: 집계 윈도우 시작 시간
+  final DateTime? endTime; // e: 집계 윈도우 종료 시간
 
   PolygonAggregateSecond.fromJson(Map<String, dynamic> json)
       : open = (json['o'] as num).toDouble(),
@@ -259,6 +265,12 @@ class PolygonAggregateSecond extends PolygonEvent {
         low = (json['l'] as num).toDouble(),
         close = (json['c'] as num).toDouble(),
         volume = (json['v'] as num).toInt(),
+        accumulatedVolume = json['av'] != null ? (json['av'] as num).toInt() : null,
+        vwap = json['vw'] != null ? (json['vw'] as num).toDouble() : null,
+        dailyVwap = json['a'] != null ? (json['a'] as num).toDouble() : null,
+        averageTradeSize = json['z'] != null ? (json['z'] as num).toInt() : null,
+        startTime = json['s'] != null ? DateTime.fromMillisecondsSinceEpoch(json['s'] as int) : null,
+        endTime = json['e'] != null ? DateTime.fromMillisecondsSinceEpoch(json['e'] as int) : null,
         super(json['sym'] as String, PolygonEvent.parseTimestamp(json['t']));
 }
 

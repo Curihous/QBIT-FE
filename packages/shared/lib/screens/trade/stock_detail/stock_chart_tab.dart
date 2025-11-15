@@ -1042,4 +1042,4 @@ class _UsIntervalConfig {
     required this.timespan,
     required this.lookback,
   });
-}
+  }
