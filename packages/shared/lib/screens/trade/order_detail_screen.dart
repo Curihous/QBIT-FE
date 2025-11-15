@@ -143,7 +143,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     );
   }
 
-  /// 상단 진행 단계 표시 (주문 → 구매완료 → 출금/입금)
+  /// 상단 진행 단계 표시 (주문 → 매수완료 → 출금/입금)
   Widget _buildProgressIndicator(Map<String, dynamic> order) {
     final status = order['status'] as String?;
     final side = order['side'] as String?;
@@ -153,7 +153,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     // 상태에 따른 단계 결정
     int currentStep = 0;
     String step1Label = '주문';
-    String step2Label = side == 'buy' ? '구매완료' : '매도완료';
+    String step2Label = side == 'buy' ? '매수완료' : '매도완료';
     String step3Label = side == 'buy' ? '출금예정' : '입금예정';
     String step1Sub = '취소 가능';
     String step2Sub = '취소 불가능';
@@ -171,7 +171,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       case 'partially_filled':
         // 부분 체결
         currentStep = 2;
-        step2Label = side == 'buy' ? '부분 구매' : '부분 매도';
+        step2Label = side == 'buy' ? '부분 매수' : '부분 매도';
         step1Sub = '';
         step2Sub = '취소 불가능';
         break;
@@ -260,7 +260,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            isBuy ? '$symbol 구매' : '$symbol 매도',
+            isBuy ? '$symbol 매수' : '$symbol 매도',
             style: AppFonts.t2Bold.copyWith(
               color: AppColors.gray900,
               fontSize: 24,
@@ -415,10 +415,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             SizedBox(height: context.h(24)),
           ],
           
-          _buildInfoRow('구매완료', _formatDateTime(order['createdAt'])),
+          _buildInfoRow('매수완료', _formatDateTime(order['createdAt'])),
           SizedBox(height: context.h(16)),
           _buildInfoRow(
-            '구매 금액',
+            '매수 금액',
             _formatPriceWithKrw(_getPrice(order)),
           ),
           SizedBox(height: context.h(16)),
