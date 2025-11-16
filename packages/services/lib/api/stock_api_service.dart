@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:intl/intl.dart';
 import 'package:logger/logger.dart';
@@ -536,7 +537,8 @@ class StockApiService {
     try {
       logger.i('미국 주식 실시간 시세 조회 시작: $ticker');
       
-      final response = await _dio.get('/stocks/us-equity/quote/$ticker');
+      final response = await _dio.get('/stocks/us-equity/quote/$ticker')
+          .timeout(const Duration(seconds: 10));
       
       if (response.statusCode == 200) {
         if (response.data is Map<String, dynamic>) {
@@ -550,6 +552,9 @@ class StockApiService {
         logger.e('미국 주식 실시간 시세 조회 실패: ${response.statusCode}');
         return null;
       }
+    } on TimeoutException catch (error) {
+      logger.e('미국 주식 실시간 시세 조회 타임아웃: $error');
+      return null;
     } catch (error) {
       logger.e('미국 주식 실시간 시세 조회 에러: $error');
       if (error is DioException) {
@@ -569,7 +574,7 @@ class StockApiService {
       final response = await _dio.get(
         '/portfolios/positions/detail',
         queryParameters: {'symbol': symbol},
-      );
+      ).timeout(const Duration(seconds: 10));
       
       if (response.statusCode == 200) {
         logger.i('포지션 상세 정보 조회 성공');
@@ -585,6 +590,9 @@ class StockApiService {
         logger.e('포지션 상세 정보 조회 실패: ${response.statusCode}');
         return null;
       }
+    } on TimeoutException catch (error) {
+      logger.e('포지션 상세 정보 조회 타임아웃: $error');
+      return null;
     } catch (error) {
       logger.e('포지션 상세 정보 조회 에러: $error');
       if (error is DioException) {

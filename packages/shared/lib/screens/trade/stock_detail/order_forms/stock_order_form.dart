@@ -103,7 +103,7 @@ class _StockOrderFormState extends State<StockOrderForm> {
       return;
     }
     
-    // 지정가 주문일 때만 가격 검증
+    // 주문 타입별 가격 검증
     if (_selectedOrderType == '지정가') {
       if (_price <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -120,6 +120,17 @@ class _StockOrderFormState extends State<StockOrderForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('환율 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요'),
+            backgroundColor: AppColors.loss,
+          ),
+        );
+        return;
+      }
+    } else if (_selectedOrderType == '시장가') {
+      // 시장가 주문 시 현재 시장 가격 확인
+      if (widget.currentMarketPrice == null || widget.currentMarketPrice! <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('시장 가격 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요'),
             backgroundColor: AppColors.loss,
           ),
         );
@@ -439,8 +450,8 @@ class _StockOrderFormState extends State<StockOrderForm> {
                     if (widget.currentMarketPrice != null && widget.currentMarketPrice! > 0) {
                       return (_quantity * widget.currentMarketPrice!).toStringAsFixed(2);
                     }
-                    // 시장 가격이 없을 때는 수량이 있으면 "시장가" 표시, 없으면 "0.00"
-                    return _quantity > 0 ? '시장가' : '0.00';
+                    // 시장 가격이 없을 때는 명확한 메시지 표시
+                    return _quantity > 0 ? '시장가(가격 없음)' : '0.00';
                   } else {
                     // 지정가일 때는 입력한 가격 기준으로 계산
                     if (_price > 0 && _quantity > 0) {
@@ -461,28 +472,39 @@ class _StockOrderFormState extends State<StockOrderForm> {
           SizedBox(height: context.h(16)),
           
           // 매수/매도 버튼
-          GestureDetector(
-            onTap: widget.isSubmitting ? null : _handleSubmit,
-            child: Container(
-              width: double.infinity,
-              height: context.h(45),
-              decoration: BoxDecoration(
-                color: widget.selectedOrderTab == '매도' ? AppColors.loss : AppColors.profit,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: widget.isSubmitting
-                    ? CircularProgressIndicator(color: Colors.white)
-                    : Text(
-                        widget.selectedOrderTab == '매도' ? '매도' : '매수',
-                        style: AppFonts.t1Bold.copyWith(
-                          color: AppColors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-              ),
-            ),
+          Builder(
+            builder: (context) {
+              // 시장가 주문 시 가격이 없으면 버튼 비활성화
+              final isMarketOrderWithoutPrice = _selectedOrderType == '시장가' &&
+                  (widget.currentMarketPrice == null || widget.currentMarketPrice! <= 0);
+              final isButtonDisabled = widget.isSubmitting || isMarketOrderWithoutPrice;
+              
+              return GestureDetector(
+                onTap: isButtonDisabled ? null : _handleSubmit,
+                child: Container(
+                  width: double.infinity,
+                  height: context.h(45),
+                  decoration: BoxDecoration(
+                    color: isButtonDisabled
+                        ? AppColors.gray300
+                        : (widget.selectedOrderTab == '매도' ? AppColors.loss : AppColors.profit),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: widget.isSubmitting
+                        ? CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                            widget.selectedOrderTab == '매도' ? '매도' : '매수',
+                            style: AppFonts.t1Bold.copyWith(
+                              color: AppColors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),

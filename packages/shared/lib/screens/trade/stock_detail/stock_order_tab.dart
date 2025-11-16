@@ -70,26 +70,54 @@ class OrderHistoryModel {
   });
 
   factory OrderHistoryModel.fromJson(Map<String, dynamic> json) {
+    // 필수 필드 검증
+    final requiredFields = [
+      'orderId', 'alpacaOrderId', 'symbol', 'side', 'quantity',
+      'filledQuantity', 'type', 'timeInForce', 'status', 'createdAt', 'submittedAt'
+    ];
+    
+    for (final field in requiredFields) {
+      if (!json.containsKey(field) || json[field] == null) {
+        throw FormatException('필수 필드가 누락되었거나 null입니다: $field');
+      }
+    }
+    
+    // 타입 안전한 파싱
+    int parseOrderId(dynamic value) {
+      if (value is int) return value;
+      if (value is String) {
+        final parsed = int.tryParse(value);
+        if (parsed != null) return parsed;
+        throw FormatException('orderId 파싱 실패: $value');
+      }
+      throw FormatException('orderId 타입이 올바르지 않습니다: ${value.runtimeType}');
+    }
+    
+    String parseString(dynamic value, String fieldName) {
+      if (value == null) throw FormatException('$fieldName이 null입니다');
+      return value.toString();
+    }
+    
     return OrderHistoryModel(
-      orderId: json['orderId'],
-      alpacaOrderId: json['alpacaOrderId'],
-      symbol: json['symbol'],
-      side: json['side'],
-      quantity: json['quantity'],
-      filledQuantity: json['filledQuantity'],
-      filledAvgPrice: json['filledAvgPrice'],
-      type: json['type'],
-      timeInForce: json['timeInForce'],
-      limitPrice: json['limitPrice'],
-      stopPrice: json['stopPrice'],
-      status: json['status'],
-      createdAt: json['createdAt'],
-      submittedAt: json['submittedAt'],
-      filledAt: json['filledAt'],
-      canceledAt: json['canceledAt'],
-      replacedAt: json['replacedAt'],
-      replacedBy: json['replacedBy'],
-      replaces: json['replaces'],
+      orderId: parseOrderId(json['orderId']),
+      alpacaOrderId: parseString(json['alpacaOrderId'], 'alpacaOrderId'),
+      symbol: parseString(json['symbol'], 'symbol'),
+      side: parseString(json['side'], 'side'),
+      quantity: parseString(json['quantity'], 'quantity'),
+      filledQuantity: parseString(json['filledQuantity'], 'filledQuantity'),
+      filledAvgPrice: json['filledAvgPrice']?.toString(),
+      type: parseString(json['type'], 'type'),
+      timeInForce: parseString(json['timeInForce'], 'timeInForce'),
+      limitPrice: json['limitPrice']?.toString(),
+      stopPrice: json['stopPrice']?.toString(),
+      status: parseString(json['status'], 'status'),
+      createdAt: parseString(json['createdAt'], 'createdAt'),
+      submittedAt: parseString(json['submittedAt'], 'submittedAt'),
+      filledAt: json['filledAt']?.toString(),
+      canceledAt: json['canceledAt']?.toString(),
+      replacedAt: json['replacedAt']?.toString(),
+      replacedBy: json['replacedBy']?.toString(),
+      replaces: json['replaces']?.toString(),
     );
   }
 }
@@ -158,6 +186,10 @@ class _StockOrderTabState extends State<StockOrderTab> {
   
   // 현재 시장 가격 (시장가 주문용)
   double _currentMarketPrice = 0.0;
+  
+  // REST API 재시도 카운트
+  int _marketPriceRetryCount = 0;
+  static const int _maxRetries = 3;
   
   // 종목 상세 정보
   StockDetailModel? _stockDetail;
@@ -314,8 +346,16 @@ class _StockOrderTabState extends State<StockOrderTab> {
   
   /// REST API로 시장 가격 로드 (폴백용)
   Future<void> _loadMarketPriceFromRestApi() async {
+    // 최대 재시도 횟수 확인
+    if (_marketPriceRetryCount >= _maxRetries) {
+      logger.w('최대 재시도 횟수 초과, REST API 폴백 중단');
+      return;
+    }
+    
+    _marketPriceRetryCount++;
+    
     try {
-      logger.i('REST API로 시장 가격 로드 시작: ${widget.symbol}');
+      logger.i('REST API로 시장 가격 로드 시작: ${widget.symbol} (재시도: $_marketPriceRetryCount/$_maxRetries)');
       final quote = await StockApiService.getUsStockQuote(widget.symbol);
       logger.i('REST API 응답: $quote');
       
@@ -334,6 +374,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
         if (currentPrice != null && currentPrice > 0) {
           setState(() {
             _currentMarketPrice = currentPrice!;
+            _marketPriceRetryCount = 0; // 성공 시 재시도 카운트 리셋
           });
           logger.i('미국 주식 현재 가격 로드 성공 (REST API): $_currentMarketPrice');
         } else {
@@ -350,6 +391,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
         final bestAsk = _orderBook!.asks.first.price;
         setState(() {
           _currentMarketPrice = (bestBid + bestAsk) / 2;
+          _marketPriceRetryCount = 0; // 호가창에서 가격을 가져왔으므로 재시도 카운트 리셋
         });
         logger.i('호가창에서 현재 가격 계산: $_currentMarketPrice');
       }
@@ -430,8 +472,10 @@ class _StockOrderTabState extends State<StockOrderTab> {
                 }
               }, onError: (error) {
                 logger.w('WebSocket 스트림 에러: $error');
-                // WebSocket 에러 시 REST API로 폴백
-                _loadMarketPriceFromRestApi();
+                // 재시도 제한 확인 후 REST API로 폴백
+                if (_marketPriceRetryCount < _maxRetries && _currentMarketPrice == 0.0) {
+                  _loadMarketPriceFromRestApi();
+                }
               });
             } catch (wsError) {
               logger.w('WebSocket 연결 실패, REST API만 사용: $wsError');
@@ -1665,10 +1709,22 @@ class _StockOrderTabState extends State<StockOrderTab> {
     return GestureDetector(
       onTap: () {
         // 주문 상세 페이지로 이동
-        context.push('/order-detail/${order.orderId}');
+        try {
+          context.push('/order-detail/${order.orderId}');
+        } catch (e) {
+          logger.e('주문 상세 페이지 이동 실패: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('주문 상세를 열 수 없습니다'),
+                backgroundColor: AppColors.loss,
+              ),
+            );
+          }
+        }
       },
       child: Container(
-        width: context.w(193),
+        width: double.infinity,
         height: context.h(55),
         margin: EdgeInsets.only(bottom: context.h(12)),
         padding: EdgeInsets.all(context.w(8)),
