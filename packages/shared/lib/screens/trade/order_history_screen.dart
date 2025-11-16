@@ -234,6 +234,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   // 검색 관련 상태
   final TextEditingController _searchController = TextEditingController();
   String? _searchSymbol;
+  Timer? _searchDebounce;
   
   // 삭제 관련 상태
   int? _selectedOrderId;
@@ -250,6 +251,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
   
   void _onSearchChanged() {
+    // 기존 타이머 취소
+    _searchDebounce?.cancel();
+    
     final symbol = _searchController.text.trim();
     if (symbol.isEmpty) {
       setState(() {
@@ -258,12 +262,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       _fetchOrders();
     } else {
       // 디바운싱: 사용자가 입력을 멈춘 후 500ms 후에 검색
-      Future.delayed(const Duration(milliseconds: 500), () {
-        if (mounted && _searchController.text.trim() == symbol) {
-          setState(() {
-            _searchSymbol = symbol.toUpperCase();
-          });
-          _fetchOrders();
+      _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          final currentSymbol = _searchController.text.trim();
+          if (currentSymbol == symbol) {
+            setState(() {
+              _searchSymbol = symbol.toUpperCase();
+            });
+            _fetchOrders();
+          }
         }
       });
     }
@@ -505,6 +512,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _wsSub?.cancel();
