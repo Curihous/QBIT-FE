@@ -177,62 +177,43 @@ class StockApiService {
     }
   }
 
-  /// 해외 종목 순위 조회 (공개 API 우선)
+  /// 해외 종목 순위 조회
+  /// sortBy: 'volume' (거래량순), 'volatility' (등락폭순), 'moving' (상승률순)
   static Future<List<StockRankingModel>?> getOverseasStockRanking({
-    String sortBy = 'volume', // volume, gain, loss, surge
+    String sortBy = 'volume', // volume, volatility, moving
   }) async {
     try {
       logger.i('해외 종목 순위 조회 시작: $sortBy');
       
-      // 공개 API 엔드포인트 시도
-      final response = await _dio.get('/public/stocks/ranking', queryParameters: {
-        'sort_by': sortBy,
-      });
+      // 엔드포인트 매핑
+      String endpoint;
+      switch (sortBy) {
+        case 'volume':
+          endpoint = '/stocks/ranking/volume';
+          break;
+        case 'volatility':
+          endpoint = '/stocks/ranking/volatility';
+          break;
+        case 'moving':
+          endpoint = '/stocks/ranking/moving';
+          break;
+        default:
+          endpoint = '/stocks/ranking/volume';
+      }
+      
+      final response = await _dio.get(endpoint);
       
       if (response.statusCode == 200) {
-        logger.i('해외 종목 순위 조회 성공 (공개 API): $sortBy');
+        logger.i('해외 종목 순위 조회 성공: $sortBy');
         final data = response.data;
         if (data is List) {
-          return data.map((json) => StockRankingModel.fromJson(json as Map<String, dynamic>)).toList();
-        } else {
-          logger.e('응답 데이터가 List가 아닙니다: ${data.runtimeType}');
-          return null;
-        }
-      } else {
-        logger.e('해외 종목 순위 조회 실패: ${response.statusCode}');
-        return null;
-      }
-    } catch (error) {
-      logger.e('해외 종목 순위 조회 에러: $error');
-      if (error is DioException) {
-        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
-        
-        // 공개 API가 없거나 인증이 필요한 경우 인증 API 시도
-        if (error.response?.statusCode == 404 || error.response?.statusCode == 401) {
-          logger.i('공개 API가 없거나 인증이 필요하므로 인증 API 시도');
-          return await _getOverseasStockRankingWithAuth(sortBy: sortBy);
-        }
-      }
-      return null;
-    }
-  }
-
-  /// 인증이 필요한 해외 종목 순위 조회
-  static Future<List<StockRankingModel>?> _getOverseasStockRankingWithAuth({
-    String sortBy = 'volume',
-  }) async {
-    try {
-      logger.i('해외 종목 순위 조회 시작 (인증 API): $sortBy');
-      
-      final response = await _dio.get('/stocks/ranking', queryParameters: {
-        'sort_by': sortBy,
-      });
-      
-      if (response.statusCode == 200) {
-        logger.i('해외 종목 순위 조회 성공 (인증 API): $sortBy');
-        final data = response.data;
-        if (data is List) {
-          return data.map((json) => StockRankingModel.fromJson(json as Map<String, dynamic>)).toList();
+          // 상위 20개 반환하고 rank 부여 (1부터 시작) - 5개씩 4페이지로 표시
+          final allData = data.take(20).toList().asMap().entries.map((entry) {
+            final index = entry.key;
+            final json = entry.value as Map<String, dynamic>;
+            return StockRankingModel.fromJson(json, rank: index + 1);
+          }).toList();
+          return allData;
         } else {
           logger.e('응답 데이터가 List가 아닙니다: ${data.runtimeType}');
           return null;

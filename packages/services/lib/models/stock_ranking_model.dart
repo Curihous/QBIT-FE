@@ -21,15 +21,27 @@ class StockRankingModel {
   });
 
   /// JSON에서 StockRankingModel 객체 생성
-  factory StockRankingModel.fromJson(Map<String, dynamic> json) {
+  factory StockRankingModel.fromJson(Map<String, dynamic> json, {int? rank}) {
+    // 실제 API 응답 형식에 맞게 매핑
+    final symbol = json['symbol'] as String;
+    final stockName = json['stockName'] as String? ?? json['name'] as String? ?? '';
+    final currentPrice = (json['currentPrice'] as num?)?.toDouble() ?? (json['price'] as num?)?.toDouble() ?? 0.0;
+    final changePercent = (json['changePercent'] as num?)?.toDouble() ?? (json['changePercentage'] as num?)?.toDouble() ?? 0.0;
+    
+    // changeAmount 계산 (가격 * 변동률 / 100)
+    final changeAmount = currentPrice * changePercent / 100;
+    
+    // isPositive 계산 (변동률이 0 이상이면 true)
+    final isPositive = changePercent >= 0;
+    
     return StockRankingModel(
-      rank: json['rank'] as int,
-      symbol: json['symbol'] as String,
-      name: json['name'] as String,
-      price: (json['price'] as num).toDouble(),
-      changeAmount: (json['changeAmount'] as num).toDouble(),
-      changePercentage: (json['changePercentage'] as num).toDouble(),
-      isPositive: json['isPositive'] as bool,
+      rank: rank ?? json['rank'] as int? ?? 0,
+      symbol: symbol,
+      name: stockName,
+      price: currentPrice,
+      changeAmount: changeAmount,
+      changePercentage: changePercent,
+      isPositive: isPositive,
       isHighlighted: json['isHighlighted'] as bool? ?? false,
     );
   }
