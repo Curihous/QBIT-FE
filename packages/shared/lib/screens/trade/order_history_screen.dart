@@ -231,6 +231,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   String _selectedTab = '개별'; // 개별, 사이클
   String _selectedFilter = '전체'; // 전체, 매수, 매도
   
+  // 검색 관련 상태
+  final TextEditingController _searchController = TextEditingController();
+  String? _searchSymbol;
+  Timer? _searchDebounce;
+  
   // 삭제 관련 상태
   int? _selectedOrderId;
   final Map<String, Uint8List?> _logoCache = {};
@@ -239,20 +244,65 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_onSearchChanged);
     _fetchOrders();
     _fetchTradeCycles();
     _connectWs();
+  }
+  
+  void _onSearchChanged() {
+    // 기존 타이머 취소
+    _searchDebounce?.cancel();
+    
+    final symbol = _searchController.text.trim();
+    if (symbol.isEmpty) {
+      setState(() {
+        _searchSymbol = null;
+      });
+      _fetchOrders();
+    } else {
+      // 디바운싱: 사용자가 입력을 멈춘 후 500ms 후에 검색
+      _searchDebounce = Timer(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          final currentSymbol = _searchController.text.trim();
+          if (currentSymbol == symbol) {
+            setState(() {
+              _searchSymbol = symbol.toUpperCase();
+            });
+            _fetchOrders();
+          }
+        }
+      });
+    }
   }
 
   Future<void> _fetchOrders() async {
     setState(() => _isLoading = true);
     
     try {
-      final response = await OrderApiService.getOrderHistory();
+      // side 필터 변환 (매수/매도 -> BUY/SELL)
+      String? side;
+      if (_selectedFilter == '매수') {
+        side = 'BUY';
+      } else if (_selectedFilter == '매도') {
+        side = 'SELL';
+      }
+      
+      final response = await OrderApiService.getOrderHistory(
+        symbol: _searchSymbol,
+        status: null,
+      );
       
       if (mounted) {
+        List<OrderModel> orders = response?['content']?.map<OrderModel>((json) => OrderModel.fromJson(json)).toList() ?? [];
+        
+        // side 필터링 (클라이언트 사이드)
+        if (side != null) {
+          orders = orders.where((order) => order.side.toUpperCase() == side).toList();
+        }
+        
         setState(() {
-          _orders = response?['content']?.map<OrderModel>((json) => OrderModel.fromJson(json)).toList() ?? [];
+          _orders = orders;
           _isLoading = false;
         });
       }
@@ -462,6 +512,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     _wsSub?.cancel();
     // WebSocket 연결은 다른 화면에서도 사용할 수 있으므로 여기서는 구독만 취소
     super.dispose();
@@ -507,6 +560,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 ],
               ),
             ),
+          
+          // 검색바 (개별 탭일 때만 표시)
+          if (_selectedTab == '개별') _buildSearchBar(),
           
           // 필터 버튼
           _buildFilterButtons(),
@@ -579,6 +635,93 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
+  Widget _buildSearchBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: context.w(16)),
+      margin: EdgeInsets.only(top: context.h(4), bottom: context.h(8)),
+      child: Container(
+        width: double.infinity,
+        height: 48,
+        padding: const EdgeInsets.all(2),
+        decoration: ShapeDecoration(
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            side: BorderSide(
+              width: 1,
+              color: AppColors.gray300,
+            ),
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              margin: const EdgeInsets.only(left: 12, right: 4),
+              child: Icon(
+                Icons.search,
+                color: AppColors.gray600,
+                size: 20,
+              ),
+            ),
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                style: AppFonts.b1Regular.copyWith(
+                  color: AppColors.gray900,
+                  height: 1.40,
+                ),
+                decoration: InputDecoration(
+                  hintText: '종목 심볼 (예: AAPL)',
+                  hintStyle: AppFonts.b1Regular.copyWith(
+                    color: AppColors.gray600,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  filled: true,
+                  fillColor: Colors.transparent,
+                  isDense: true,
+                  isCollapsed: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _searchController,
+              builder: (context, value, child) {
+                if (value.text.isEmpty) return const SizedBox.shrink();
+                return GestureDetector(
+                  onTap: () {
+                    // _onSearchChanged 리스너에서 _searchSymbol 초기화 및 _fetchOrders 호출을 처리
+                    _searchController.clear();
+                  },
+                  child: Container(
+                    width: 34,
+                    height: 34,
+                    margin: const EdgeInsets.only(left: 4, right: 12),
+                    child: Icon(
+                      Icons.clear,
+                      color: AppColors.gray600,
+                      size: 20,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildFilterButtons() {
     if (_selectedTab != '개별') return const SizedBox.shrink();
     
@@ -590,19 +733,28 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           FilterButton(
             label: '전체',
             isSelected: _selectedFilter == '전체',
-            onTap: () => setState(() => _selectedFilter = '전체'),
+            onTap: () {
+              setState(() => _selectedFilter = '전체');
+              _fetchOrders();
+            },
           ),
           SizedBox(width: context.w(8)),
           FilterButton(
             label: '매수',
             isSelected: _selectedFilter == '매수',
-            onTap: () => setState(() => _selectedFilter = '매수'),
+            onTap: () {
+              setState(() => _selectedFilter = '매수');
+              _fetchOrders();
+            },
           ),
           SizedBox(width: context.w(8)),
           FilterButton(
             label: '매도',
             isSelected: _selectedFilter == '매도',
-            onTap: () => setState(() => _selectedFilter = '매도'),
+            onTap: () {
+              setState(() => _selectedFilter = '매도');
+              _fetchOrders();
+            },
           ),
         ],
       ),
@@ -618,12 +770,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       );
     }
 
-    final filteredOrders = _orders.where((order) {
-      if (_selectedFilter == '전체') return true;
-      if (_selectedFilter == '매수') return order.side == 'buy';
-      if (_selectedFilter == '매도') return order.side == 'sell';
-      return true;
-    }).toList()
+    // 이미 _fetchOrders에서 필터링이 완료되었으므로 정렬만 수행
+    final filteredOrders = List<OrderModel>.from(_orders)
       ..sort((a, b) => b.createdAt.compareTo(a.createdAt)); // 최신순으로 정렬
 
     if (filteredOrders.isEmpty) {

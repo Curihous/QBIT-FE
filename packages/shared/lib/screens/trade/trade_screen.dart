@@ -43,10 +43,13 @@ class _TradeScreenState extends State<TradeScreen> {
   List<StockModel> _overseasIndices = []; // 해외 주요 지수 데이터
   AssetModel? _userAssets; // 보유자산 데이터
   List<StockRankingModel> _stockRanking = []; // 해외 종목 순위 데이터
-  String _selectedSortBy = 'volume'; // 선택된 정렬 기준
+  String _selectedSortBy = 'volume'; // 선택된 정렬 기준: volume, volatility, moving
   int? _selectedStockIndex; // 선택된 종목 인덱스
+  bool _isStockRankingLoading = true; // 해외 종목 순위 로딩 상태
   int _overseasPage = 0; // 해외 지수 페이지 인덱스
+  int _stockRankingPage = 0; // 해외 종목 순위 페이지 인덱스
   final PageController _indicesPageController = PageController(viewportFraction: 1.0);
+  final PageController _stockRankingPageController = PageController(viewportFraction: 1.0);
   
   // 포트폴리오 오버뷰 관련
   PortfolioOverviewResponse? _portfolioOverview;
@@ -253,134 +256,44 @@ class _TradeScreenState extends State<TradeScreen> {
     }
   }
 
-  // 해외 종목 순위 데이터 가져오기 (하드코딩 데이터)
+  // 해외 종목 순위 데이터 가져오기
   Future<void> _loadStockRanking() async {
-    // API 연동은 주석 처리하고 하드코딩된 데이터 사용
-    final base = _getDefaultStockRanking();
-    final sorted = _sortStockRanking(base, _selectedSortBy);
-    setState(() {
-      _stockRanking = sorted;
-    });
+    if (mounted) {
+      setState(() {
+        _isStockRankingLoading = true;
+        _stockRankingPage = 0; // 필터 변경 시 첫 페이지로 리셋
+      });
+    }
     
-    // TODO: 실제 API 연동 시 아래 코드 
-    /*
     try {
-      final ranking = await StockApiService.getOverseasStockRanking(sortBy: _selectedSortBy);
+      final ranking = await StockApiService.getOverseasStockRanking(sortBy: _selectedSortBy)
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              print('해외 종목 순위 조회 타임아웃: $_selectedSortBy');
+              return null;
+            },
+          );
+      
       if (mounted) {
         setState(() {
           _stockRanking = ranking ?? [];
+          _isStockRankingLoading = false;
         });
+        // 첫 페이지로 스크롤
+        if (_stockRankingPageController.hasClients) {
+          _stockRankingPageController.jumpToPage(0);
+        }
       }
     } catch (error) {
+      print('해외 종목 순위 조회 실패: $error');
       if (mounted) {
         setState(() {
-          _stockRanking = _getDefaultStockRanking();
+          _stockRanking = [];
+          _isStockRankingLoading = false;
         });
       }
     }
-    */
-  }
-
-  // 기본 종목 순위 데이터
-  List<StockRankingModel> _getDefaultStockRanking() {
-    return [
-      StockRankingModel(
-        rank: 1,
-        symbol: 'GNLN',
-        name: '종목명',
-        price: 0, // 가격
-        changeAmount: 0, // 등락폭
-        changePercentage: 0, // 등락률
-        isPositive: true,
-      ),
-      StockRankingModel(
-        rank: 2,
-        symbol: 'ALTO',
-        name: '종목명',
-        price: 0, // 가격
-        changeAmount: 0, // 등락폭
-        changePercentage: 0, // 등락률
-        isPositive: true,
-        isHighlighted: true,
-      ),
-      StockRankingModel(
-        rank: 3,
-        symbol: 'RAPT',
-        name: '종목명',
-        price: 0, // 가격
-        changeAmount: 0, // 등락폭
-        changePercentage: 0, // 등락
-        isPositive: true,
-      ),
-      StockRankingModel(
-        rank: 4,
-        symbol: 'BURU',
-        name: '종목명',
-        price: 0, // 가격
-        changeAmount: 0, // 등락폭
-        changePercentage: 0, // 등락
-        isPositive: true,
-      ),
-      StockRankingModel(
-        rank: 5,
-        symbol: 'AZTR',
-        name: '종목명',
-        price: 0, // 가격
-        changeAmount: 0, // 등락폭
-        changePercentage: 0, // 등락
-        isPositive: true,
-      ),
-      StockRankingModel(
-        rank: 6,
-        symbol: 'GLD',
-        name: '종목명',
-        price: 0, // 가격
-        changeAmount: 0, // 등락폭
-        changePercentage: 0, // 등락
-        isPositive: true,
-      ),
-      StockRankingModel(
-        rank: 7,
-        symbol: 'LAES',
-        name: '종목명',
-        price: 0, // 가격
-        changeAmount: 0, // 등락폭
-        changePercentage: 0, // 등락
-        isPositive: true,
-      ),
-    ];
-  }
-
-  // 하드코딩 데이터 정렬 유틸
-  List<StockRankingModel> _sortStockRanking(List<StockRankingModel> items, String sortBy) {
-    final List<StockRankingModel> copy = List<StockRankingModel>.from(items);
-
-    switch (sortBy) {
-      case 'gain':
-        // 상승률순: 등락률 내림차순
-        copy.sort((a, b) => b.changePercentage.compareTo(a.changePercentage));
-        break;
-      case 'loss':
-        // 하락률순: 등락률 오름차순
-        copy.sort((a, b) => a.changePercentage.compareTo(b.changePercentage));
-        break;
-      case 'surge':
-        // 급등 거래량순: 대체 기준으로 등락폭 절대값 내림차순
-        copy.sort((a, b) => b.changeAmount.abs().compareTo(a.changeAmount.abs()));
-        break;
-      case 'volume':
-      default:
-        // 거래량순: 거래량 데이터가 없으므로 가격 내림차순으로 대체
-        copy.sort((a, b) => b.price.compareTo(a.price));
-        break;
-    }
-
-    // 정렬 후 rank 재부여 (1부터 시작)
-    for (int i = 0; i < copy.length; i++) {
-      copy[i] = copy[i].copyWith(rank: i + 1);
-    }
-
-    return copy;
   }
 
   // 해외 주요 지수 데이터 가져오기
@@ -1078,8 +991,8 @@ class _TradeScreenState extends State<TradeScreen> {
           // 정렬 버튼들
           Inset.block(
             child: FilterButtonGroup(
-            labels: ['상승률순', '하락률순', '거래량순', '급등 거래량순'],
-            values: ['gain', 'loss', 'volume', 'surge'],
+            labels: ['거래량순', '등락폭순', '상승률순'],
+            values: ['volume', 'volatility', 'moving'],
             initialValue: _selectedSortBy,
             onChanged: (value) {
               setState(() {
@@ -1090,21 +1003,76 @@ class _TradeScreenState extends State<TradeScreen> {
             groupPadding: EdgeInsets.only(top: context.h(0), bottom: context.h(12)),
             ),
           ),
-          // 종목 순위 리스트
-          if (_stockRanking.isNotEmpty) ...[
-            ..._stockRanking.map((stock) => Inset.block(
-              child: _buildStockRankingItem(stock),
-            )),
-          ] else ...[
+          // 종목 순위 리스트 (5개씩 4페이지)
+          if (_isStockRankingLoading) ...[
             // 로딩 중
             Container(
               height: 300,
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Center(
                 child: CircularProgressIndicator(),
+              ),
+            ),
+          ] else if (_stockRanking.isNotEmpty) ...[
+            SizedBox(
+              height: 56 * 5, // 5개 아이템 높이
+              child: PageView.builder(
+                controller: _stockRankingPageController,
+                onPageChanged: (i) => setState(() => _stockRankingPage = i),
+                itemCount: 4, // 5개씩 4페이지 (총 20개)
+                itemBuilder: (context, page) {
+                  final startIndex = page * 5;
+                  final endIndex = (startIndex + 5).clamp(0, _stockRanking.length);
+                  final pageStocks = _stockRanking.sublist(startIndex, endIndex);
+                  
+                  return Column(
+                    children: pageStocks.map((stock) => Inset.block(
+                      child: _buildStockRankingItem(stock),
+                    )).toList(),
+                  );
+                },
+              ),
+            ),
+            // 페이지 인디케이터
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 12, bottom: 20),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (int i = 0; i < 4; i++) ...[
+                      Container(
+                        width: 6,
+                        height: 6,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          color: i == _stockRankingPage ? AppColors.gray600 : AppColors.gray100,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ] else ...[
+            // 데이터 없음
+            Container(
+              height: 200,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  '종목 순위 데이터가 없습니다',
+                  style: AppFonts.b1Regular.copyWith(
+                    color: AppColors.gray600,
+                  ),
+                ),
               ),
             ),
           ],
@@ -1123,9 +1091,8 @@ class _TradeScreenState extends State<TradeScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          setState(() {
-            _selectedStockIndex = isSelected ? null : index;
-          });
+          // 종목 상세 페이지로 이동
+          context.push('/stock-detail/${stock.symbol}?name=${Uri.encodeComponent(stock.name)}&assetClass=us_equity');
         },
         child: Container(
           margin: EdgeInsets.zero,
@@ -1160,14 +1127,19 @@ class _TradeScreenState extends State<TradeScreen> {
                   flex: 2,
                   child: Text(
                     stock.name,
-                    style: AppFonts.b1Semibold.copyWith(color: AppColors.gray900),
+                    style: AppFonts.b1Regular.copyWith(
+                      color: AppColors.gray900,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 // 가격
                 SizedBox(
                   width: 80,
                   child: Text(
-                    '가격',
+                    '\$${stock.price.toStringAsFixed(2)}',
                     textAlign: TextAlign.center,
                     style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
                   ),
@@ -1176,10 +1148,10 @@ class _TradeScreenState extends State<TradeScreen> {
                 SizedBox(
                   width: 80,
                   child: Text(
-                    '등락률',
+                    '${stock.changePercentage >= 0 ? '+' : ''}${stock.changePercentage.toStringAsFixed(2)}%',
                     textAlign: TextAlign.center,
                     style: AppFonts.b2Regular.copyWith(
-                      color: AppColors.gray900,
+                      color: stock.isPositive ? AppColors.profit : AppColors.loss,
                     ),
                   ),
                 ),
@@ -1500,6 +1472,7 @@ class _TradeScreenState extends State<TradeScreen> {
   @override
   void dispose() {
     _indicesPageController.dispose();
+    _stockRankingPageController.dispose();
     super.dispose();
   }
 }
