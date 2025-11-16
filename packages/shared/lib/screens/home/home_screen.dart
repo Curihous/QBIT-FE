@@ -404,7 +404,7 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: context.h(20)),
+                  SizedBox(height: context.h(12)),
                   // 상단 배너 (11월 16일, user nickname님을 위한 소식)
                   Container(
                     width: double.infinity,

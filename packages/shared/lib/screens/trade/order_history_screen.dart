@@ -15,6 +15,7 @@ import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/models/order_update_message.dart';
 import 'package:qbit_services/models/trade_cycle_response.dart';
+import 'package:qbit_shared/widgets/order/order_history_item.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 
 // OrderModel - API 응답 데이터 모델
@@ -86,13 +87,14 @@ class OrderModel {
   }
 }
 
-// 날짜 포맷팅 함수 (MM.DD)
+// 날짜 포맷팅 함수 (YY.MM.DD)
 String _formatDate(String dateString) {
   try {
     final date = DateTime.parse(dateString);
-    return '${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
+    final yearShort = date.year.toString().substring(2);
+    return '$yearShort.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
   } catch (e) {
-    return '--.--';
+    return '--.--.--';
   }
 }
 
@@ -292,15 +294,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       final response = await OrderApiService.getOrderHistory(
         symbol: _searchSymbol,
         status: null,
+        side: side,
       );
       
       if (mounted) {
         List<OrderModel> orders = response?['content']?.map<OrderModel>((json) => OrderModel.fromJson(json)).toList() ?? [];
-        
-        // side 필터링 (클라이언트 사이드)
-        if (side != null) {
-          orders = orders.where((order) => order.side.toUpperCase() == side).toList();
-        }
         
         setState(() {
           _orders = orders;
@@ -728,7 +726,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     
     return Container(
       padding: EdgeInsets.symmetric(horizontal: context.w(16)),
-      margin: EdgeInsets.only(top: context.h(6), bottom: context.h(8)),
+      // 필터 탭과 리스트 간 상하 여백을 조금 더 촘촘하게 조정
+      margin: EdgeInsets.only(top: context.h(4), bottom: context.h(4)),
       child: Row(
         children: [
           FilterButton(
@@ -888,7 +887,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     }
 
     return ListView.builder(
-      padding: EdgeInsets.symmetric(vertical: context.h(16)),
+      // 필터 탭과 첫 컴포넌트 사이 여백을 줄이기 위해 상단 패딩 축소
+      padding: EdgeInsets.only(
+        top: context.h(8),
+        bottom: context.h(12),
+      ),
       itemCount: filteredOrders.length,
       itemBuilder: (context, index) {
         final order = filteredOrders[index];
@@ -899,101 +902,31 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   Widget _buildOrderItem(OrderModel order) {
     final isSelected = _selectedOrderId == order.orderId;
+    final isBuy = order.side.toLowerCase() == 'buy';
+    final quantityAndPriceText = _formatQuantityAndPrice(order);
+    final statusLabel = _getStatusLabel(order);
+    final orderDateText = _formatDate(order.createdAt);
     
-    return Container(
-      margin: EdgeInsets.only(bottom: context.h(22)),
-      padding: EdgeInsets.symmetric(horizontal: context.w(16)),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 날짜 (MM.DD)
-          Container(
-            width: context.w(40),
-            padding: EdgeInsets.only(top: context.h(11)),
-            child: Text(
-              _formatDate(order.createdAt),
-              style: AppFonts.c1.copyWith(
-                color: AppColors.gray900,
-                fontSize: 14,
-                height: 1.21,
-              ),
-            ),
-          ),
-          
-          SizedBox(width: context.w(16)),
-          
-          // 심볼과 상태
-          Expanded(
-            child: GestureDetector(
-              onLongPress: () {
-                setState(() {
-                  _selectedOrderId = isSelected ? null : order.orderId;
-                });
-              },
-              onTap: () {
-                if (isSelected) {
-                  _showDeleteDialog(order);
-                } else {
-                  // 주문 상세 화면으로 이동
-                  context.push('/order-detail/${order.orderId}');
-                }
-              },
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    order.symbol,
-                    style: AppFonts.b2Semibold.copyWith(
-                      color: AppColors.gray900,
-                      fontSize: 16,
-                      height: 1.25,
-                    ),
-                  ),
-                  SizedBox(height: context.h(4)),
-                  Text(
-                    _getStatusLabel(order),
-                    style: AppFonts.c1.copyWith(
-                      color: _getStatusColor(order),
-                      fontSize: 13,
-                      height: 1.31,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // 수량과 가격 또는 삭제 버튼
-          if (isSelected)
-            GestureDetector(
-              onTap: () => _showDeleteDialog(order),
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: context.w(12), vertical: context.h(6)),
-                decoration: BoxDecoration(
-                  color: Colors.red,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  '삭제',
-                  style: AppFonts.c1.copyWith(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            )
-          else
-            Text(
-              _formatQuantityAndPrice(order),
-              style: AppFonts.c1.copyWith(
-                color: AppColors.gray900,
-                fontSize: 14,
-                height: 1.21,
-              ),
-            ),
-        ],
-      ),
+    return OrderHistoryItem(
+      orderDateText: orderDateText,
+      symbol: order.symbol,
+      quantityAndPriceText: quantityAndPriceText,
+      statusText: statusLabel,
+      isBuy: isBuy,
+      isSelected: isSelected,
+      onTap: () {
+        if (isSelected) {
+          _showDeleteDialog(order);
+        } else {
+          context.push('/order-detail/${order.orderId}');
+        }
+      },
+      onLongPress: () {
+        setState(() {
+          _selectedOrderId = isSelected ? null : order.orderId;
+        });
+      },
+      onDeleteTap: () => _showDeleteDialog(order),
     );
   }
 
@@ -1167,7 +1100,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       height: context.h(32),
                       padding: EdgeInsets.all(context.w(4)),
                       child: SvgPicture.asset(
-                        'assets/icons/report.svg',
+                        'assets/icons/trade/order_history_screen/report.svg',
                         width: context.w(24),
                         height: context.h(24),
                       ),

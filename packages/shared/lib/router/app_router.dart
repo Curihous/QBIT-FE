@@ -94,21 +94,18 @@ class AppRouter {
           // 알파카 인증 콜백 처리
           final success = state.uri.queryParameters['success'] == 'true';
           
-          // 성공 시 투자 화면으로 이동
-          if (success) {
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (context.mounted) {
+          // 즉시 화면 이동 처리
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              if (success) {
+                // 성공 시 투자 화면으로 이동
                 context.go('/trade');
+              } else {
+                // 실패 시 Alpaca 인증 화면으로 이동
+                context.go('/alpaca-auth');
               }
-            });
-          } else {
-            // 실패 시 이전 화면으로 돌아가기
-            Future.delayed(const Duration(milliseconds: 500), () {
-              if (context.mounted) {
-                context.pop();
-              }
-            });
-          }
+            }
+          });
           
           // 로딩 화면 표시
           return Scaffold(
