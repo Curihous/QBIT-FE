@@ -161,6 +161,7 @@ class OrderApiService {
   static Future<Map<String, dynamic>?> getOrderHistory({
     String? symbol,
     String? status,
+    String? side,
     int page = 0,
     int size = 100,
   }) async {
@@ -174,6 +175,9 @@ class OrderApiService {
       
       if (symbol != null) {
         queryParams['symbol'] = symbol;
+      }
+      if (side != null) {
+        queryParams['side'] = side;
       }
       if (status != null) {
         queryParams['status'] = status;
