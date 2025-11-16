@@ -34,14 +34,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Spacer(flex: 3),
               
               // Qbit 로고
-              Text(
-                'Qbit',
-                style: GoogleFonts.shrikhand(
-                  fontSize: 44,
-                  fontWeight: FontWeight.w500,
-                  fontStyle: FontStyle.italic,
-                  color: AppColors.primary,
-                ),
+              SvgPicture.asset(
+                'assets/images/Qbit_logo_intro_primary.svg',
+                width: 98,
+                height: 43,
               ),
               
               SizedBox(height: context.h(24)),
