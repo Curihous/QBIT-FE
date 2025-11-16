@@ -318,6 +318,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   // 거래 사이클 데이터 로드
   Future<void> _fetchTradeCycles() async {
     print('💡💡💡 _fetchTradeCycles 호출됨');
+    if (_selectedTab == '사이클') {
+      setState(() => _isLoading = true);
+    }
+    
     try {
       print('💡 거래 사이클 조회 시작');
       final response = await OrderApiService.getTradeCycles(page: 0, size: 100);
@@ -334,9 +338,12 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         setState(() {
           _cycleData = response.content
             ..sort((a, b) {
-              // 종료일이 가장 최신인 순으로 정렬
-              return b.endDate.compareTo(a.endDate);
+              // 종료일이 가장 최신인 순으로 정렬 (null인 경우 startDate 사용)
+              final aEndDate = a.endDate ?? a.startDate;
+              final bEndDate = b.endDate ?? b.startDate;
+              return bEndDate.compareTo(aEndDate);
             });
+          _isLoading = false;
         });
         print('💡 사이클 데이터 업데이트 완료: ${_cycleData.length}개');
         if (_cycleData.isNotEmpty) {
@@ -344,11 +351,23 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         }
       } else {
         print('💡 거래 사이클 응답이 null입니다 (mounted: $mounted)');
+        if (mounted) {
+          setState(() {
+            _cycleData = [];
+            _isLoading = false;
+          });
+        }
       }
     } catch (error, stackTrace) {
       print('💡 거래 사이클 조회 실패: $error');
       print('💡 에러 타입: ${error.runtimeType}');
       print('💡 에러 스택: $stackTrace');
+      if (mounted) {
+        setState(() {
+          _cycleData = [];
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -983,9 +1002,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   Widget _buildCycleItem(TradeCycleResponseDto cycle) {
     // 날짜 범위 포맷팅
     final startDate = cycle.startDate;
-    final endDate = cycle.endDate;
-    final dateRangeText =
-        '${startDate.year.toString().substring(2)}.${startDate.month.toString().padLeft(2, '0')}.${startDate.day.toString().padLeft(2, '0')} - ${endDate.year.toString().substring(2)}.${endDate.month.toString().padLeft(2, '0')}.${endDate.day.toString().padLeft(2, '0')}';
+    final endDate = cycle.endDate ?? startDate; // endDate가 null이면 startDate 사용
+    final startDateText = '${startDate.year.toString().substring(2)}.${startDate.month.toString().padLeft(2, '0')}.${startDate.day.toString().padLeft(2, '0')}';
+    final endDateText = '${endDate.year.toString().substring(2)}.${endDate.month.toString().padLeft(2, '0')}.${endDate.day.toString().padLeft(2, '0')}';
+    final dateRangeText = '$startDateText - $endDateText';
     
     // 손익률 포맷팅
     final profitLossRate = cycle.profitLossRate;

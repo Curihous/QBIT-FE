@@ -40,7 +40,6 @@ flutter:
     - assets/icons/trade/order_history_screen/
     - assets/icons/trade/trade_report_screen/
     - assets/cards/
-    - .env
   
   fonts:
     - family: Pretendard

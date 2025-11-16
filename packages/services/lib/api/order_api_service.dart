@@ -223,8 +223,8 @@ class OrderApiService {
         'size': size,
       };
       
-      print('💡 거래 사이클 API 호출: /trade-cycles');
-      final response = await _dio.get('/trade-cycles', queryParameters: queryParams);
+      print('💡 거래 사이클 API 호출: /trading/trade-cycles');
+      final response = await _dio.get('/trading/trade-cycles', queryParameters: queryParams);
       
       print('💡 거래 사이클 API 응답 상태코드: ${response.statusCode}');
       

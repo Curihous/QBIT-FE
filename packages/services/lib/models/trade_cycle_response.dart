@@ -4,7 +4,7 @@ class TradeCycleResponseDto {
   final String symbol;
   final String? logoUrl;
   final DateTime startDate;
-  final DateTime endDate;
+  final DateTime? endDate; // nullable
   final double profitLossRate;
   final double profitLossAmount;
 
@@ -13,7 +13,7 @@ class TradeCycleResponseDto {
     required this.symbol,
     this.logoUrl,
     required this.startDate,
-    required this.endDate,
+    this.endDate, // nullable
     required this.profitLossRate,
     required this.profitLossAmount,
   });
@@ -24,7 +24,9 @@ class TradeCycleResponseDto {
       symbol: json['symbol'] as String,
       logoUrl: json['logoUrl'] as String?,
       startDate: DateTime.parse(json['startDate'] as String),
-      endDate: DateTime.parse(json['endDate'] as String),
+      endDate: json['endDate'] != null
+          ? DateTime.parse(json['endDate'] as String)
+          : null,
       profitLossRate: (json['profitLossRate'] as num).toDouble(),
       profitLossAmount: (json['profitLossAmount'] as num).toDouble(),
     );
@@ -36,7 +38,7 @@ class TradeCycleResponseDto {
       'symbol': symbol,
       'logoUrl': logoUrl,
       'startDate': startDate.toIso8601String(),
-      'endDate': endDate.toIso8601String(),
+      'endDate': endDate?.toIso8601String(),
       'profitLossRate': profitLossRate,
       'profitLossAmount': profitLossAmount,
     };

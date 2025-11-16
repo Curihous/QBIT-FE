@@ -4,6 +4,8 @@ import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/widgets/common/header_basic.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_services/api/learning_card_api_service.dart';
+import 'package:qbit_services/api/report_api_service.dart';
+import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/models/learning_card_model.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:go_router/go_router.dart';
@@ -52,29 +54,63 @@ class _StudyScreenState extends State<StudyScreen> {
     }
   }
   
-  // 추천 카드 로드 (id=1, id=16)
+  // 추천 카드 로드 (리포트에서 추천하는 카드)
   Future<void> _loadRecommendedCards() async {
     setState(() {
       _isLoadingRecommended = true;
     });
     
     try {
+      // 리포트에서 추천하는 학습 카드 ID 가져오기
+      // 최근 거래 사이클 조회
+      List<int> recommendedCardIds = [];
+      
+      try {
+        final cyclesResponse = await OrderApiService.getTradeCycles(page: 0, size: 1);
+        debugPrint('📚 [학습] 거래 사이클 조회 결과: ${cyclesResponse != null ? "성공" : "실패"}');
+        
+        if (cyclesResponse != null && cyclesResponse.content.isNotEmpty) {
+          final latestCycle = cyclesResponse.content.first;
+          debugPrint('📚 [학습] 최근 거래 사이클 ID: ${latestCycle.tradeCycleId}');
+          
+          final report = await ReportApiService.getTradeReport(latestCycle.tradeCycleId);
+          debugPrint('📚 [학습] 리포트 조회 결과: ${report != null ? "성공" : "실패"}');
+          
+          if (report != null && report.learningCards.isNotEmpty) {
+            recommendedCardIds = report.learningCards.map((c) => c.id).toList();
+            debugPrint('📚 [학습] 리포트에서 추천 카드 ID 가져옴: $recommendedCardIds');
+          } else {
+            debugPrint('📚 [학습] 리포트에 학습 카드가 없음');
+          }
+        } else {
+          debugPrint('📚 [학습] 거래 사이클이 없음');
+        }
+      } catch (e) {
+        debugPrint('📚 [학습] 거래 사이클/리포트 조회 중 에러: $e');
+      }
+      
+      // 리포트에서 추천 카드가 없으면 기본 추천 카드 ID 사용 (9, 11, 17)
+      if (recommendedCardIds.isEmpty) {
+        recommendedCardIds = [9, 11, 17];
+        debugPrint('📚 [학습] 기본 추천 카드 ID 사용: $recommendedCardIds');
+      }
+      
       final response = await LearningCardApiService.getLearningCards();
       
       if (mounted) {
-        if (response != null && response.success) {
-          // id=1, id=16 필터링
-          final filteredCards = response.cards
-              .where((card) => card.id == 1 || card.id == 16)
+        if (response != null && response.isNotEmpty) {
+          // 리포트에서 추천하는 카드 ID로 필터링
+          final filteredCards = response
+              .where((card) => recommendedCardIds.contains(card.id))
               .toList();
           
-          // 정렬: ID 1번이 먼저 오도록
+          // 추천 카드 ID 순서대로 정렬
           filteredCards.sort((a, b) {
-            if (a.id == 1) return -1;
-            if (b.id == 1) return 1;
-            if (a.id == 16) return -1;
-            if (b.id == 16) return 1;
-            return 0;
+            final indexA = recommendedCardIds.indexOf(a.id);
+            final indexB = recommendedCardIds.indexOf(b.id);
+            if (indexA == -1) return 1;
+            if (indexB == -1) return -1;
+            return indexA.compareTo(indexB);
           });
           
           setState(() {
@@ -111,9 +147,9 @@ class _StudyScreenState extends State<StudyScreen> {
         );
         
         if (mounted) {
-          if (response != null && response.success) {
+          if (response != null && response.isNotEmpty) {
             setState(() {
-              _levelCards[level] = response.cards;
+              _levelCards[level] = response;
               _isLoadingLevel[level] = false;
             });
           } else {
@@ -211,9 +247,8 @@ class _StudyScreenState extends State<StudyScreen> {
                                 _buildLearningCard(
                                   context,
                                   card: card,
-                                  cardIndex: index, // 추천: image1, image2
                                   onTap: () {
-                                    context.push('/learning-card/${card.category}', extra: card.keywordsList);
+                                    context.push('/learning-card/${card.id}', extra: card);
                                   },
                                 ),
                                 if (index < _recommendedCards.length - 1)
@@ -331,10 +366,6 @@ class _StudyScreenState extends State<StudyScreen> {
       );
     }
     
-    // 각 레벨별로 시작 이미지 인덱스를 다르게 설정하여 골고루 사용
-    // Level 1: image3부터 시작, Level 2: image5부터 시작, Level 3: image2부터 시작
-    final startImageIndex = level == 1 ? 2 : (level == 2 ? 4 : 1);
-    
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -342,16 +373,13 @@ class _StudyScreenState extends State<StudyScreen> {
           ...cards.asMap().entries.map((entry) {
             final index = entry.key;
             final card = entry.value;
-            // 각 레벨별 시작 인덱스 + 카드 인덱스를 더해서 5로 나눈 나머지
-            final imageIndex = (startImageIndex + index) % 5;
             return Row(
               children: [
                 _buildLearningCard(
                   context,
                   card: card,
-                  cardIndex: imageIndex, // image1~image5 골고루 사용
                   onTap: () {
-                    context.push('/learning-card/${card.category}', extra: card.keywordsList);
+                    context.push('/learning-card/${card.id}', extra: card);
                   },
                 ),
                 if (index < cards.length - 1)
@@ -364,130 +392,108 @@ class _StudyScreenState extends State<StudyScreen> {
     );
   }
   
-  // 학습 카드 위젯 (홈화면과 동일)
+  // 학습 카드 위젯 (리포트 화면과 동일한 디자인)
   Widget _buildLearningCard(
     BuildContext context, {
     LearningCard? card,
     String? title,
     String? tag,
     required VoidCallback onTap,
-    int? cardIndex,
   }) {
     final cardTitle = card?.title ?? title ?? '제목 제목 제목';
-    final cardTag = card != null 
-        ? '#${card.category}'
-        : (tag ?? '#태그태그');
+    final categoryLabel = card != null 
+        ? (card.category.isNotEmpty ? card.category : '학습 카드')
+        : (tag ?? '학습 카드');
     
-    // 카드 인덱스에 따라 이미지 경로 결정 (0: image1.png, 1: image2.png, ...)
-    final imagePath = cardIndex != null 
-        ? 'assets/cards/image${(cardIndex % 5) + 1}.png'
-        : 'assets/cards/image1.png';
+    // 리포트 화면과 동일하게 demo_bg 이미지 사용 (순환)
+    final imagePaths = [
+      'assets/icons/trade/trade_report_screen/demo_bg1.png',
+      'assets/icons/trade/trade_report_screen/demo_bg2.png',
+      'assets/icons/trade/trade_report_screen/demo_bg3.png',
+    ];
+    final imageIndex = card != null ? (card.id % imagePaths.length) : 0;
+    final imagePath = imagePaths[imageIndex];
 
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: context.w(234),
-        height: context.h(163),
-        decoration: ShapeDecoration(
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          width: context.w(234),
+          height: context.h(163),
+          decoration: BoxDecoration(
+            color: AppColors.secondaryBG,
           ),
-        ),
-        child: Stack(
-          children: [
-            // 배경 이미지
-            Positioned(
-              left: 0,
-              top: 0,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.asset(
-                  imagePath,
-                  width: context.w(234),
-                  height: context.h(163),
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      width: context.w(234),
-                      height: context.h(163),
-                      decoration: ShapeDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment(0.50, -0.00),
-                          end: Alignment(0.50, 1.00),
-                          colors: [Color(0xFFD9D9D9), Color(0xFF737373)],
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 배경 이미지
+              Image.asset(
+                imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment(0.50, -0.00),
+                        end: Alignment(0.50, 1.00),
+                        colors: [Color(0xFFD9D9D9), Color(0xFF737373)],
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
-            ),
-            // 그라데이션 오버레이
-            Positioned(
-              left: 0,
-              top: 0,
-              child: Container(
-                width: context.w(234),
-                height: context.h(163),
-                decoration: ShapeDecoration(
+              // 그라데이션 오버레이 (리포트와 동일)
+              Container(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
+                    begin: Alignment.bottomCenter,
+                    end: Alignment.topCenter,
                     colors: [
-                      Colors.transparent,
-                      Colors.black.withOpacity(0.6),
+                      Colors.black.withOpacity(0.55),
+                      Colors.black.withOpacity(0.1),
                     ],
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
                 ),
               ),
-            ),
-            // 제목
-            Positioned(
-              left: context.w(13),
-              top: context.h(92),
-              child: Text(
-                cardTitle,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontFamily: 'Pretendard',
-                  fontWeight: FontWeight.w700,
-                  height: 1.25,
+              // 텍스트 (리포트와 동일)
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        categoryLabel,
+                        style: AppFonts.c2.copyWith(
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      cardTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppFonts.b1Semibold.copyWith(
+                        color: Colors.white,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            // 태그
-            Positioned(
-              left: context.w(13),
-              top: context.h(127),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: ShapeDecoration(
-                  color: const Color(0xFFE6F4F1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                child: Text(
-                  cardTag,
-                  style: TextStyle(
-                    color: const Color(0xFF323232),
-                    fontSize: 13,
-                    fontFamily: 'Pretendard',
-                    fontWeight: FontWeight.w400,
-                    height: 1.23,
-                  ),
-                ),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

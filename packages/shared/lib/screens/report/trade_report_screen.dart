@@ -9,7 +9,7 @@ import 'package:qbit_services/api/report_api_service.dart';
 import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/models/trade_report_model.dart';
 import 'package:qbit_services/models/trade_cycle_report_model.dart';
-import 'package:qbit_shared/widgets/chart/candlestick_chart.dart';
+import 'package:qbit_shared/widgets/chart/trade_report_chart.dart';
 
 class TradeReportScreen extends StatefulWidget {
   final int tradeCycleId;
@@ -113,8 +113,10 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
     // 상단 카드에 사용할 값들 (없으면 기본값)
     String dateRangeText = '';
     String symbolText = '-';
+    String stockNameText = 'Figma (FIG)';
     String realizedPlRateText = '--%';
-    String realizedPlAmountText = '-- USD';
+    String realizedPlAmountText = '--';
+    String realizedPlAmountUsdText = 'USD';
     Color realizedPlAmountColor = AppColors.gray900;
 
     if (cycle != null) {
@@ -126,6 +128,8 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
           '${end.year}.${end.month.toString().padLeft(2, '0')}.${end.day.toString().padLeft(2, '0')}';
 
       symbolText = cycle.symbol;
+      // mock
+      stockNameText = 'Figma (FIG)';
 
       final rate = cycle.profitLossRate;
       // 상세 응답에는 금액 필드가 없으므로, 최대 투입 금액과 손익률로 추정
@@ -135,8 +139,13 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
       final amountSign = amount > 0 ? '+' : amount < 0 ? '-' : '';
 
       realizedPlRateText = '$rateSign${rate.abs().toStringAsFixed(2)}%';
-      realizedPlAmountText =
-          '$amountSign${amount.abs().toStringAsFixed(2)} USD';
+      // 숫자 포맷팅 (천 단위 콤마)
+      final formattedAmount = amount.abs().toStringAsFixed(2).replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (Match m) => '${m[1]},',
+      );
+      realizedPlAmountText = '$amountSign$formattedAmount';
+      realizedPlAmountUsdText = 'USD';
       realizedPlAmountColor =
           amount >= 0 ? AppColors.loss : AppColors.profit;
     }
@@ -170,7 +179,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '변화를 기회로 보는 성장형',
+                        '변화를 엿보는 성장형',
                         style: AppFonts.t2Bold.copyWith(
                           color: AppColors.primary,
                           height: 1.3,
@@ -180,40 +189,34 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                   ),
                 ),
                 SizedBox(width: context.w(12)),
-                Container(
-                  width: context.w(122),
-                  height: context.h(122),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(25),
-                  ),
-                  child: Center(
-                    child: SvgPicture.asset(
-                      'assets/icons/trade/trade_report_screen/owl_head.svg',
-                      width: context.w(90),
-                      height: context.h(90),
-                    ),
-                  ),
+                SizedBox(
+                  width: context.w(120),
+                  height: context.h(120),
                 ),
               ],
             ),
           ),
 
-          // 메인 내용 영역
-          Container(
-            color: AppColors.gray30,
-            padding: EdgeInsets.symmetric(
-              horizontal: context.w(16),
-              vertical: context.h(16),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 요약 카드 (기간 / 종목 / 실현 손익 + 4개 지표)
-                Container(
-                  width: double.infinity,
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // 부엉이 아이콘
+              Positioned(
+                right: context.w(20),
+                top: context.h(-140),
+                child: SvgPicture.asset(
+                  'assets/icons/trade/trade_report_screen/owl_head.svg',
+                  width: context.w(120),
+                  height: context.h(120),
+                ),
+              ),
+              // 요약 카드
+              Transform.translate(
+                offset: Offset(0, -context.h(40)), // 부엉이와 겹치게
+                child: Container(
+        width: double.infinity,
                   constraints: BoxConstraints(
-                    minHeight: context.h(260),
+                    minHeight: context.h(367),
                   ),
                   padding: EdgeInsets.symmetric(
                     horizontal: context.w(20),
@@ -231,14 +234,16 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                     children: [
                       if (dateRangeText.isNotEmpty) ...[
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             Text(
                               dateRangeText,
                               style: AppFonts.c1.copyWith(
-                                color: AppColors.gray600,
+                                color: const Color(0xFF7F7F7F), // Gray-600
+                                fontFamily: 'Pretendard',
                               ),
                             ),
+                            const SizedBox(width: 4),
                             const Icon(
                               Icons.chevron_right,
                               size: 18,
@@ -250,26 +255,24 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       ],
                       // 종목 + 수익률 배지
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Expanded(
-                            child: Text(
-                              symbolText,
-                              style: AppFonts.t2Bold.copyWith(
-                                color: AppColors.gray900,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          Text(
+                            stockNameText,
+                            style: AppFonts.t2Bold.copyWith(
+                              color: AppColors.gray900,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           if (cycle != null) ...[
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
+        decoration: BoxDecoration(
+          color: Colors.white,
                                 borderRadius: BorderRadius.circular(999),
                                 border: Border.all(
                                   color: realizedPlAmountColor,
@@ -290,25 +293,46 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       const SizedBox(height: 24),
 
                       // 실현 손익 (금액)
-                      Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              '실현 손익',
-                              style: AppFonts.c1.copyWith(
-                                color: AppColors.gray600,
-                              ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            '실현 손익',
+                            style: AppFonts.b2Regular.copyWith(
+                              color: const Color(0xFF7F7F7F), // Gray-600
+                              fontFamily: 'Pretendard',
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              realizedPlAmountText,
-                              style: AppFonts.t2Bold.copyWith(
-                                color: realizedPlAmountColor,
-                                fontSize: 28,
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                realizedPlAmountText,
+                                style: TextStyle(
+                                  color: realizedPlAmountColor,
+                                  fontSize: 28,
+                                  fontFamily: 'Pretendard',
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
                               ),
-                            ),
-                          ],
-                        ),
+                              const SizedBox(width: 4),
+                              Text(
+                                realizedPlAmountUsdText,
+                                style: TextStyle(
+                                  color: realizedPlAmountColor,
+                                  fontSize: 16,
+                                  fontFamily: 'Pretendard',
+                                  fontWeight: FontWeight.normal,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
 
                       const SizedBox(height: 24),
@@ -337,7 +361,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       ),
                       SizedBox(height: context.h(10)),
                       Row(
-                        children: [
+          children: [
                           Expanded(
                             child: _buildSummaryStatCard(
                               title: '평균 매수가',
@@ -361,7 +385,20 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                     ],
                   ),
                 ),
+              ),
+            ],
+          ),
 
+          // 메인 내용 영역 (회색 배경)
+          Container(
+            color: AppColors.gray30,
+            padding: EdgeInsets.symmetric(
+              horizontal: context.w(16),
+              vertical: context.h(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
                 const SizedBox(height: 24),
 
                 // 상세 분석 차트
@@ -375,14 +412,21 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                   ),
                   const SizedBox(height: 12),
                   Container(
-                    height: context.h(260),
-                    padding: const EdgeInsets.all(12),
+                    height: context.h(400),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color.fromRGBO(0, 0, 0, 0.04),
+                          offset: Offset(0, 4),
+                          blurRadius: 12,
+                        ),
+                      ],
                     ),
-                    child: CandlestickChart(
+                    child: TradeReportChart(
                       candles: cycle.chartData,
+                      tradePoints: cycle.tradePoints,
                       interval: cycle.interval,
                     ),
                   ),
@@ -412,7 +456,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       ),
                     ],
                   ),
-                  child: Text(
+              child: Text(
                     report.overallEvaluation,
                     style: AppFonts.b1Regular.copyWith(color: AppColors.gray600),
                   ),
@@ -443,7 +487,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       ),
                     ],
                   ),
-                  child: Text(
+                child: Text(
                     report.marketContext,
                     style: AppFonts.b1Regular.copyWith(color: AppColors.gray600),
                   ),
@@ -549,8 +593,8 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                 if (report.learningCards.isNotEmpty) ...[
                   Text(
                     '추천 학습',
-                    style: AppFonts.t2Bold.copyWith(
-                      color: AppColors.gray900,
+                  style: AppFonts.t2Bold.copyWith(
+                    color: AppColors.gray900,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -679,9 +723,9 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       categoryLabel,
                       style: AppFonts.c2.copyWith(
                         color: Colors.white,
-                      ),
-                    ),
-                  ),
+                ),
+              ),
+            ),
                   const SizedBox(height: 6),
                   Text(
                     title,
@@ -718,21 +762,24 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             title,
             style: AppFonts.c1.copyWith(
-              color: AppColors.gray600,
+              color: const Color(0xFF7F7F7F), // Gray-600
             ),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
             value,
-            style: AppFonts.b2Semibold.copyWith(
-              color: AppColors.gray900,
+            style: AppFonts.b1Semibold.copyWith(
+              color: const Color(0xFF323232), // gray-900-font-black
+              fontFamily: 'Pretendard',
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
