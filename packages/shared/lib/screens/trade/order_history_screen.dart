@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qbit_shared/widgets/common/header_back.dart';
 import 'package:qbit_shared/widgets/common/button/filter_button.dart';
 import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
@@ -16,6 +15,7 @@ import 'package:qbit_services/api/order_websocket_service.dart';
 import 'package:qbit_services/models/order_update_message.dart';
 import 'package:qbit_services/models/trade_cycle_response.dart';
 import 'package:qbit_shared/widgets/order/order_history_item.dart';
+import 'package:qbit_shared/widgets/order/trade_cycle_item.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 
 // OrderModel - API 응답 데이터 모델
@@ -967,7 +967,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
     print('💡 사이클 리스트 빌드 시작 - ${_cycleData.length}개 아이템');
     return ListView.builder(
-      padding: EdgeInsets.zero,
+      padding: EdgeInsets.only(
+        top: context.h(8),
+        bottom: context.h(12),
+      ),
       itemCount: _cycleData.length,
       itemBuilder: (context, index) {
         final cycle = _cycleData[index];
@@ -981,7 +984,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     // 날짜 범위 포맷팅
     final startDate = cycle.startDate;
     final endDate = cycle.endDate;
-    final dateRangeText = '${startDate.year.toString().substring(2)}.${startDate.month.toString().padLeft(2, '0')}.${startDate.day.toString().padLeft(2, '0')}-${endDate.year.toString().substring(2)}.${endDate.month.toString().padLeft(2, '0')}.${endDate.day.toString().padLeft(2, '0')}';
+    final dateRangeText =
+        '${startDate.year.toString().substring(2)}.${startDate.month.toString().padLeft(2, '0')}.${startDate.day.toString().padLeft(2, '0')} - ${endDate.year.toString().substring(2)}.${endDate.month.toString().padLeft(2, '0')}.${endDate.day.toString().padLeft(2, '0')}';
     
     // 손익률 포맷팅
     final profitLossRate = cycle.profitLossRate;
@@ -996,7 +1000,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     
     // 손익 금액 포맷팅
     final profitLossAmount = cycle.profitLossAmount;
-    final profitLossAmountText = '\$${profitLossAmount.toStringAsFixed(2)}';
+    final profitLossAmountText = '\$${profitLossAmount.abs().toStringAsFixed(2)}';
     
     // 손익률 색상 (양수: 빨간색, 음수: 파란색)
     final profitLossColor = profitLossRate >= 0 ? AppColors.loss : AppColors.profit;
@@ -1004,114 +1008,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     print('💡 _buildCycleItem - symbol: ${cycle.symbol}, rate: $profitLossRate, amount: $profitLossAmount');
     print('💡 포맷팅된 텍스트: $profitLossRateText · $profitLossAmountText');
     
-    return Container(
-      width: double.infinity,
-      margin: EdgeInsets.only(bottom: context.h(18)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 날짜 범위
-          Padding(
-            padding: EdgeInsets.only(left: context.w(16), bottom: context.h(2)),
-            child: SizedBox(
-              width: context.w(104),
-              height: context.h(18),
-              child: Text(
-                dateRangeText,
-                style: AppFonts.c1.copyWith(
-                  color: AppColors.gray600,
-                  fontSize: 13,
-                  height: 1.23,
-                ),
-              ),
-            ),
-          ),
-          
-          // 메인 컨텐츠 영역
-          Container(
-            width: double.infinity,
-            height: context.h(65),
-            padding: EdgeInsets.symmetric(horizontal: context.w(16)),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 회사 로고 (원형)
-                Container(
-                  width: context.w(44),
-                  height: context.h(44),
-                  margin: EdgeInsets.only(top: context.h(11)),
-                  decoration: const ShapeDecoration(
-                    color: AppColors.secondaryBG,
-                    shape: OvalBorder(),
-                  ),
-                  child: Center(
-                    child: _buildCycleLogo(context, cycle.logoUrl, cycle.symbol),
-                  ),
-                ),
-                
-                SizedBox(width: context.w(14)),
-                
-                // 심볼명과 손익률/금액을 세로로 배치
-                Expanded(
-                  child: Padding(
-                    padding: EdgeInsets.only(top: context.h(13)),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 심볼명
-                        Text(
-                          cycle.symbol,
-                          style: AppFonts.b1Semibold.copyWith(
-                            color: AppColors.gray900,
-                            fontSize: 16,
-                            height: 1.25,
-                          ),
-                        ),
-                        
-                        SizedBox(height: context.h(5)),
-                        
-                        // 손익률 및 손익 금액
-                        Text(
-                          '$profitLossRateText · $profitLossAmountText',
-                          style: AppFonts.c1.copyWith(
-                            color: profitLossColor,
-                            fontSize: 13,
-                            height: 1.23,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // 리포트 아이콘
-                Padding(
-                  padding: EdgeInsets.only(top: context.h(11)),
-                  child: GestureDetector(
-                    onTap: () {
-                      context.push('/trade-report');
-                    },
-                    child: Container(
-                      width: context.w(32),
-                      height: context.h(32),
-                      padding: EdgeInsets.all(context.w(4)),
-                      child: SvgPicture.asset(
-                        'assets/icons/trade/order_history_screen/report.svg',
-                        width: context.w(24),
-                        height: context.h(24),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return TradeCycleItem(
+      dateRangeText: dateRangeText,
+      leading: _buildCycleLogo(context, cycle.logoUrl, cycle.symbol),
+      symbol: cycle.symbol,
+      profitLossText: '$profitLossRateText · $profitLossAmountText',
+      profitLossColor: profitLossColor,
+      onReportTap: () {
+        context.push('/trade-report');
+      },
     );
   }
 
