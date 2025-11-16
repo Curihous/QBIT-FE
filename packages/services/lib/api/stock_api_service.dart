@@ -565,6 +565,81 @@ class StockApiService {
     }
   }
 
+  /// 보유 종목 리스트 조회
+  /// GET /portfolios/positions
+  /// marketValue 순으로 정렬된 상위 3개 종목의 심볼 리스트 반환
+  static Future<List<String>?> getPositions() async {
+    try {
+      logger.i('보유 종목 리스트 조회 시작');
+      
+      final response = await _dio.get(
+        '/portfolios/positions',
+      ).timeout(const Duration(seconds: 10));
+      
+      if (response.statusCode == 200) {
+        logger.i('보유 종목 리스트 조회 성공');
+        logger.i('응답 데이터: ${response.data}');
+        
+        List<Map<String, dynamic>> positions = [];
+        
+        if (response.data is List) {
+          // 리스트 형태로 반환되는 경우
+          positions = (response.data as List)
+              .whereType<Map<String, dynamic>>()
+              .toList();
+        } else if (response.data is Map<String, dynamic>) {
+          // 맵 형태로 반환되는 경우 (예: {content: [...]})
+          final data = response.data as Map<String, dynamic>;
+          if (data['content'] is List) {
+            positions = (data['content'] as List)
+                .whereType<Map<String, dynamic>>()
+                .toList();
+          } else if (data['positions'] is List) {
+            positions = (data['positions'] as List)
+                .whereType<Map<String, dynamic>>()
+                .toList();
+          }
+        }
+        
+        if (positions.isEmpty) {
+          logger.i('보유 종목 없음');
+          return [];
+        }
+        
+        // marketValue 순으로 정렬 (내림차순)
+        positions.sort((a, b) {
+          final aValue = (a['marketValue'] as num?)?.toDouble() ?? 0.0;
+          final bValue = (b['marketValue'] as num?)?.toDouble() ?? 0.0;
+          return bValue.compareTo(aValue);
+        });
+        
+        // 상위 3개 종목의 심볼 추출
+        final tickers = positions
+            .take(3)
+            .map((item) => item['symbol'] as String?)
+            .where((symbol) => symbol != null && symbol.isNotEmpty)
+            .cast<String>()
+            .toList();
+        
+        logger.i('보유 종목 개수: ${positions.length}, 상위 3개: $tickers');
+        return tickers;
+      } else {
+        logger.e('보유 종목 리스트 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } on TimeoutException catch (error) {
+      logger.e('보유 종목 리스트 조회 타임아웃: $error');
+      return null;
+    } catch (error) {
+      logger.e('보유 종목 리스트 조회 에러: $error');
+      if (error is DioException) {
+        logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');
+        logger.e('Dio 에러 데이터: ${error.response?.data}');
+      }
+      return null;
+    }
+  }
+
   /// 포지션 상세 정보 조회 (매수 가능 금액 및 보유 수량)
   /// GET /portfolios/positions/detail?symbol={symbol}
   static Future<Map<String, dynamic>?> getPositionDetail(String symbol) async {

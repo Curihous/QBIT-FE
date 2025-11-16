@@ -10,9 +10,14 @@ import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/storage/token_service.dart';
+import 'package:qbit_services/api/ai_api_service.dart';
+import 'package:qbit_services/api/stock_api_service.dart';
+import 'package:qbit_services/models/recommend_column_response.dart';
+import 'package:qbit_services/models/column.dart' as models;
 import 'package:kakao_flutter_sdk_auth/kakao_flutter_sdk_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -67,6 +72,9 @@ class HomeContentScreen extends StatefulWidget {
 class _HomeContentScreenState extends State<HomeContentScreen> {
   String _userNickname = '';
   String _currentDate = '';
+  RecommendColumnResponse? _columnResponse;
+  bool _isLoadingColumn = false;
+  String? _columnError;
 
   @override
   void initState() {
@@ -75,6 +83,7 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeLocaleAndSetDate();
       _loadUserData();
+      _loadColumn();
       _printTokens();
     });
   }
@@ -141,6 +150,57 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
     }
   }
 
+  // 칼럼 추천 로드
+  Future<void> _loadColumn() async {
+    setState(() {
+      _isLoadingColumn = true;
+      _columnError = null;
+    });
+
+    try {
+      // 사용자 포트폴리오 종목 가져오기
+      final positions = await StockApiService.getPositions();
+      final tickers = positions ?? <String>[];
+      
+      // 상위 3개 종목만 사용 (API 권장사항)
+      final topTickers = tickers.take(3).toList();
+      
+      debugPrint('📰 칼럼 추천 요청 시작 - 보유 종목: $tickers, 사용할 종목: $topTickers');
+      final response = await AiApiService.recommendColumn(topTickers);
+      
+      debugPrint('📰 칼럼 추천 응답:');
+      debugPrint('  - success: ${response.success}');
+      debugPrint('  - source: ${response.source}');
+      debugPrint('  - message: ${response.message}');
+      debugPrint('  - ticker: ${response.column.ticker}');
+      debugPrint('  - title: ${response.column.title}');
+      debugPrint('  - subtitle: ${response.column.subtitle}');
+      
+      if (mounted) {
+        setState(() {
+          _columnResponse = response;
+          _isLoadingColumn = false;
+        });
+      }
+    } on ApiException catch (e) {
+      debugPrint('📰 칼럼 추천 에러: ${e.message}');
+      if (mounted) {
+        setState(() {
+          _columnError = e.message;
+          _isLoadingColumn = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('📰 칼럼 추천 예외: $e');
+      if (mounted) {
+        setState(() {
+          _columnError = '칼럼을 불러오는 중 오류가 발생했습니다.';
+          _isLoadingColumn = false;
+        });
+      }
+    }
+  }
+
   // 토큰 정보 출력
   Future<void> _printTokens() async {
     debugPrint('=== 토큰 정보 ===');
@@ -185,27 +245,93 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
         child: Column(
           children: [
             // 사용자를 위한 소식 섹션
-            Container(
-              width: double.infinity,
-              height: 276,
-              decoration: const BoxDecoration(
-                color: AppColors.secondaryMain, // 노란색 배경
-              ),
-              child: Stack(
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 제목
-                  Positioned(
-                    left: 20,
-                    top: 25,
-                    child: Text(
-                      _userNickname.isNotEmpty 
-                        ? '$_currentDate, $_userNickname님을 위한 소식'
-                        : '$_currentDate, 큐빗을 위한 소식',
-                      style: AppFonts.t2Bold.copyWith(
-                        color: AppColors.gray900,
+                  SizedBox(height: context.h(20)),
+                  // 상단 배너 (11월 16일, user nickname님을 위한 소식)
+                  Container(
+                    width: double.infinity,
+                    height: context.h(48),
+                    decoration: ShapeDecoration(
+                      color: AppColors.primary,
+                      shape: RoundedRectangleBorder(
+                        side: BorderSide(
+                          width: 0.50,
+                          color: AppColors.gray150,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: context.w(16)),
+                      child: Row(
+                        children: [
+                          Text(
+                            '🗞️',
+                            style: TextStyle(
+                              fontSize: context.w(16),
+                            ),
+                          ),
+                          SizedBox(width: context.w(8)),
+                          Expanded(
+                            child: Text(
+                              _userNickname.isNotEmpty 
+                                ? '$_currentDate, $_userNickname님을 위한 소식'
+                                : '$_currentDate, 큐빗을 위한 소식',
+                              style: AppFonts.b1Semibold.copyWith(
+                                color: AppColors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
+                  SizedBox(height: context.h(12)),
+                  
+                  // 칼럼 카드
+                  if (_isLoadingColumn)
+                    Container(
+                      width: double.infinity,
+                      height: context.h(203), // 137 + 66
+                      decoration: BoxDecoration(
+                        color: AppColors.gray100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (_columnError != null)
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.all(context.w(16)),
+                      decoration: BoxDecoration(
+                        color: AppColors.gray100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _columnError!,
+                            style: AppFonts.b1Regular.copyWith(
+                              color: AppColors.gray600,
+                            ),
+                          ),
+                          SizedBox(height: context.h(8)),
+                          TextButton(
+                            onPressed: _loadColumn,
+                            child: const Text('다시 시도'),
+                          ),
+                        ],
+                      ),
+                    )
+                  else if (_columnResponse != null)
+                    _buildColumnCard(_columnResponse!.column as models.Column),
                 ],
               ),
             ),
@@ -244,6 +370,134 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildColumnCard(models.Column column) {
+    return GestureDetector(
+      onTap: () {
+        // 칼럼 상세 화면으로 이동
+        context.pushNamed(
+          'column-detail',
+          pathParameters: {'ticker': column.ticker},
+        );
+      },
+      child: Column(
+        children: [
+          // 이미지 (상단만 radius 12)
+          if (column.imageUrl != null && column.imageUrl!.isNotEmpty)
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              child: Image.network(
+                column.imageUrl!,
+                width: double.infinity,
+                height: context.h(137),
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return Container(
+                    width: double.infinity,
+                    height: context.h(137),
+                    color: AppColors.gray100,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded /
+                                loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, error, stackTrace) => Container(
+                  width: double.infinity,
+                  height: context.h(137),
+                  color: AppColors.gray100,
+                  child: Icon(
+                    Icons.error_outline,
+                    color: AppColors.gray400,
+                    size: context.w(40),
+                  ),
+                ),
+              ),
+            )
+          else
+            Container(
+              width: double.infinity,
+              height: context.h(137),
+              decoration: const BoxDecoration(
+                color: AppColors.gray100,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(12),
+                  topRight: Radius.circular(12),
+                ),
+              ),
+              child: Icon(
+                Icons.image_not_supported,
+                color: AppColors.gray400,
+                size: context.w(40),
+              ),
+            ),
+          
+          // 하단 정보 (하단만 radius 10, 높이 66)
+          Container(
+            width: double.infinity,
+            height: context.h(66),
+            padding: EdgeInsets.symmetric(
+              horizontal: context.w(16),
+              vertical: context.h(12),
+            ),
+            decoration: ShapeDecoration(
+              color: AppColors.gray50,
+              shape: RoundedRectangleBorder(
+                side: BorderSide(
+                  width: 0.50,
+                  color: AppColors.gray150,
+                ),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(10),
+                  bottomRight: Radius.circular(10),
+                ),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 제목
+                Text(
+                  column.title,
+                  style: AppFonts.b1Semibold.copyWith(
+                    color: AppColors.gray900,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: context.h(2)),
+                // 부제 ∙ 심볼
+                Text(
+                  column.subtitle != null && column.subtitle!.isNotEmpty && column.ticker.isNotEmpty
+                      ? '${column.subtitle} ∙ ${column.ticker}'
+                      : column.subtitle != null && column.subtitle!.isNotEmpty
+                          ? column.subtitle!
+                          : column.ticker.isNotEmpty
+                              ? column.ticker
+                              : '',
+                  style: AppFonts.b2Regular.copyWith(
+                    color: AppColors.gray600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
