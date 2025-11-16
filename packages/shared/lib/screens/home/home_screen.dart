@@ -12,8 +12,10 @@ import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/api/ai_api_service.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
+import 'package:qbit_services/api/learning_card_api_service.dart';
 import 'package:qbit_services/models/recommend_column_response.dart';
 import 'package:qbit_services/models/column.dart' as models;
+import 'package:qbit_services/models/learning_card_model.dart';
 import 'package:kakao_flutter_sdk_auth/kakao_flutter_sdk_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -75,6 +77,11 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
   RecommendColumnResponse? _columnResponse;
   bool _isLoadingColumn = false;
   String? _columnError;
+  
+  // 학습 카드 관련
+  List<LearningCard> _learningCards = [];
+  bool _isLoadingLearningCards = false;
+  String? _learningCardsError;
 
   @override
   void initState() {
@@ -84,6 +91,7 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
       _initializeLocaleAndSetDate();
       _loadUserData();
       _loadColumn();
+      _loadLearningCards();
       _printTokens();
     });
   }
@@ -215,6 +223,138 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
     }
   }
 
+  // 학습 카드 로드
+  Future<void> _loadLearningCards() async {
+    setState(() {
+      _isLoadingLearningCards = true;
+      _learningCardsError = null;
+    });
+
+    try {
+      debugPrint('📚 학습 카드 목록 조회 시작...');
+      
+      // 전체 카드 목록 조회
+      final response = await LearningCardApiService.getLearningCards();
+
+      if (mounted) {
+        if (response != null && response.success) {
+          debugPrint('📚 학습 카드 목록 조회 성공: ${response.cards.length}개');
+          debugPrint('📚 전체 카드 제목: ${response.cards.map((c) => c.title).join(", ")}');
+          debugPrint('📚 전체 카드 ID: ${response.cards.map((c) => c.id).join(", ")}');
+          
+          // 특정 카드만 필터링: ID 1번과 16번
+          final filteredCards = response.cards.where((card) {
+            final matches = card.id == 1 || card.id == 16;
+            if (matches) {
+              debugPrint('📚 매칭된 카드: ID=${card.id}, 제목=${card.title}');
+            }
+            return matches;
+          }).toList();
+          
+          debugPrint('📚 필터링 후 카드 수: ${filteredCards.length}개');
+          
+          if (filteredCards.isEmpty) {
+            debugPrint('📚 필터링된 카드가 없습니다. 전체 카드 목록을 확인하세요.');
+            setState(() {
+              _learningCardsError = '학습 카드를 불러올 수 없습니다.';
+              _isLoadingLearningCards = false;
+            });
+            return;
+          }
+          
+          // 정렬: ID 1번이 먼저 오도록
+          filteredCards.sort((a, b) {
+            if (a.id == 1) return -1;
+            if (b.id == 1) return 1;
+            if (a.id == 16) return -1;
+            if (b.id == 16) return 1;
+            return 0;
+          });
+          
+          final finalCards = filteredCards.take(2).toList();
+          debugPrint('📚 최종 표시할 카드: ${finalCards.map((c) => 'ID=${c.id}, 제목=${c.title}').join(", ")}');
+          
+          setState(() {
+            _learningCards = finalCards;
+            _isLoadingLearningCards = false;
+          });
+        } else {
+          // API가 404를 반환하거나 응답이 없는 경우 임시 데이터 사용
+          debugPrint('📚 학습 카드 목록 조회 실패: response=$response');
+          debugPrint('📚 임시 데이터로 대체합니다.');
+          
+          // 임시 하드코딩된 데이터 (백엔드가 준비되지 않았을 때 사용)
+          final tempCards = [
+            LearningCard(
+              id: 1,
+              title: '왜 투자가 필요한가: 저금리 시대의 돈 가치 이해하기',
+              description: '예·적금만으로는 부족한 이유와 투자가 필요한 배경을 짚어보는 입문 가이드',
+              contents: [],
+              category: '투자기초',
+              level: 1,
+              keywords: ['금융상품이해', '물가상승', '복리'],
+              createdAt: DateTime.now().toIso8601String(),
+              updatedAt: DateTime.now().toIso8601String(),
+            ),
+            LearningCard(
+              id: 16,
+              title: '투자 비율 설계: 생활비·비상자금·투자금의 경계 정하기',
+              description: '생활비, 비상자금, 투자금의 적절한 비율을 설계하는 방법',
+              contents: [],
+              category: '투자기초',
+              level: 1,
+              keywords: ['자산배분', '비상자금', '투자비율'],
+              createdAt: DateTime.now().toIso8601String(),
+              updatedAt: DateTime.now().toIso8601String(),
+            ),
+          ];
+          
+          setState(() {
+            _learningCards = tempCards;
+            _isLoadingLearningCards = false;
+          });
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint('📚 학습 카드 목록 조회 예외: $e');
+      debugPrint('📚 스택 트레이스: $stackTrace');
+      
+      // 예외 발생 시에도 임시 데이터 사용
+      debugPrint('📚 예외 발생으로 임시 데이터로 대체합니다.');
+      final tempCards = [
+        LearningCard(
+          id: 1,
+          title: '왜 투자가 필요한가: 저금리 시대의 돈 가치 이해하기',
+          description: '예·적금만으로는 부족한 이유와 투자가 필요한 배경을 짚어보는 입문 가이드',
+          contents: [],
+          category: '투자기초',
+          level: 1,
+          keywords: ['금융상품이해', '물가상승', '복리'],
+          createdAt: DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String(),
+        ),
+        LearningCard(
+          id: 16,
+          title: '투자 비율 설계: 생활비·비상자금·투자금의 경계 정하기',
+          description: '생활비, 비상자금, 투자금의 적절한 비율을 설계하는 방법',
+          contents: [],
+          category: '투자기초',
+          level: 1,
+          keywords: ['자산배분', '비상자금', '투자비율'],
+          createdAt: DateTime.now().toIso8601String(),
+          updatedAt: DateTime.now().toIso8601String(),
+        ),
+      ];
+      
+      if (mounted) {
+        setState(() {
+          _learningCards = tempCards;
+          _isLoadingLearningCards = false;
+        });
+      }
+    }
+  }
+
   // 토큰 정보 출력
   Future<void> _printTokens() async {
     debugPrint('=== 토큰 정보 ===');
@@ -264,7 +404,7 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: context.h(20)),
+                  SizedBox(height: context.h(12)),
                   // 상단 배너 (11월 16일, user nickname님을 위한 소식)
                   Container(
                     width: double.infinity,
@@ -349,36 +489,110 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
                 ],
               ),
             ),
-            // 추천 이론 학습 섹션 (구현 예정)
+            // 추천 이론 학습 섹션
+            SizedBox(height: context.h(20)),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              padding: EdgeInsets.symmetric(horizontal: context.w(20), vertical: context.h(20)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '추천 이론 학습',
-                    style: AppFonts.t2Semibold.copyWith(
-                      color: AppColors.gray900,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: AppColors.gray100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '구현 예정',
-                        style: AppFonts.b1Regular.copyWith(
-                          color: AppColors.gray400,
+                  // 헤더: 제목 + 더 학습하기 링크
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        '추천 이론 학습',
+                        style: AppFonts.t2Semibold.copyWith(
+                          color: AppColors.gray900,
                         ),
                       ),
-                    ),
+                      GestureDetector(
+                        onTap: () {
+                          // TODO: 더 학습하기 화면으로 이동
+                        },
+                        child: Row(
+                          children: [
+                            Text(
+                              '더 학습하기',
+                              style: AppFonts.b2Regular.copyWith(
+                                color: AppColors.gray600,
+                              ),
+                            ),
+                            SizedBox(width: context.w(4)),
+                            Icon(
+                              Icons.chevron_right,
+                              size: 16,
+                              color: AppColors.gray600,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
+                  SizedBox(height: context.h(16)),
+                  
+                  // 학습 카드들 (2개 가로 배치)
+                  if (_isLoadingLearningCards)
+                    Container(
+                      height: context.h(163),
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  else if (_learningCardsError != null)
+                    Container(
+                      height: context.h(163),
+                      padding: EdgeInsets.all(context.w(16)),
+                      child: Center(
+                        child: Text(
+                          _learningCardsError!,
+                          style: AppFonts.b2Regular.copyWith(
+                            color: AppColors.gray600,
+                          ),
+                        ),
+                      ),
+                    )
+                  else if (_learningCards.isEmpty)
+                    Container(
+                      height: context.h(163),
+                      child: Center(
+                        child: Text(
+                          '학습 카드가 없습니다',
+                          style: AppFonts.b2Regular.copyWith(
+                            color: AppColors.gray600,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          ..._learningCards.asMap().entries.map((entry) {
+                            final index = entry.key;
+                            final card = entry.value;
+                            return Row(
+                              children: [
+                                _buildLearningCard(
+                                  context,
+                                  card: card,
+                                  cardIndex: index, // 카드 인덱스 전달 (0: image1.png, 1: image2.png)
+                                  onTap: () {
+                                    // 학습 카드 상세로 이동
+                                    context.push('/learning-card/${card.category}', extra: card.keywordsList);
+                                  },
+                                ),
+                                if (index < _learningCards.length - 1)
+                                  SizedBox(width: context.w(16)),
+                              ],
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -512,6 +726,138 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // 학습 카드 위젯
+  Widget _buildLearningCard(
+    BuildContext context, {
+    LearningCard? card,
+    String? title,
+    String? tag,
+    required VoidCallback onTap,
+    int? cardIndex, // 카드 인덱스 (0: image1.png, 1: image2.png)
+  }) {
+    // card가 있으면 card 데이터 사용, 없으면 title/tag 사용 (하위 호환성)
+    final cardTitle = card?.title ?? title ?? '제목 제목 제목';
+    // 태그는 category로 표시
+    final cardTag = card != null 
+        ? '#${card.category}'
+        : (tag ?? '#태그태그');
+    
+    // 카드 인덱스에 따라 이미지 경로 결정 (0: image1.png, 1: image2.png)
+    final imagePath = cardIndex != null 
+        ? 'assets/cards/image${cardIndex + 1}.png'
+        : 'assets/cards/image1.png';
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: context.w(234),
+        height: context.h(163),
+        decoration: ShapeDecoration(
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: Stack(
+          children: [
+            // 배경 이미지
+            Positioned(
+              left: 0,
+              top: 0,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.asset(
+                  imagePath,
+                  width: context.w(234),
+                  height: context.h(163),
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    // 이미지 로드 실패 시 그라데이션 배경 표시
+                    return Container(
+                      width: context.w(234),
+                      height: context.h(163),
+                      decoration: ShapeDecoration(
+                        gradient: const LinearGradient(
+                          begin: Alignment(0.50, -0.00),
+                          end: Alignment(0.50, 1.00),
+                          colors: [Color(0xFFD9D9D9), Color(0xFF737373)],
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            // 그라데이션 오버레이 (텍스트 가독성을 위해)
+            Positioned(
+              left: 0,
+              top: 0,
+              child: Container(
+                width: context.w(234),
+                height: context.h(163),
+                decoration: ShapeDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.6),
+                    ],
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+            // 제목
+            Positioned(
+              left: context.w(13),
+              top: context.h(92),
+              child: Text(
+                cardTitle,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontFamily: 'Pretendard',
+                  fontWeight: FontWeight.w700,
+                  height: 1.25,
+                ),
+              ),
+            ),
+            // 태그
+            Positioned(
+              left: context.w(13),
+              top: context.h(127),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: ShapeDecoration(
+                  color: const Color(0xFFE6F4F1), // Primary-BG
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                child: Text(
+                  cardTag,
+                  style: TextStyle(
+                    color: const Color(0xFF323232), // Gray-900
+                    fontSize: 13,
+                    fontFamily: 'Pretendard',
+                    fontWeight: FontWeight.w400,
+                    height: 1.23,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
