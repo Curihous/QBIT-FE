@@ -52,7 +52,7 @@ class TradeCycleItem extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: context.w(16)),
             child: Row(
               mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // 회사 로고 
@@ -96,19 +96,18 @@ class TradeCycleItem extends StatelessWidget {
                   ),
                 ),
 
-                // 리포트 아이콘 (항상 우측 끝에 붙도록 배치)
+                SizedBox(width: context.w(12)),
+
+                // 리포트 아이콘 (우측으로 붙되 살짝 안쪽에 위치)
                 GestureDetector(
                   onTap: onReportTap,
                   child: SizedBox(
-                    width: context.w(32),
-                    height: context.h(32),
-                    child: Align(
-                      alignment: Alignment.centerRight,
-                      child: SvgPicture.asset(
-                        'assets/icons/trade/order_history_screen/report.svg',
-                        width: context.w(24),
-                        height: context.h(24),
-                      ),
+                    width: context.w(28),
+                    height: context.h(28),
+                    child: SvgPicture.asset(
+                      'assets/icons/trade/order_history_screen/report.svg',
+                      width: context.w(24),
+                      height: context.h(24),
                     ),
                   ),
                 ),
