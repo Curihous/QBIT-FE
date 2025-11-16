@@ -22,25 +22,24 @@ class PortfolioPosition {
   });
 
   factory PortfolioPosition.fromJson(Map<String, dynamic> json) {
+    String requireString(String key) {
+      final value = json[key];
+      if (value == null) {
+        throw FormatException('Missing required field: $key', json);
+      }
+      return value.toString();
+    }
+
     return PortfolioPosition(
-      symbol: json['symbol']?.toString() ??
-          throw FormatException('Missing required field: symbol', json),
-      quantity: json['quantity']?.toString() ??
-          throw FormatException('Missing required field: quantity', json),
-      avgEntryPrice: json['avgEntryPrice']?.toString() ??
-          throw FormatException('Missing required field: avgEntryPrice', json),
-      marketValue: json['marketValue']?.toString() ??
-          throw FormatException('Missing required field: marketValue', json),
-      costBasis: json['costBasis']?.toString() ??
-          throw FormatException('Missing required field: costBasis', json),
-      unrealizedPl: json['unrealizedPl']?.toString() ??
-          throw FormatException('Missing required field: unrealizedPl', json),
-      unrealizedPlpc: json['unrealizedPlpc']?.toString() ??
-          throw FormatException('Missing required field: unrealizedPlpc', json),
-      currentPrice: json['currentPrice']?.toString() ??
-          throw FormatException('Missing required field: currentPrice', json),
-      side: json['side']?.toString() ??
-          throw FormatException('Missing required field: side', json),
+      symbol: requireString('symbol'),
+      quantity: requireString('quantity'),
+      avgEntryPrice: requireString('avgEntryPrice'),
+      marketValue: requireString('marketValue'),
+      costBasis: requireString('costBasis'),
+      unrealizedPl: requireString('unrealizedPl'),
+      unrealizedPlpc: requireString('unrealizedPlpc'),
+      currentPrice: requireString('currentPrice'),
+      side: requireString('side'),
     );
   }
 
@@ -87,17 +86,25 @@ class PortfolioPositionPageResponse {
           json);
     }
 
+    int requireInt(String key) {
+      final value = json[key];
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      throw FormatException('Missing or invalid field: $key', json);
+    }
+
+    bool requireBool(String key) {
+      final value = json[key];
+      if (value is bool) return value;
+      throw FormatException('Missing or invalid field: $key', json);
+    }
+
     return PortfolioPositionPageResponse(
-      currentPage: json['currentPage'] as int? ??
-          throw FormatException('Missing required field: currentPage', json),
-      pageSize: json['pageSize'] as int? ??
-          throw FormatException('Missing required field: pageSize', json),
-      totalElements: json['totalElements'] as int? ??
-          throw FormatException('Missing required field: totalElements', json),
-      totalPages: json['totalPages'] as int? ??
-          throw FormatException('Missing required field: totalPages', json),
-      hasNext: json['hasNext'] as bool? ??
-          throw FormatException('Missing required field: hasNext', json),
+      currentPage: requireInt('currentPage'),
+      pageSize: requireInt('pageSize'),
+      totalElements: requireInt('totalElements'),
+      totalPages: requireInt('totalPages'),
+      hasNext: requireBool('hasNext'),
       content: contentValue
           .map((item) {
             if (item is! Map<String, dynamic>) {
