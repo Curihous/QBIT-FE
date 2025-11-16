@@ -31,10 +31,10 @@ class StockOrderForm extends StatefulWidget {
   });
 
   @override
-  State<StockOrderForm> createState() => _StockOrderFormState();
+  State<StockOrderForm> createState() => StockOrderFormState();
 }
 
-class _StockOrderFormState extends State<StockOrderForm> {
+class StockOrderFormState extends State<StockOrderForm> {
   String _selectedOrderType = '지정가'; // '지정가', '시장가'
   int _quantity = 1;
   double _price = 0.0;
@@ -55,6 +55,14 @@ class _StockOrderFormState extends State<StockOrderForm> {
     super.initState();
     _quantityController.text = '';
     _priceController.text = '';
+  }
+  
+  /// 호가창에서 선택한 가격으로 업데이트 (USD)
+  void updatePriceFromOrderBook(double priceUsd) {
+    setState(() {
+      _price = priceUsd;
+      _priceController.text = priceUsd.toStringAsFixed(2);
+    });
   }
 
   @override

@@ -206,6 +206,9 @@ class _StockOrderTabState extends State<StockOrderTab> {
   // 포지션 정보
   double? _buyingPower; // 매수 가능 금액 (USD)
   double? _positionQuantity; // 보유 수량
+  
+  // StockOrderForm의 상태에 접근하기 위한 GlobalKey
+  final GlobalKey<StockOrderFormState> _stockOrderFormKey = GlobalKey<StockOrderFormState>();
 
   @override
   void initState() {
@@ -1186,14 +1189,8 @@ class _StockOrderTabState extends State<StockOrderTab> {
                           : UsStockOrderBookWidget(
                               symbol: widget.symbol,
                               onPriceSelected: (price) {
-                                // 호가 터치 시 가격 입력
-                                if (_exchangeRate != null) {
-                                  final priceInKrw = price * _exchangeRate!;
-                                  setState(() {
-                                    _price = priceInKrw;
-                                    _priceController.text = priceInKrw.toStringAsFixed(0);
-                                  });
-                                }
+                                // 호가 터치 시 주문 폼의 가격 입력란에 반영 (USD)
+                                _stockOrderFormKey.currentState?.updatePriceFromOrderBook(price);
                               },
                             ),
                     ),
@@ -1329,6 +1326,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
           )
         else
           StockOrderForm(
+            key: _stockOrderFormKey,
             symbol: widget.symbol,
             selectedOrderTab: _selectedOrderTab,
             exchangeRate: _exchangeRate,
