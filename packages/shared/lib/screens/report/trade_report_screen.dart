@@ -218,12 +218,14 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                   constraints: BoxConstraints(
                     minHeight: context.h(367),
                   ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: context.w(20),
-                    vertical: context.h(18),
+                  padding: EdgeInsets.only(
+                    left: context.w(20),
+                    right: context.w(20),
+                    top: context.h(18),
+                    bottom: context.h(9), // 절반으로 줄임
                   ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
+        decoration: BoxDecoration(
+          color: Colors.white,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(25),
                       topRight: Radius.circular(25),
@@ -257,7 +259,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.start,
                         crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
+          children: [
                           Text(
                             stockNameText,
                             style: AppFonts.t2Bold.copyWith(
@@ -279,7 +281,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                                   width: 1,
                                 ),
                               ),
-                              child: Text(
+              child: Text(
                                 realizedPlRateText,
                                 style: AppFonts.c1.copyWith(
                                   color: realizedPlAmountColor,
@@ -398,8 +400,8 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-                const SizedBox(height: 24),
+              children: [
+                const SizedBox(height: 12),
 
                 // 상세 분석 차트
                 if (cycle != null && cycle.chartData.isNotEmpty) ...[
@@ -444,7 +446,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                 const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(context.w(16)),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -456,14 +458,58 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       ),
                     ],
                   ),
-              child: Text(
+                  child: Text(
                     report.overallEvaluation,
-                    style: AppFonts.b1Regular.copyWith(color: AppColors.gray600),
-                  ),
+                    style: AppFonts.b1Regular.copyWith(
+                      color: const Color(0xFF323232), // gray-900-font-black
                 ),
-
+              ),
+            ),
+            
                 const SizedBox(height: 24),
 
+              ],
+            ),
+          ),
+
+          // 추천 학습 카드 (전체 매매 평가 다음)
+          if (report.learningCards.isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              color: const Color(0xFFFCE6B3), // Secondary-Light
+              padding: EdgeInsets.only(
+                left: context.w(16),
+                right: context.w(16),
+                top: context.h(24),
+                bottom: context.h(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '추천 학습',
+                    style: AppFonts.t2Bold.copyWith(
+                      color: AppColors.gray900,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLearningCardsSection(report),
+                ],
+              ),
+            ),
+          ],
+
+          // 메인 내용 영역 (회색 배경) - 시장 상황, 매수/매도 분석
+          Container(
+            color: AppColors.gray30,
+            padding: EdgeInsets.symmetric(
+              horizontal: context.w(16),
+              vertical: context.h(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 // 시장 상황
                 Text(
                   '시장 상황',
@@ -475,7 +521,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                 const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(context.w(16)),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -487,12 +533,14 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       ),
                     ],
                   ),
-                child: Text(
+                  child: Text(
                     report.marketContext,
-                    style: AppFonts.b1Regular.copyWith(color: AppColors.gray600),
-                  ),
+                    style: AppFonts.b1Regular.copyWith(
+                      color: const Color(0xFF323232), 
                 ),
-
+              ),
+            ),
+            
                 const SizedBox(height: 24),
 
                 // 매수 분석
@@ -510,7 +558,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                 const SizedBox(height: 12),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(context.w(16)),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -527,14 +575,16 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                     children: [
                       Text(
                         report.buyEvaluation,
-                        style: AppFonts.b1Regular
-                            .copyWith(color: AppColors.gray600),
+                        style: AppFonts.b1Regular.copyWith(
+                          color: const Color(0xFF323232), // gray-900-font-black
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         report.buyImprovement,
-                        style: AppFonts.b1Regular
-                            .copyWith(color: AppColors.gray600),
+                        style: AppFonts.b1Regular.copyWith(
+                          color: const Color(0xFF323232), // gray-900-font-black
+                        ),
                       ),
                     ],
                   ),
@@ -557,7 +607,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                 const SizedBox(height: 12),
                 Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(context.w(16)),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -574,33 +624,20 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                     children: [
                       Text(
                         report.sellEvaluation,
-                        style: AppFonts.b1Regular
-                            .copyWith(color: AppColors.gray600),
+                        style: AppFonts.b1Regular.copyWith(
+                          color: const Color(0xFF323232), // gray-900-font-black
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         report.sellImprovement,
-                        style: AppFonts.b1Regular
-                            .copyWith(color: AppColors.gray600),
+                        style: AppFonts.b1Regular.copyWith(
+                          color: const Color(0xFF323232), // gray-900-font-black
+                        ),
                       ),
                     ],
                   ),
                 ),
-
-                const SizedBox(height: 24),
-
-                // 추천 학습 카드
-                if (report.learningCards.isNotEmpty) ...[
-                  Text(
-                    '추천 학습',
-                  style: AppFonts.t2Bold.copyWith(
-                    color: AppColors.gray900,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildLearningCardsSection(report),
-                ],
               ],
             ),
           ),
