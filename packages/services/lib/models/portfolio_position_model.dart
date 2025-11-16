@@ -22,61 +22,24 @@ class PortfolioPosition {
   });
 
   factory PortfolioPosition.fromJson(Map<String, dynamic> json) {
-    final symbol = json['symbol']?.toString();
-    if (symbol == null) {
-      throw FormatException('Missing required field: symbol', json);
+    String requireString(String key) {
+      final value = json[key];
+      if (value == null) {
+        throw FormatException('Missing required field: $key', json);
+      }
+      return value.toString();
     }
-    
-    final quantity = json['quantity']?.toString();
-    if (quantity == null) {
-      throw FormatException('Missing required field: quantity', json);
-    }
-    
-    final avgEntryPrice = json['avgEntryPrice']?.toString();
-    if (avgEntryPrice == null) {
-      throw FormatException('Missing required field: avgEntryPrice', json);
-    }
-    
-    final marketValue = json['marketValue']?.toString();
-    if (marketValue == null) {
-      throw FormatException('Missing required field: marketValue', json);
-    }
-    
-    final costBasis = json['costBasis']?.toString();
-    if (costBasis == null) {
-      throw FormatException('Missing required field: costBasis', json);
-    }
-    
-    final unrealizedPl = json['unrealizedPl']?.toString();
-    if (unrealizedPl == null) {
-      throw FormatException('Missing required field: unrealizedPl', json);
-    }
-    
-    final unrealizedPlpc = json['unrealizedPlpc']?.toString();
-    if (unrealizedPlpc == null) {
-      throw FormatException('Missing required field: unrealizedPlpc', json);
-    }
-    
-    final currentPrice = json['currentPrice']?.toString();
-    if (currentPrice == null) {
-      throw FormatException('Missing required field: currentPrice', json);
-    }
-    
-    final side = json['side']?.toString();
-    if (side == null) {
-      throw FormatException('Missing required field: side', json);
-    }
-    
+
     return PortfolioPosition(
-      symbol: symbol,
-      quantity: quantity,
-      avgEntryPrice: avgEntryPrice,
-      marketValue: marketValue,
-      costBasis: costBasis,
-      unrealizedPl: unrealizedPl,
-      unrealizedPlpc: unrealizedPlpc,
-      currentPrice: currentPrice,
-      side: side,
+      symbol: requireString('symbol'),
+      quantity: requireString('quantity'),
+      avgEntryPrice: requireString('avgEntryPrice'),
+      marketValue: requireString('marketValue'),
+      costBasis: requireString('costBasis'),
+      unrealizedPl: requireString('unrealizedPl'),
+      unrealizedPlpc: requireString('unrealizedPlpc'),
+      currentPrice: requireString('currentPrice'),
+      side: requireString('side'),
     );
   }
 
@@ -123,37 +86,25 @@ class PortfolioPositionPageResponse {
           json);
     }
 
-    final currentPage = json['currentPage'] as int?;
-    if (currentPage == null) {
-      throw FormatException('Missing required field: currentPage', json);
+    int requireInt(String key) {
+      final value = json[key];
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      throw FormatException('Missing or invalid field: $key', json);
     }
-    
-    final pageSize = json['pageSize'] as int?;
-    if (pageSize == null) {
-      throw FormatException('Missing required field: pageSize', json);
+
+    bool requireBool(String key) {
+      final value = json[key];
+      if (value is bool) return value;
+      throw FormatException('Missing or invalid field: $key', json);
     }
-    
-    final totalElements = json['totalElements'] as int?;
-    if (totalElements == null) {
-      throw FormatException('Missing required field: totalElements', json);
-    }
-    
-    final totalPages = json['totalPages'] as int?;
-    if (totalPages == null) {
-      throw FormatException('Missing required field: totalPages', json);
-    }
-    
-    final hasNext = json['hasNext'] as bool?;
-    if (hasNext == null) {
-      throw FormatException('Missing required field: hasNext', json);
-    }
-    
+
     return PortfolioPositionPageResponse(
-      currentPage: currentPage,
-      pageSize: pageSize,
-      totalElements: totalElements,
-      totalPages: totalPages,
-      hasNext: hasNext,
+      currentPage: requireInt('currentPage'),
+      pageSize: requireInt('pageSize'),
+      totalElements: requireInt('totalElements'),
+      totalPages: requireInt('totalPages'),
+      hasNext: requireBool('hasNext'),
       content: contentValue
           .map((item) {
             if (item is! Map<String, dynamic>) {
