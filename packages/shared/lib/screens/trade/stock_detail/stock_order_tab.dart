@@ -704,11 +704,11 @@ class _StockOrderTabState extends State<StockOrderTab> {
     }
     
     if (filledQuantity > 0) {
-      return side == 'buy' ? AppColors.profit : AppColors.loss;
+      return side == 'buy' ? AppColors.loss : AppColors.profit;
     }
     
     if (status == 'filled' || status == 'partially_filled') {
-      return side == 'buy' ? AppColors.profit : AppColors.loss;
+      return side == 'buy' ? AppColors.loss : AppColors.profit;
     } else if (status == 'accepted' || status == 'pending_new' || status == 'new') {
       return AppColors.primary;
     } else {
@@ -1862,7 +1862,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                           ),
                           child: Icon(
                             Icons.check_circle,
-                            color: orderType == '매수' ? AppColors.profit : AppColors.loss,
+                            color: orderType == '매수' ? AppColors.loss : AppColors.profit,
                             size: context.w(25),
                           ),
                         ),
@@ -1871,7 +1871,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                         Text(
                           '$symbol $orderType 주문 요청 성공',
                           style: AppFonts.t1Bold.copyWith(
-                            color: orderType == '매수' ? AppColors.profit : AppColors.loss,
+                            color: orderType == '매수' ? AppColors.loss : AppColors.profit,
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1905,7 +1905,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                             width: double.infinity,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: orderType == '매수' ? AppColors.profit : AppColors.loss,
+                              color: orderType == '매수' ? AppColors.loss : AppColors.profit,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Center(
