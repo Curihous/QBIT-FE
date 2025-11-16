@@ -32,15 +32,23 @@ class TradeReportChart extends StatelessWidget {
 
     // 이동 평균선 계산 (20일 이동평균)
     final movingAverage = _calculateMovingAverage(candles, 20);
+    
+    // 차트 너비 계산 (캔들 개수에 따라 동적 조정, 최소 너비는 화면 너비)
+    final chartWidth = (candles.length * 8.0).clamp(400.0, double.infinity);
 
-    return Container(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        children: [
-          // 캔들스틱 차트 + 이동 평균선
-          Expanded(
-            flex: 3,
-            child: Stack(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: SizedBox(
+        width: chartWidth,
+          child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 캔들스틱 차트 + 이동 평균선
+              SizedBox(
+                height: 270,
+                child: Stack(
               children: [
                 // 캔들스틱 차트
                 BarChart(
@@ -89,7 +97,7 @@ class TradeReportChart extends StatelessWidget {
                       drawVerticalLine: true,
                       drawHorizontalLine: true,
                       horizontalInterval: _getPriceInterval(),
-                      verticalInterval: candles.length / 6,
+                      verticalInterval: _getXAxisInterval(),
                       getDrawingHorizontalLine: (value) {
                         return FlLine(
                           color: AppColors.gray200.withOpacity(0.5),
@@ -138,14 +146,14 @@ class TradeReportChart extends StatelessWidget {
                   ),
                   child: Container(),
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          // 거래량 차트
-          Expanded(
-            flex: 1,
-            child: BarChart(
+                ],
+              ),
+              ),
+              const SizedBox(height: 8),
+              // 거래량 차트
+              SizedBox(
+                height: 90,
+                child: BarChart(
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
                 maxY: _getMaxVolume(),
@@ -153,29 +161,8 @@ class TradeReportChart extends StatelessWidget {
                 barTouchData: BarTouchData(enabled: false),
                 titlesData: FlTitlesData(
                   show: true,
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 30,
-                      interval: candles.length / 6,
-                      getTitlesWidget: (value, meta) {
-                        final intIndex = value.toInt();
-                        if (intIndex >= 0 && intIndex < candles.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              _formatTime(intIndex),
-                              style: TextStyle(
-                                color: AppColors.gray600,
-                                fontSize: 10,
-                                fontFamily: 'Pretendard',
-                              ),
-                            ),
-                          );
-                        }
-                        return const Text('');
-                      },
-                    ),
+                  bottomTitles: const AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
                   ),
                   topTitles: const AxisTitles(
                     sideTitles: SideTitles(showTitles: false),
@@ -191,7 +178,7 @@ class TradeReportChart extends StatelessWidget {
                 gridData: FlGridData(
                   show: true,
                   drawVerticalLine: true,
-                  verticalInterval: candles.length / 6,
+                  verticalInterval: _getXAxisInterval(),
                   getDrawingVerticalLine: (value) {
                     return FlLine(
                       color: AppColors.gray200.withOpacity(0.5),
@@ -202,8 +189,10 @@ class TradeReportChart extends StatelessWidget {
                 barGroups: _getVolumeBars(),
               ),
             ),
+            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -312,6 +301,18 @@ class TradeReportChart extends StatelessWidget {
     if (priceRange < 100) return 10;
     if (priceRange < 1000) return 100;
     return 1000;
+  }
+
+  double _getXAxisInterval() {
+    if (candles.isEmpty) return 1;
+    
+    final dataCount = candles.length;
+    if (dataCount <= 10) return 2;
+    if (dataCount <= 20) return 4;
+    if (dataCount <= 50) return dataCount / 4;
+    if (dataCount <= 100) return dataCount / 5;
+    if (dataCount <= 200) return dataCount / 6;
+    return dataCount / 8;
   }
 
   String _formatPrice(double price) {

@@ -10,6 +10,7 @@ import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/models/trade_report_model.dart';
 import 'package:qbit_services/models/trade_cycle_report_model.dart';
 import 'package:qbit_shared/widgets/chart/trade_report_chart.dart';
+import 'package:qbit_shared/widgets/common/button/big_black_button.dart';
 
 class TradeReportScreen extends StatefulWidget {
   final int tradeCycleId;
@@ -28,6 +29,8 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
   TradeReport? _report;
   String? _error;
   ReportTradeCycleResponse? _cycle;
+  bool _isBuyAnalysisExpanded = true; // 매수 분석 접기/열기
+  bool _isSellAnalysisExpanded = false; // 매도 분석 접기/열기
 
   @override
   void initState() {
@@ -169,7 +172,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+          children: [
                       Text(
                         '노현선님의 투자유형은',
                         style: AppFonts.b2Regular.copyWith(
@@ -201,7 +204,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
             clipBehavior: Clip.none,
             children: [
               // 부엉이 아이콘
-              Positioned(
+            Positioned(
                 right: context.w(20),
                 top: context.h(-140),
                 child: SvgPicture.asset(
@@ -216,13 +219,13 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                 child: Container(
         width: double.infinity,
                   constraints: BoxConstraints(
-                    minHeight: context.h(367),
+                    minHeight: context.h(300),
                   ),
                   padding: EdgeInsets.only(
                     left: context.w(20),
                     right: context.w(20),
                     top: context.h(18),
-                    bottom: context.h(9), // 절반으로 줄임
+                    bottom: context.h(4),
                   ),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -262,8 +265,8 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
           children: [
                           Text(
                             stockNameText,
-                            style: AppFonts.t2Bold.copyWith(
-                              color: AppColors.gray900,
+                  style: AppFonts.t2Bold.copyWith(
+                    color: AppColors.gray900,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -285,9 +288,9 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                                 realizedPlRateText,
                                 style: AppFonts.c1.copyWith(
                                   color: realizedPlAmountColor,
-                                ),
-                              ),
-                            ),
+                ),
+              ),
+            ),
                           ],
                         ],
                       ),
@@ -414,7 +417,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                   ),
                   const SizedBox(height: 12),
                   Container(
-                    height: context.h(400),
+                    height: context.h(420),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(12),
@@ -436,17 +439,12 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                 ],
 
                 // 전체 평가
-                Text(
-                  '전체 매매 평가',
-                  style: AppFonts.t2Bold.copyWith(
-                    color: AppColors.gray900,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(context.w(16)),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.w(20),
+                    vertical: context.h(20),
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -458,13 +456,26 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       ),
                     ],
                   ),
-                  child: Text(
-                    report.overallEvaluation,
-                    style: AppFonts.b1Regular.copyWith(
-                      color: const Color(0xFF323232), // gray-900-font-black
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '전체 매매 평가',
+                        style: AppFonts.t2Bold.copyWith(
+                          color: AppColors.gray900,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        report.overallEvaluation,
+                        style: AppFonts.b1Regular.copyWith(
+                          color: const Color(0xFF323232), // gray-900-font-black
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
             
                 const SizedBox(height: 24),
 
@@ -478,8 +489,8 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
               width: double.infinity,
               color: const Color(0xFFFCE6B3), // Secondary-Light
               padding: EdgeInsets.only(
-                left: context.w(16),
-                right: context.w(16),
+              left: context.w(16),
+              right: context.w(16),
                 top: context.h(24),
                 bottom: context.h(24),
               ),
@@ -511,54 +522,12 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 시장 상황
-                Text(
-                  '시장 상황',
-                  style: AppFonts.t2Bold.copyWith(
-                    color: AppColors.gray900,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(context.w(16)),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color.fromRGBO(0, 0, 0, 0.04),
-                        offset: Offset(0, 4),
-                        blurRadius: 12,
-                      ),
-                    ],
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.w(20),
+                    vertical: context.h(20),
                   ),
-                  child: Text(
-                    report.marketContext,
-                    style: AppFonts.b1Regular.copyWith(
-                      color: const Color(0xFF323232), 
-                ),
-              ),
-            ),
-            
-                const SizedBox(height: 24),
-
-                // 매수 분석
-                Text(
-                  '매수 타이밍 분석',
-                  style: AppFonts.t2Bold.copyWith(
-                    color: AppColors.gray900,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildIndicatorSection('RSI', report.buyRsi),
-                const SizedBox(height: 8),
-                _buildIndicatorSection('MACD', report.buyMacd),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(context.w(16)),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -574,75 +543,79 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        report.buyEvaluation,
-                        style: AppFonts.b1Regular.copyWith(
-                          color: const Color(0xFF323232), // gray-900-font-black
+                        '시장 상황',
+                        style: AppFonts.t2Bold.copyWith(
+                          color: AppColors.gray900,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 12),
                       Text(
-                        report.buyImprovement,
+                        report.marketContext,
                         style: AppFonts.b1Regular.copyWith(
-                          color: const Color(0xFF323232), // gray-900-font-black
+                          color: const Color(0xFF323232),
                         ),
                       ),
                     ],
                   ),
+                ),
+            
+                const SizedBox(height: 24),
+
+                // 매수 분석
+                _buildTimingAnalysisSection(
+                  title: '주요 매수 시점',
+                  date: cycle?.startDate,
+                  evaluation: report.buyEvaluation,
+                  improvement: report.buyImprovement,
+                  rsi: report.buyRsi,
+                  macd: report.buyMacd,
+                  isExpanded: _isBuyAnalysisExpanded,
+                  onToggle: () {
+                    setState(() {
+                      _isBuyAnalysisExpanded = !_isBuyAnalysisExpanded;
+                    });
+                  },
                 ),
 
                 const SizedBox(height: 24),
 
                 // 매도 분석
-                Text(
-                  '매도 타이밍 분석',
-                  style: AppFonts.t2Bold.copyWith(
-                    color: AppColors.gray900,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildIndicatorSection('RSI', report.sellRsi),
-                const SizedBox(height: 8),
-                _buildIndicatorSection('MACD', report.sellMacd),
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(context.w(16)),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Color.fromRGBO(0, 0, 0, 0.04),
-                        offset: Offset(0, 4),
-                        blurRadius: 12,
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        report.sellEvaluation,
-                        style: AppFonts.b1Regular.copyWith(
-                          color: const Color(0xFF323232), // gray-900-font-black
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        report.sellImprovement,
-                        style: AppFonts.b1Regular.copyWith(
-                          color: const Color(0xFF323232), // gray-900-font-black
-                        ),
-                      ),
-                    ],
-                  ),
+                _buildTimingAnalysisSection(
+                  title: '주요 매도 시점',
+                  date: cycle?.endDate ?? cycle?.startDate,
+                  evaluation: report.sellEvaluation,
+                  improvement: report.sellImprovement,
+                  rsi: report.sellRsi,
+                  macd: report.sellMacd,
+                  isExpanded: _isSellAnalysisExpanded,
+                  onToggle: () {
+                    setState(() {
+                      _isSellAnalysisExpanded = !_isSellAnalysisExpanded;
+                    });
+                  },
                 ),
               ],
             ),
           ),
-        ],
-      ),
+
+          // 거래 일지 모아보기 버튼
+          Container(
+            color: AppColors.gray30,
+            padding: EdgeInsets.symmetric(
+              horizontal: context.w(16),
+              vertical: context.h(24),
+            ),
+              child: BigBlackButton(
+              text: '거래 일지 모아보기',
+                onPressed: () {
+                // TODO: 거래 일지 화면으로 이동
+                // context.push('/trade-journal');
+                },
+              ),
+            ),
+          ],
+        ),
     );
   }
 
@@ -780,6 +753,211 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
         ),
       ),
     );
+  }
+
+  /// 타이밍 분석 섹션 (접기/열기 가능)
+  Widget _buildTimingAnalysisSection({
+    required String title,
+    DateTime? date,
+    required String evaluation,
+    required String improvement,
+    required TradeReportIndicator rsi,
+    required TradeReportIndicator macd,
+    required bool isExpanded,
+    required VoidCallback onToggle,
+  }) {
+    String dateText = '';
+    if (date != null) {
+      dateText = '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: Color.fromRGBO(0, 0, 0, 0.04),
+            offset: Offset(0, 4),
+            blurRadius: 12,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 헤더 (제목 + 날짜 + 접기/열기 버튼)
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: context.w(20),
+              vertical: context.h(16),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        style: AppFonts.b1Semibold.copyWith(
+                          color: AppColors.gray900,
+                        ),
+                      ),
+                      if (dateText.isNotEmpty) ...[
+                        SizedBox(width: context.w(6)),
+                        Text(
+                          dateText,
+                          style: AppFonts.b2Semibold.copyWith(
+                            color: AppColors.gray600,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: onToggle,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    isExpanded ? '접기' : '열기',
+                    style: AppFonts.c1.copyWith(
+                      color: AppColors.gray600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 확장된 내용
+          if (isExpanded) ...[
+            // 설명 텍스트 (연한 초록색 배경)
+            Container(
+              width: double.infinity,
+              margin: EdgeInsets.symmetric(horizontal: context.w(20)),
+              padding: EdgeInsets.symmetric(
+                horizontal: context.w(20),
+                vertical: context.h(16),
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.background.withOpacity(0.5), // Primary-BG: #E6F4F1 with 50% opacity
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                evaluation,
+                style: AppFonts.b1Regular.copyWith(
+                  color: const Color(0xFF323232),
+                ),
+              ),
+            ),
+
+            SizedBox(height: context.h(16)),
+
+            // 기술적 지표들 (2열 - RSI, MACD만 API 데이터 사용)
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'RSI(14)',
+                          style: AppFonts.c1.copyWith(
+                            color: AppColors.gray600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${rsi.value.toStringAsFixed(1)} (${_getRsiStatus(rsi.value)})',
+                          style: AppFonts.b1Regular.copyWith(
+                            color: const Color(0xFF323232),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(width: context.w(8)),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'MACD',
+                          style: AppFonts.c1.copyWith(
+                            color: AppColors.gray600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          macd.value > 0 ? '골든크로스 직전' : '데드크로스',
+                          style: AppFonts.b1Regular.copyWith(
+                            color: const Color(0xFF323232),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: context.h(16)),
+
+            // 구분선
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: AppColors.gray100,
+              indent: context.w(20),
+              endIndent: context.w(20),
+            ),
+
+            SizedBox(height: context.h(16)),
+
+            // 개선 방안
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '개선 방안',
+                    style: AppFonts.b1Semibold.copyWith(
+                      color: AppColors.gray900,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    improvement,
+                    style: AppFonts.b1Regular.copyWith(
+                      color: const Color(0xFF323232),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: context.h(16)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  String _getRsiStatus(double rsi) {
+    if (rsi >= 70) return '과열';
+    if (rsi <= 30) return '과매도';
+    return '적정';
   }
 
   /// 상단 4개 요약 지표 카드
