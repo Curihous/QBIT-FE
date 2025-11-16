@@ -37,6 +37,7 @@ flutter:
     - assets/icons/
     - assets/icons/navigation/
     - assets/icons/stock_search_screen/
+    - assets/icons/trade/order_history_screen/
     - assets/cards/
     - .env
   

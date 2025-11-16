@@ -1493,16 +1493,6 @@ class _TradeScreenState extends State<TradeScreen> {
             // 보유자산 섹션 (검색바 바로 아래)
             _buildAssetSection(),
 
-            // 디바이더 (8px, Gray-30)
-            Container(
-              width: double.infinity,
-              height: 8,
-              color: AppColors.gray30,
-            ),
-
-            // 디바이더  
-            SizedBox(height: context.h(28)),
-
             // 포트폴리오 포지션 섹션 (오버뷰 아래, 해외 주요 지수 위)
             if (_isAlpacaConnected)
               if (_isLoadingPositions)
@@ -1514,6 +1504,7 @@ class _TradeScreenState extends State<TradeScreen> {
                   ),
                 )
               else if (_positions.isNotEmpty) ...[
+                SizedBox(height: context.h(16)),
                 PortfolioPositionsWidget(
                   positions: _positions,
                   onViewAll: () {
@@ -1521,8 +1512,13 @@ class _TradeScreenState extends State<TradeScreen> {
                     // context.push('/portfolio-detail');
                   },
                 ),
-                // 세 번째 종목과 해외 주요 지수 사이 여백 추가 (해외 주요 지수 <-> 해외 종목 순위 사이 여백과 동일: 9 + 20 = 29)
-                SizedBox(height: context.h(29)),
+                SizedBox(height: context.h(28)),
+                Container(
+                  width: double.infinity,
+                  height: 8,
+                  color: AppColors.gray30,
+                ),
+                SizedBox(height: context.h(28)),
               ],
 
             // 해외 주요 지수 섹션 (디바이더 아래)
