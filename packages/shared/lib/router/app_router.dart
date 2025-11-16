@@ -173,7 +173,6 @@ class AppRouter {
         builder: (context, state) {
           final cardType = state.pathParameters['cardType'] ?? '';
           final extractedTags = state.extra as List<String>?;
-          print('Navigating to learning card: $cardType with tags: $extractedTags');
           return LearningCardDetailScreen(
             cardType: cardType,
             extractedTags: extractedTags,
