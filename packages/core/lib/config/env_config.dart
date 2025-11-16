@@ -12,10 +12,10 @@ class EnvConfig {
     if (_initialized) return;
     
     try {
-      // Flutter 앱은 assets/env/ 디렉터리에서 .env 파일을 로드
-      await dotenv.load(fileName: "assets/env/.env");
+      // Flutter 앱은 프로젝트 루트의 .env 파일을 로드
+      await dotenv.load(fileName: ".env");
       _initialized = true;
-      logger.i('환경 변수 로드 완료: assets/env/.env');
+      logger.i('환경 변수 로드 완료: .env');
     } catch (e) {
       logger.e('환경 변수 로드 실패: $e');
       // 개발 환경에서는 기본값 사용, 릴리스에서는 예외 발생

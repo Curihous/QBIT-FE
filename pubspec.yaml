@@ -37,8 +37,8 @@ flutter:
     - assets/icons/
     - assets/icons/navigation/
     - assets/icons/stock_search_screen/
-    - assets/env/
     - assets/cards/
+    - .env
   
   fonts:
     - family: Pretendard
