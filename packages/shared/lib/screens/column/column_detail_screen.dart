@@ -91,10 +91,19 @@ class _ColumnDetailScreenState extends State<ColumnDetailScreen> {
     if (dateString == null || dateString.isEmpty) return '';
     try {
       final date = DateTime.parse(dateString);
-      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+      // "2025년 11월 14일" 형식으로 포맷팅
+      return '${date.year}년 ${date.month}월 ${date.day}일';
     } catch (e) {
       return '';
     }
+  }
+
+  String _formatSectionBody(String body) {
+    // "📚 함께 보면 좋은 키워드:" 앞에 줄바꿈 추가
+    if (body.contains('📚 함께 보면 좋은 키워드:')) {
+      return body.replaceAll('📚 함께 보면 좋은 키워드:', '\n📚 함께 보면 좋은 키워드:');
+    }
+    return body;
   }
 
   bool _hasSourceInfo() {
@@ -310,7 +319,7 @@ class _ColumnDetailScreenState extends State<ColumnDetailScreen> {
                                           Padding(
                                             padding: EdgeInsets.only(bottom: context.h(8)),
                                             child: Text(
-                                              section.body!,
+                                              _formatSectionBody(section.body!),
                                               style: TextStyle(
                                                 color: AppColors.gray600,
                                                 fontSize: 14,
