@@ -9,7 +9,7 @@ import 'package:logger/logger.dart';
 class UsStockMarketWebSocket {
   static const String _wsUrl = 'wss://delayed.polygon.io/stocks';
   static const Duration _baseReconnectDelay = Duration(seconds: 2);
-  static const int _maxReconnectAttempts = 10;
+  static const int _maxReconnectAttempts = 2; // 재연결 시도 횟수 감소 (빠른 REST API 폴백)
 
   final Logger _logger = Logger();
   final String apiKey;

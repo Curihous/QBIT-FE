@@ -9,6 +9,9 @@ class StockOrderForm extends StatefulWidget {
   final String selectedOrderTab; // '매수', '매도'
   final double? exchangeRate;
   final double? tickSizeInKrw;
+  final double? buyingPower; // 매수 가능 금액 (USD)
+  final double? positionQuantity; // 보유 수량 (주)
+  final double? currentMarketPrice; // 현재 시장 가격 (USD)
   final Function(String orderType, String orderMethod, String quantity, String? limitPrice, String apiSymbol) onSubmit;
   final Function() onSetMaxQuantity;
   final bool isSubmitting;
@@ -19,16 +22,19 @@ class StockOrderForm extends StatefulWidget {
     required this.selectedOrderTab,
     this.exchangeRate,
     this.tickSizeInKrw,
+    this.buyingPower,
+    this.positionQuantity,
+    this.currentMarketPrice,
     required this.onSubmit,
     required this.onSetMaxQuantity,
     required this.isSubmitting,
   });
 
   @override
-  State<StockOrderForm> createState() => _StockOrderFormState();
+  State<StockOrderForm> createState() => StockOrderFormState();
 }
 
-class _StockOrderFormState extends State<StockOrderForm> {
+class StockOrderFormState extends State<StockOrderForm> {
   String _selectedOrderType = '지정가'; // '지정가', '시장가'
   int _quantity = 1;
   double _price = 0.0;
@@ -50,6 +56,14 @@ class _StockOrderFormState extends State<StockOrderForm> {
     _quantityController.text = '';
     _priceController.text = '';
   }
+  
+  /// 호가창에서 선택한 가격으로 업데이트 (USD)
+  void updatePriceFromOrderBook(double priceUsd) {
+    setState(() {
+      _price = priceUsd;
+      _priceController.text = priceUsd.toStringAsFixed(2);
+    });
+  }
 
   @override
   void dispose() {
@@ -58,6 +72,24 @@ class _StockOrderFormState extends State<StockOrderForm> {
     _quantityFocusNode.dispose();
     _priceFocusNode.dispose();
     super.dispose();
+  }
+
+  /// 총액 계산 메서드
+  String _calculateTotalAmount() {
+    if (_selectedOrderType == '시장가') {
+      // 시장가일 때는 현재 시장 가격 기준으로 계산
+      if (widget.currentMarketPrice != null && widget.currentMarketPrice! > 0) {
+        return (_quantity * widget.currentMarketPrice!).toStringAsFixed(2);
+      }
+      // 시장 가격이 없을 때는 명확한 메시지 표시
+      return _quantity > 0 ? '시장가(가격 없음)' : '0.00';
+    } else {
+      // 지정가일 때는 입력한 가격 기준으로 계산
+      if (_price > 0 && _quantity > 0) {
+        return (_price * _quantity).toStringAsFixed(2);
+      }
+      return '0.00';
+    }
   }
 
   /// 통화 전환 메서드
@@ -97,7 +129,7 @@ class _StockOrderFormState extends State<StockOrderForm> {
       return;
     }
     
-    // 지정가 주문일 때만 가격 검증
+    // 주문 타입별 가격 검증
     if (_selectedOrderType == '지정가') {
       if (_price <= 0) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -114,6 +146,17 @@ class _StockOrderFormState extends State<StockOrderForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('환율 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요'),
+            backgroundColor: AppColors.loss,
+          ),
+        );
+        return;
+      }
+    } else if (_selectedOrderType == '시장가') {
+      // 시장가 주문 시 현재 시장 가격 확인
+      if (widget.currentMarketPrice == null || widget.currentMarketPrice! <= 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('시장 가격 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요'),
             backgroundColor: AppColors.loss,
           ),
         );
@@ -168,22 +211,43 @@ class _StockOrderFormState extends State<StockOrderForm> {
               },
               child: Text(
                 '$_selectedOrderType ▾',
-                textAlign: TextAlign.center,
-                style: AppFonts.b2Semibold.copyWith(
-                  color: AppColors.gray900,
+                textAlign: TextAlign.right,
+                style: AppFonts.c1.copyWith(
+                  color: AppColors.primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  height: 1.31,
                 ),
               ),
             ),
           ),
-          SizedBox(height: context.h(2)),
+          SizedBox(height: context.h(9)),
           
           // 주문가능 금액
-          Text(
-            '주문가능금액',
-            textAlign: TextAlign.center,
-            style: AppFonts.btn2.copyWith(
-              color: AppColors.gray900,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '주문가능(USD)',
+                style: AppFonts.c1.copyWith(
+                  color: AppColors.gray600,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  height: 1.23,
+                ),
+              ),
+              Text(
+                widget.buyingPower != null 
+                    ? widget.buyingPower!.toStringAsFixed(2)
+                    : '-',
+                style: AppFonts.b2Regular.copyWith(
+                  color: AppColors.gray900,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
+                  height: 1.21,
+                ),
+              ),
+            ],
           ),
           SizedBox(height: context.h(9)),
           
@@ -202,12 +266,17 @@ class _StockOrderFormState extends State<StockOrderForm> {
                 children: [
                   Text(
                     '수량',
-                    style: AppFonts.b2Regular.copyWith(
-                      color: AppColors.gray900,
+                    style: AppFonts.c1.copyWith(
+                      color: AppColors.gray600,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w400,
+                      height: 1.23,
                     ),
                   ),
                   SizedBox(height: context.h(6)),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Row(
@@ -219,9 +288,18 @@ class _StockOrderFormState extends State<StockOrderForm> {
                                 keyboardType: TextInputType.number,
                                 style: AppFonts.b1Semibold.copyWith(
                                   color: AppColors.gray900,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  height: 1.25,
                                 ),
                                 decoration: InputDecoration(
-                                  hintText: '수량',
+                                  hintText: '0',
+                                  hintStyle: AppFonts.b1Semibold.copyWith(
+                                    color: AppColors.gray400,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1.25,
+                                  ),
                                   border: InputBorder.none,
                                   enabledBorder: InputBorder.none,
                                   focusedBorder: InputBorder.none,
@@ -236,22 +314,19 @@ class _StockOrderFormState extends State<StockOrderForm> {
                                 },
                               ),
                             ),
-                            Text(
-                              '주',
-                              style: AppFonts.b1Regular.copyWith(
-                                color: AppColors.gray900,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
                           ],
                         ),
                       ),
                       GestureDetector(
                         onTap: widget.onSetMaxQuantity,
                         child: Text(
-                          '최대 ▾',
-                          style: AppFonts.b2Semibold.copyWith(
-                            color: AppColors.gray600,
+                          '최대',
+                          textAlign: TextAlign.right,
+                          style: AppFonts.c1.copyWith(
+                            color: AppColors.gray400,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                            height: 1.23,
                           ),
                         ),
                       ),
@@ -272,143 +347,103 @@ class _StockOrderFormState extends State<StockOrderForm> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.w(22), vertical: context.h(12)),
+              padding: EdgeInsets.symmetric(horizontal: context.w(22), vertical: context.h(14)),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '가격',
-                    style: AppFonts.b2Regular.copyWith(
-                      color: AppColors.gray900,
-                    ),
-                  ),
-                  SizedBox(height: context.h(6)),
-                  Row(
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: TextField(
-                                controller: _priceController,
-                                focusNode: _priceFocusNode,
-                                keyboardType: TextInputType.number,
-                                style: AppFonts.b1Semibold.copyWith(
-                                  color: AppColors.gray900,
-                                ),
-                                decoration: InputDecoration(
-                                  hintText: '가격',
-                                  border: InputBorder.none,
-                                  enabledBorder: InputBorder.none,
-                                  focusedBorder: InputBorder.none,
-                                  filled: false,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                onChanged: (value) {
-                                  final price = double.tryParse(value) ?? 0.0;
-                                  setState(() {
-                                    _price = price;
-                                  });
-                                },
-                              ),
-                            ),
-                            SizedBox(width: context.w(4)),
-                            // 통화 토글 버튼
-                            GestureDetector(
-                              onTap: _toggleCurrency,
-                              child: Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: context.w(8),
-                                  vertical: context.h(4),
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.gray100,
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: context.w(6),
-                                        vertical: context.h(2),
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: _isShowingKRW ? Colors.white : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                      child: Text(
-                                        '원',
-                                        style: AppFonts.b2Semibold.copyWith(
-                                          color: AppColors.gray900,
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(width: context.w(2)),
-                                    Container(
-                                      padding: EdgeInsets.symmetric(
-                                        horizontal: context.w(6),
-                                        vertical: context.h(2),
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: !_isShowingKRW ? Colors.white : Colors.transparent,
-                                        borderRadius: BorderRadius.circular(2),
-                                      ),
-                                      child: Text(
-                                        r'$',
-                                        style: AppFonts.b2Semibold.copyWith(
-                                          color: AppColors.gray900,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
+                      Text(
+                        '가격(USD)',
+                        style: AppFonts.c1.copyWith(
+                          color: AppColors.gray600,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                          height: 1.23,
                         ),
                       ),
+                      SizedBox(height: context.h(9)),
                       Row(
                         children: [
-                          GestureDetector(
-                            onTap: () {
-                              final tickSize = !_isShowingKRW 
-                                  ? ((widget.tickSizeInKrw ?? 13.0) / (widget.exchangeRate ?? 1300.0)) 
-                                  : (widget.tickSizeInKrw ?? 13.0);
-                              setState(() {
-                                _price = (_price - tickSize).clamp(0, double.infinity);
-                                _priceController.text = !_isShowingKRW
-                                    ? _price.toStringAsFixed(2)
-                                    : _price.toStringAsFixed(0);
-                              });
-                            },
-                            child: Text(
-                              '−',
-                              style: AppFonts.b2Semibold.copyWith(
-                                color: AppColors.gray600,
+                          Expanded(
+                            child: TextField(
+                              controller: _priceController,
+                              focusNode: _priceFocusNode,
+                              keyboardType: TextInputType.number,
+                              style: AppFonts.b1Semibold.copyWith(
+                                color: AppColors.gray900,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                height: 1.25,
                               ),
+                              decoration: InputDecoration(
+                                hintText: '0.00',
+                                border: InputBorder.none,
+                                enabledBorder: InputBorder.none,
+                                focusedBorder: InputBorder.none,
+                                filled: false,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                              onChanged: (value) {
+                                final price = double.tryParse(value) ?? 0.0;
+                                setState(() {
+                                  _price = price;
+                                });
+                              },
                             ),
                           ),
-                          SizedBox(width: context.w(8)),
-                          GestureDetector(
-                            onTap: () {
-                              final tickSize = !_isShowingKRW 
-                                  ? ((widget.tickSizeInKrw ?? 13.0) / (widget.exchangeRate ?? 1300.0)) 
-                                  : (widget.tickSizeInKrw ?? 13.0);
-                              setState(() {
-                                _price = _price + tickSize;
-                                _priceController.text = !_isShowingKRW
-                                    ? _price.toStringAsFixed(2)
-                                    : _price.toStringAsFixed(0);
-                              });
-                            },
-                            child: Text(
-                              '+',
-                              style: AppFonts.b2Semibold.copyWith(
-                                color: AppColors.gray600,
+                          SizedBox(width: context.w(12)),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              GestureDetector(
+                                onTap: () {
+                                  final tickSize = !_isShowingKRW 
+                                      ? ((widget.tickSizeInKrw ?? 13.0) / (widget.exchangeRate ?? 1300.0)) 
+                                      : (widget.tickSizeInKrw ?? 13.0);
+                                  setState(() {
+                                    _price = (_price - tickSize).clamp(0, double.infinity);
+                                    _priceController.text = !_isShowingKRW
+                                        ? _price.toStringAsFixed(2)
+                                        : _price.toStringAsFixed(0);
+                                  });
+                                },
+                                child: Text(
+                                  '−',
+                                  style: AppFonts.c1.copyWith(
+                                    color: AppColors.gray600,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                    height: 1.31,
+                                  ),
+                                ),
                               ),
-                            ),
+                              SizedBox(width: context.w(16)),
+                              GestureDetector(
+                                onTap: () {
+                                  final tickSize = !_isShowingKRW 
+                                      ? ((widget.tickSizeInKrw ?? 13.0) / (widget.exchangeRate ?? 1300.0)) 
+                                      : (widget.tickSizeInKrw ?? 13.0);
+                                  setState(() {
+                                    _price = _price + tickSize;
+                                    _priceController.text = !_isShowingKRW
+                                        ? _price.toStringAsFixed(2)
+                                        : _price.toStringAsFixed(0);
+                                  });
+                                },
+                                child: Text(
+                                  '+',
+                                  style: AppFonts.c1.copyWith(
+                                    color: AppColors.gray600,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w400,
+                                    height: 1.31,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -418,58 +453,69 @@ class _StockOrderFormState extends State<StockOrderForm> {
               ),
             ),
           ),
-          SizedBox(height: (availableHeight * 0.05).clamp(10.0, 20.0)),
+          SizedBox(height: context.h(60)),
           
           // 총액
           Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                '총액',
-                style: AppFonts.b2Regular.copyWith(
-                  color: AppColors.gray900,
+                '총액(USD)',
+                style: AppFonts.c1.copyWith(
+                  color: AppColors.gray600,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w400,
+                  height: 1.23,
                 ),
               ),
               SizedBox(height: context.h(8)),
               Text(
-                _selectedOrderType == '시장가' 
-                    ? '시장가' 
-                    : () {
-                        final exchangeRate = widget.exchangeRate ?? 1300.0;
-                        final priceInKrw = _isShowingKRW ? _price : (_price * exchangeRate);
-                        final totalInKrw = _quantity * priceInKrw;
-                        return '${totalInKrw.toStringAsFixed(0)}원';
-                      }(),
+                _calculateTotalAmount(),
                 style: AppFonts.t1Bold.copyWith(
                   color: AppColors.gray900,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
+                  height: 1.25,
                 ),
               ),
             ],
           ),
-          SizedBox(height: (availableHeight * 0.03).clamp(8.0, 16.0)),
+          SizedBox(height: context.h(16)),
           
           // 매수/매도 버튼
-          GestureDetector(
-            onTap: widget.isSubmitting ? null : _handleSubmit,
-            child: Container(
-              width: double.infinity,
-              height: (availableHeight * 0.06).clamp(40.0, 50.0),
-              decoration: BoxDecoration(
-                color: widget.selectedOrderTab == '매도' ? AppColors.loss : AppColors.profit,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Center(
-                child: widget.isSubmitting
-                    ? CircularProgressIndicator(color: Colors.white)
-                    : Text(
-                        widget.selectedOrderTab == '매도' ? '매도' : '매수',
-                        style: AppFonts.t1Bold.copyWith(
-                          color: AppColors.white,
-                        ),
-                      ),
-              ),
-            ),
+          Builder(
+            builder: (context) {
+              // 시장가 주문 시 가격이 없으면 버튼 비활성화
+              final isMarketOrderWithoutPrice = _selectedOrderType == '시장가' &&
+                  (widget.currentMarketPrice == null || widget.currentMarketPrice! <= 0);
+              final isButtonDisabled = widget.isSubmitting || isMarketOrderWithoutPrice;
+              
+              return GestureDetector(
+                onTap: isButtonDisabled ? null : _handleSubmit,
+                child: Container(
+                  width: double.infinity,
+                  height: context.h(45),
+                  decoration: BoxDecoration(
+                    color: isButtonDisabled
+                        ? AppColors.gray300
+                        : (widget.selectedOrderTab == '매도' ? AppColors.loss : AppColors.profit),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: widget.isSubmitting
+                        ? CircularProgressIndicator(color: Colors.white)
+                        : Text(
+                            widget.selectedOrderTab == '매도' ? '매도' : '매수',
+                            style: AppFonts.t1Bold.copyWith(
+                              color: AppColors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
