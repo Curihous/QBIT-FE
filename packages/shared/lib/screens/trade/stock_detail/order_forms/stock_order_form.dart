@@ -66,6 +66,24 @@ class _StockOrderFormState extends State<StockOrderForm> {
     super.dispose();
   }
 
+  /// 총액 계산 메서드
+  String _calculateTotalAmount() {
+    if (_selectedOrderType == '시장가') {
+      // 시장가일 때는 현재 시장 가격 기준으로 계산
+      if (widget.currentMarketPrice != null && widget.currentMarketPrice! > 0) {
+        return (_quantity * widget.currentMarketPrice!).toStringAsFixed(2);
+      }
+      // 시장 가격이 없을 때는 명확한 메시지 표시
+      return _quantity > 0 ? '시장가(가격 없음)' : '0.00';
+    } else {
+      // 지정가일 때는 입력한 가격 기준으로 계산
+      if (_price > 0 && _quantity > 0) {
+        return (_price * _quantity).toStringAsFixed(2);
+      }
+      return '0.00';
+    }
+  }
+
   /// 통화 전환 메서드
   Future<void> _toggleCurrency() async {
     if (widget.exchangeRate == null) return;
@@ -444,22 +462,7 @@ class _StockOrderFormState extends State<StockOrderForm> {
               ),
               SizedBox(height: context.h(8)),
               Text(
-                () {
-                  if (_selectedOrderType == '시장가') {
-                    // 시장가일 때는 현재 시장 가격 기준으로 계산
-                    if (widget.currentMarketPrice != null && widget.currentMarketPrice! > 0) {
-                      return (_quantity * widget.currentMarketPrice!).toStringAsFixed(2);
-                    }
-                    // 시장 가격이 없을 때는 명확한 메시지 표시
-                    return _quantity > 0 ? '시장가(가격 없음)' : '0.00';
-                  } else {
-                    // 지정가일 때는 입력한 가격 기준으로 계산
-                    if (_price > 0 && _quantity > 0) {
-                      return (_price * _quantity).toStringAsFixed(2);
-                    }
-                    return '0.00';
-                  }
-                }(),
+                _calculateTotalAmount(),
                 style: AppFonts.t1Bold.copyWith(
                   color: AppColors.gray900,
                   fontSize: 16,

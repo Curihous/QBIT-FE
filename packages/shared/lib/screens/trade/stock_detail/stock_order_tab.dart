@@ -18,6 +18,7 @@ import 'package:qbit_shared/widgets/trade/us_stock_orderbook_widget.dart';
 import 'package:qbit_services/models/stock_detail_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
+import 'package:qbit_shared/utils/stock_price_parser.dart';
 import 'package:logger/logger.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/order_forms/crypto_order_form.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/order_forms/stock_order_form.dart';
@@ -360,20 +361,11 @@ class _StockOrderTabState extends State<StockOrderTab> {
       logger.i('REST API 응답: $quote');
       
       if (mounted && quote != null) {
-        double? currentPrice;
+        final currentPrice = StockPriceParser.parseCurrentPrice(quote);
         
-        // currentPrice가 숫자 타입이거나 문자열일 수 있음
-        if (quote['currentPrice'] != null) {
-          if (quote['currentPrice'] is num) {
-            currentPrice = (quote['currentPrice'] as num).toDouble();
-          } else {
-            currentPrice = double.tryParse(quote['currentPrice'].toString());
-          }
-        }
-        
-        if (currentPrice != null && currentPrice > 0) {
+        if (currentPrice != null) {
           setState(() {
-            _currentMarketPrice = currentPrice!;
+            _currentMarketPrice = currentPrice;
             _marketPriceRetryCount = 0; // 성공 시 재시도 카운트 리셋
           });
           logger.i('미국 주식 현재 가격 로드 성공 (REST API): $_currentMarketPrice');

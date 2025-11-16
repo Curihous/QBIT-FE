@@ -4,6 +4,7 @@ import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_shared/utils/us_stock_order_book_generator.dart';
+import 'package:qbit_shared/utils/stock_price_parser.dart';
 import 'package:qbit_services/websocket/us_stock_market_websocket.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -24,6 +25,9 @@ class UsStockOrderBookWidget extends StatefulWidget {
 }
 
 class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
+  // 상수
+  static const int _defaultVolume = 50000; // 기본 거래량 (REST API에는 거래량 정보가 없을 수 있음)
+  
   UsStockOrderBookGenerator? _generator;
   UsStockMarketWebSocket? _webSocket;
   StreamSubscription<PolygonEvent>? _subscription;
@@ -59,21 +63,12 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
       final quote = await StockApiService.getUsStockQuote(widget.symbol);
       
       if (mounted && quote != null) {
-        double? currentPrice;
+        final currentPrice = StockPriceParser.parseCurrentPrice(quote);
         
-        // currentPrice가 숫자 타입이거나 문자열일 수 있음
-        if (quote['currentPrice'] != null) {
-          if (quote['currentPrice'] is num) {
-            currentPrice = (quote['currentPrice'] as num).toDouble();
-          } else {
-            currentPrice = double.tryParse(quote['currentPrice'].toString());
-          }
-        }
-        
-        if (currentPrice != null && currentPrice > 0) {
+        if (currentPrice != null) {
           setState(() {
-            _currentPrice = currentPrice!;
-            _currentVolume = 50000; // 기본 거래량 (REST API에는 거래량 정보가 없을 수 있음)
+            _currentPrice = currentPrice;
+            _currentVolume = _defaultVolume;
             _isLoading = false;
             _updateOrderBook();
           });
