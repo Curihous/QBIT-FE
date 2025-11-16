@@ -700,11 +700,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                 if (value.text.isEmpty) return const SizedBox.shrink();
                 return GestureDetector(
                   onTap: () {
+                    // _onSearchChanged 리스너에서 _searchSymbol 초기화 및 _fetchOrders 호출을 처리
                     _searchController.clear();
-                    setState(() {
-                      _searchSymbol = null;
-                    });
-                    _fetchOrders();
                   },
                   child: Container(
                     width: 34,
