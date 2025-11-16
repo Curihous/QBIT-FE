@@ -579,7 +579,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   Widget _buildTabSelector() {
     return Container(
-      padding: EdgeInsets.only(left: context.w(20), right: context.w(20), top: 0, bottom: context.h(4)),
+      padding: EdgeInsets.only(left: context.w(20), right: context.w(20), top: 0, bottom: context.h(12)),
       child: Row(
         children: [
           GestureDetector(
@@ -728,7 +728,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     
     return Container(
       padding: EdgeInsets.symmetric(horizontal: context.w(16)),
-      margin: EdgeInsets.only(top: context.h(4), bottom: context.h(8)),
+      margin: EdgeInsets.only(top: context.h(6), bottom: context.h(8)),
       child: Row(
         children: [
           FilterButton(
