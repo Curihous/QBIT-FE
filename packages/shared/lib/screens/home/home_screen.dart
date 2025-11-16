@@ -13,9 +13,12 @@ import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/api/ai_api_service.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/api/learning_card_api_service.dart';
+import 'package:qbit_services/api/portfolio_api_service.dart';
 import 'package:qbit_services/models/recommend_column_response.dart';
 import 'package:qbit_services/models/column.dart' as models;
 import 'package:qbit_services/models/learning_card_model.dart';
+import 'package:qbit_services/models/portfolio_position_model.dart';
+import 'package:qbit_shared/widgets/home/portfolio_positions_widget.dart';
 import 'package:kakao_flutter_sdk_auth/kakao_flutter_sdk_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -82,6 +85,10 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
   List<LearningCard> _learningCards = [];
   bool _isLoadingLearningCards = false;
   String? _learningCardsError;
+  
+  // 포트폴리오 포지션 관련
+  List<PortfolioPosition> _positions = [];
+  bool _isLoadingPositions = false;
 
   @override
   void initState() {
@@ -92,6 +99,7 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
       _loadUserData();
       _loadColumn();
       _loadLearningCards();
+      _loadPortfolioPositions();
       _printTokens();
     });
   }
@@ -355,6 +363,42 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
     }
   }
 
+  // 포트폴리오 포지션 로드
+  Future<void> _loadPortfolioPositions() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingPositions = true;
+    });
+
+    try {
+      final response = await PortfolioApiService.getPositions(
+        page: 0,
+        size: 10,
+      );
+
+      if (!mounted) return;
+      
+      if (response != null) {
+        setState(() {
+          _positions = response.content;
+          _isLoadingPositions = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingPositions = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('포트폴리오 포지션 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingPositions = false;
+        });
+      }
+    }
+  }
+
   // 토큰 정보 출력
   Future<void> _printTokens() async {
     debugPrint('=== 토큰 정보 ===');
@@ -596,6 +640,26 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
                 ],
               ),
             ),
+            // 내 종목 보기 섹션 (추천 이론 학습 아래)
+            SizedBox(height: context.h(20)), // 뉴스 칼럼과 추천 이론 학습 사이 여백과 동일
+            if (_isLoadingPositions)
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: context.h(20)),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else if (_positions.isNotEmpty)
+              PortfolioPositionsWidget(
+                positions: _positions,
+                onViewAll: () {
+                  // TODO: 전체 포트폴리오 상세 화면으로 이동
+                  // context.push('/portfolio-detail');
+                },
+              ),
+            // 하단 여백 추가
+            SizedBox(height: context.h(100)),
           ],
         ),
       ),
