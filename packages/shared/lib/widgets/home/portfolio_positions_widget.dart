@@ -85,7 +85,7 @@ class PortfolioPositionsWidget extends StatelessWidget {
     final avgEntryPrice = double.tryParse(position.avgEntryPrice) ?? 0.0;
     final quantity = double.tryParse(position.quantity) ?? 0.0;
     
-    // 암호화폐인지 확인 (USD가 포함되어 있으면 암호화폐)
+    // 암호화폐인지 확인 ('/'가 포함되어 있으면 암호화폐 거래 페어)
     final isCrypto = position.symbol.contains('/');
     final quantityText = isCrypto 
         ? '${quantity.toStringAsFixed(9).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')}개'
@@ -97,8 +97,8 @@ class PortfolioPositionsWidget extends StatelessWidget {
         ? '+${plpcPercent.toStringAsFixed(3)}%'
         : '${plpcPercent.toStringAsFixed(3)}%';
     
-    // 손익률 색상 (양수: 빨강, 음수: 파랑)
-    final plpcColor = unrealizedPlpc >= 0 ? AppColors.loss : AppColors.profit;
+    // 손익률 색상 (양수: 수익 색상, 음수: 손실 색상)
+    final plpcColor = unrealizedPlpc >= 0 ? AppColors.profit : AppColors.loss;
 
     // 해외 종목 순위처럼 양옆에 여백이 있는 구분선을 위해 Inset.block으로 감싸기
     return Inset.block(

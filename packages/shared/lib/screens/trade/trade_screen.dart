@@ -270,6 +270,8 @@ class _TradeScreenState extends State<TradeScreen> {
 
   // 포트폴리오 포지션 로드
   Future<void> _loadPortfolioPositions() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoadingPositions = true;
     });
@@ -280,17 +282,17 @@ class _TradeScreenState extends State<TradeScreen> {
         size: 10,
       );
 
-      if (mounted && response != null) {
+      if (!mounted) return;
+      
+      if (response != null) {
         setState(() {
           _positions = response.content;
           _isLoadingPositions = false;
         });
       } else {
-        if (mounted) {
-          setState(() {
-            _isLoadingPositions = false;
-          });
-        }
+        setState(() {
+          _isLoadingPositions = false;
+        });
       }
     } catch (e) {
       print('포트폴리오 포지션 로드 실패: $e');

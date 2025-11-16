@@ -23,15 +23,24 @@ class PortfolioPosition {
 
   factory PortfolioPosition.fromJson(Map<String, dynamic> json) {
     return PortfolioPosition(
-      symbol: json['symbol'] as String,
-      quantity: json['quantity'] as String,
-      avgEntryPrice: json['avgEntryPrice'] as String,
-      marketValue: json['marketValue'] as String,
-      costBasis: json['costBasis'] as String,
-      unrealizedPl: json['unrealizedPl'] as String,
-      unrealizedPlpc: json['unrealizedPlpc'] as String,
-      currentPrice: json['currentPrice'] as String,
-      side: json['side'] as String,
+      symbol: json['symbol']?.toString() ??
+          throw FormatException('Missing required field: symbol', json),
+      quantity: json['quantity']?.toString() ??
+          throw FormatException('Missing required field: quantity', json),
+      avgEntryPrice: json['avgEntryPrice']?.toString() ??
+          throw FormatException('Missing required field: avgEntryPrice', json),
+      marketValue: json['marketValue']?.toString() ??
+          throw FormatException('Missing required field: marketValue', json),
+      costBasis: json['costBasis']?.toString() ??
+          throw FormatException('Missing required field: costBasis', json),
+      unrealizedPl: json['unrealizedPl']?.toString() ??
+          throw FormatException('Missing required field: unrealizedPl', json),
+      unrealizedPlpc: json['unrealizedPlpc']?.toString() ??
+          throw FormatException('Missing required field: unrealizedPlpc', json),
+      currentPrice: json['currentPrice']?.toString() ??
+          throw FormatException('Missing required field: currentPrice', json),
+      side: json['side']?.toString() ??
+          throw FormatException('Missing required field: side', json),
     );
   }
 
@@ -68,14 +77,36 @@ class PortfolioPositionPageResponse {
   });
 
   factory PortfolioPositionPageResponse.fromJson(Map<String, dynamic> json) {
+    final contentValue = json['content'];
+    if (contentValue == null) {
+      throw FormatException('Missing required field: content', json);
+    }
+    if (contentValue is! List) {
+      throw FormatException(
+          'Invalid type for field content: expected List, got ${contentValue.runtimeType}',
+          json);
+    }
+
     return PortfolioPositionPageResponse(
-      currentPage: json['currentPage'] as int,
-      pageSize: json['pageSize'] as int,
-      totalElements: json['totalElements'] as int,
-      totalPages: json['totalPages'] as int,
-      hasNext: json['hasNext'] as bool,
-      content: (json['content'] as List)
-          .map((item) => PortfolioPosition.fromJson(item as Map<String, dynamic>))
+      currentPage: json['currentPage'] as int? ??
+          throw FormatException('Missing required field: currentPage', json),
+      pageSize: json['pageSize'] as int? ??
+          throw FormatException('Missing required field: pageSize', json),
+      totalElements: json['totalElements'] as int? ??
+          throw FormatException('Missing required field: totalElements', json),
+      totalPages: json['totalPages'] as int? ??
+          throw FormatException('Missing required field: totalPages', json),
+      hasNext: json['hasNext'] as bool? ??
+          throw FormatException('Missing required field: hasNext', json),
+      content: contentValue
+          .map((item) {
+            if (item is! Map<String, dynamic>) {
+              throw FormatException(
+                  'Invalid content item type: expected Map<String, dynamic>, got ${item.runtimeType}',
+                  item);
+            }
+            return PortfolioPosition.fromJson(item);
+          })
           .toList(),
     );
   }
