@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:qbit_shared/widgets/common/header_back.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
@@ -90,7 +91,7 @@ class _ColumnDetailScreenState extends State<ColumnDetailScreen> {
     if (dateString == null || dateString.isEmpty) return '';
     try {
       final date = DateTime.parse(dateString);
-      return '${date.year}년 ${date.month}월 ${date.day}일';
+      return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     } catch (e) {
       return '';
     }
@@ -103,31 +104,43 @@ class _ColumnDetailScreenState extends State<ColumnDetailScreen> {
            (_column!.sourceUrl != null && _column!.sourceUrl!.isNotEmpty);
   }
 
-  String _buildSourceText() {
-    final parts = <String>[];
+  Future<void> _launchSourceUrl(String? url) async {
+    if (url == null || url.isEmpty) return;
     
-    // source_title이 있으면 우선 사용
-    if (_column!.sourceTitle != null && _column!.sourceTitle!.isNotEmpty) {
-      parts.add(_column!.sourceTitle!);
+    try {
+      final uri = Uri.parse(url);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      // URL 실행 실패 시 무시
     }
-    
-    // source_publisher가 있으면 추가
-    if (_column!.sourcePublisher != null && _column!.sourcePublisher!.isNotEmpty) {
-      parts.add(_column!.sourcePublisher!);
+  }
+
+  Widget _buildPublisherLogo(String? logoUrl, String? publisherName) {
+    if (logoUrl != null && logoUrl.isNotEmpty) {
+      return Image.network(
+        logoUrl,
+        width: 24,
+        height: 24,
+        errorBuilder: (context, error, stackTrace) {
+          // 로고 로드 실패 시 publisher name 표시
+          if (publisherName != null && publisherName.isNotEmpty) {
+            return Text(
+              publisherName,
+              style: AppFonts.c2.copyWith(color: AppColors.gray600),
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      );
+    } else if (publisherName != null && publisherName.isNotEmpty) {
+      return Text(
+        publisherName,
+        style: AppFonts.c2.copyWith(color: AppColors.gray600),
+      );
     }
-    
-    // source_published_at이 있으면 추가
-    final dateStr = _formatSourceDate(_column!.sourcePublishedAt);
-    if (dateStr.isNotEmpty) {
-      parts.add(dateStr);
-    }
-    
-    // 위 정보가 없고 source_url만 있으면 URL 표시
-    if (parts.isEmpty && _column!.sourceUrl != null && _column!.sourceUrl!.isNotEmpty) {
-      return _column!.sourceUrl!;
-    }
-    
-    return parts.join(', ');
+    return const SizedBox.shrink();
   }
 
   @override
@@ -339,11 +352,6 @@ class _ColumnDetailScreenState extends State<ColumnDetailScreen> {
                                 SizedBox(height: context.h(16)),
                                 
                                 // 원본이 궁금하다면?
-                                // TODO: 향후 개선사항
-                                // - source_title을 "원문: [제목]" 형태로 표시
-                                // - source_published_at을 "발행일: YYYY-MM-DD" 형태로 표시
-                                // - source_url과 함께 "원문 보기" 버튼 제공
-                                // - source_publisher 로고/이름 표시
                                 if (_hasSourceInfo())
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -355,12 +363,69 @@ class _ColumnDetailScreenState extends State<ColumnDetailScreen> {
                                         ),
                                       ),
                                       SizedBox(height: context.h(8)),
-                                      Text(
-                                        _buildSourceText(),
-                                        style: AppFonts.c2.copyWith(
-                                          color: AppColors.gray600,
+                                      
+                                      // 원문 제목
+                                      if (_column!.sourceTitle != null && _column!.sourceTitle!.isNotEmpty)
+                                        Padding(
+                                          padding: EdgeInsets.only(bottom: context.h(4)),
+                                          child: Text(
+                                            '원문: ${_column!.sourceTitle!}',
+                                            style: AppFonts.c2.copyWith(
+                                              color: AppColors.gray600,
+                                            ),
+                                          ),
                                         ),
-                                      ),
+                                      
+                                      // 발행일
+                                      if (_column!.sourcePublishedAt != null && _column!.sourcePublishedAt!.isNotEmpty)
+                                        Padding(
+                                          padding: EdgeInsets.only(bottom: context.h(4)),
+                                          child: Builder(
+                                            builder: (context) {
+                                              final dateStr = _formatSourceDate(_column!.sourcePublishedAt);
+                                              if (dateStr.isNotEmpty) {
+                                                return Text(
+                                                  '발행일: $dateStr',
+                                                  style: AppFonts.c2.copyWith(
+                                                    color: AppColors.gray600,
+                                                  ),
+                                                );
+                                              }
+                                              return const SizedBox.shrink();
+                                            },
+                                          ),
+                                        ),
+                                      
+                                      // Publisher 정보 (로고 또는 이름)
+                                      if (_column!.sourcePublisher != null && _column!.sourcePublisher!.isNotEmpty)
+                                        Padding(
+                                          padding: EdgeInsets.only(bottom: context.h(8)),
+                                          child: Row(
+                                            children: [
+                                              _buildPublisherLogo(
+                                                null, // TODO: publisherLogo 필드가 추가되면 여기에 전달
+                                                _column!.sourcePublisher,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      
+                                      // 원문 보기 버튼
+                                      if (_column!.sourceUrl != null && _column!.sourceUrl!.isNotEmpty)
+                                        TextButton(
+                                          onPressed: () => _launchSourceUrl(_column!.sourceUrl),
+                                          style: TextButton.styleFrom(
+                                            padding: EdgeInsets.zero,
+                                            minimumSize: Size.zero,
+                                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                          child: Text(
+                                            '원문 보기',
+                                            style: AppFonts.c2.copyWith(
+                                              color: AppColors.primary,
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 SizedBox(height: context.h(32)),
