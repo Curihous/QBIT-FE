@@ -5,6 +5,7 @@ import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_shared/utils/us_stock_order_book_generator.dart';
 import 'package:qbit_services/websocket/us_stock_market_websocket.dart';
+import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// 미국 주식용 가짜 호가창 위젯
@@ -51,23 +52,76 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
     super.dispose();
   }
 
+  /// REST API로 현재 가격 가져오기 (폴백용)
+  Future<void> _loadPriceFromRestApi() async {
+    try {
+      debugPrint('REST API로 현재 가격 로드 시작: ${widget.symbol}');
+      final quote = await StockApiService.getUsStockQuote(widget.symbol);
+      
+      if (mounted && quote != null) {
+        double? currentPrice;
+        
+        // currentPrice가 숫자 타입이거나 문자열일 수 있음
+        if (quote['currentPrice'] != null) {
+          if (quote['currentPrice'] is num) {
+            currentPrice = (quote['currentPrice'] as num).toDouble();
+          } else {
+            currentPrice = double.tryParse(quote['currentPrice'].toString());
+          }
+        }
+        
+        if (currentPrice != null && currentPrice > 0) {
+          setState(() {
+            _currentPrice = currentPrice!;
+            _currentVolume = 50000; // 기본 거래량 (REST API에는 거래량 정보가 없을 수 있음)
+            _isLoading = false;
+            _updateOrderBook();
+          });
+          debugPrint('REST API로 현재 가격 로드 성공: $_currentPrice');
+        } else {
+          debugPrint('REST API로 가격 파싱 실패: ${quote['currentPrice']}');
+          if (mounted) {
+            setState(() {
+              _isLoading = false;
+            });
+          }
+        }
+      } else {
+        debugPrint('REST API 응답이 null');
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } catch (error) {
+      debugPrint('REST API로 가격 로드 실패: $error');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   /// WebSocket 연결 및 실시간 데이터 수신
   /// 
   /// - 실시간 데이터: Polygon WebSocket에서 Aggregate Second (A) 이벤트 수신
-  /// - Mock 데이터: 10초 후에도 데이터가 없으면 더미 데이터 사용 (장 마감 시)
+  /// - REST API 폴백: 10초 후에도 데이터가 없으면 REST API로 현재 가격 가져오기
   void _connectWebSocket() async {
     try {
       final apiKey = dotenv.env['POLYGON_API_KEY'] ?? '';
       if (apiKey.isEmpty) {
-        print('Polygon API 키가 없습니다');
-        setState(() {
-          _isLoading = false;
-        });
+        debugPrint('Polygon API 키가 없습니다 - REST API로 폴백');
+        _loadPriceFromRestApi();
         return;
       }
 
       _webSocket = UsStockMarketWebSocket(apiKey);
       await _webSocket!.connect();
+      
+      // 연결 후 위젯이 dispose되었는지 확인
+      if (!mounted) return;
       
       // Aggregate Second (A) 채널 구독 - 실시간 가격/거래량 수신
       _webSocket!.subscribe(
@@ -78,53 +132,57 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
         quote: false,
       );
 
-      // 10초 후에도 데이터가 안 오면 Mock 데이터 표시 (장 마감 시)
+      // 10초 후에도 데이터가 안 오면 REST API로 폴백
       Future.delayed(const Duration(seconds: 10), () {
         if (mounted && _currentPrice == 0.0) {
-          print('⚠️ 실시간 데이터 수신 없음 - Mock 데이터 표시 (장 마감 가능성)');
-          setState(() {
-            _currentPrice = 225.0; // Mock 가격
-            _currentVolume = 50000; // Mock 거래량
-            _isLoading = false;
-            _updateOrderBook();
-          });
+          debugPrint('⚠️ 실시간 데이터 수신 없음 - REST API로 폴백');
+          _loadPriceFromRestApi();
         }
       });
 
       // WebSocket 실시간 데이터 수신
-      _subscription = _webSocket!.stream.listen((event) {
-        if (!mounted) return;
-        
-        // Aggregate Second 이벤트만 처리 (실시간 가격/거래량)
-        if (event is PolygonAggregateSecond) {
-          setState(() {
-            _previousPrice = _currentPrice;
-            _currentPrice = event.close; // 실시간 종가
-            _currentVolume = event.volume; // 실시간 거래량
-            _isLoading = false;
-            
-            // 가격 변동 시 깜빡임 효과
-            if (_previousPrice > 0 && _previousPrice != _currentPrice) {
-              _shouldBlink = true;
-              Future.delayed(const Duration(milliseconds: 500), () {
-                if (mounted) {
-                  setState(() {
-                    _shouldBlink = false;
-                  });
-                }
-              });
-            }
-            
-            _updateOrderBook();
-          });
-        }
-      });
+      _subscription = _webSocket!.stream.listen(
+        (event) {
+          if (!mounted) return;
+          
+          // Aggregate Second 이벤트만 처리 (실시간 가격/거래량)
+          if (event is PolygonAggregateSecond) {
+            setState(() {
+              _previousPrice = _currentPrice;
+              _currentPrice = event.close; // 실시간 종가
+              _currentVolume = event.volume; // 실시간 거래량
+              _isLoading = false;
+              
+              // 가격 변동 시 깜빡임 효과
+              if (_previousPrice > 0 && _previousPrice != _currentPrice) {
+                _shouldBlink = true;
+                Future.delayed(const Duration(milliseconds: 500), () {
+                  if (mounted) {
+                    setState(() {
+                      _shouldBlink = false;
+                    });
+                  }
+                });
+              }
+              
+              _updateOrderBook();
+            });
+          }
+        },
+        onError: (error) {
+          debugPrint('US Stock WebSocket 스트림 에러: $error - REST API로 폴백');
+          if (mounted && _currentPrice == 0.0) {
+            _loadPriceFromRestApi();
+          }
+        },
+        onDone: () {
+          debugPrint('US Stock WebSocket 스트림 종료');
+        },
+      );
     } catch (e) {
-      print('US Stock WebSocket 연결 에러: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+      debugPrint('US Stock WebSocket 연결 에러: $e - REST API로 폴백');
+      if (mounted && _currentPrice == 0.0) {
+        _loadPriceFromRestApi();
       }
     }
   }
