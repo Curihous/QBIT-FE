@@ -264,7 +264,7 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: context.h(20)),
+                  SizedBox(height: context.h(12)),
                   // 상단 배너 (11월 16일, user nickname님을 위한 소식)
                   Container(
                     width: double.infinity,
@@ -349,34 +349,73 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
                 ],
               ),
             ),
-            // 추천 이론 학습 섹션 (구현 예정)
+            // 추천 이론 학습 섹션
+            SizedBox(height: context.h(20)),
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              padding: EdgeInsets.symmetric(horizontal: context.w(20), vertical: context.h(20)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '추천 이론 학습',
-                    style: AppFonts.t2Semibold.copyWith(
-                      color: AppColors.gray900,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: AppColors.gray100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Center(
-                      child: Text(
-                        '구현 예정',
-                        style: AppFonts.b1Regular.copyWith(
-                          color: AppColors.gray400,
+                  // 헤더: 제목 + 더 학습하기 링크
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        '추천 이론 학습',
+                        style: AppFonts.t2Semibold.copyWith(
+                          color: AppColors.gray900,
                         ),
                       ),
+                      GestureDetector(
+                        onTap: () {
+                          // TODO: 더 학습하기 화면으로 이동
+                        },
+                        child: Row(
+                          children: [
+                            Text(
+                              '더 학습하기',
+                              style: AppFonts.b2Regular.copyWith(
+                                color: AppColors.gray600,
+                              ),
+                            ),
+                            SizedBox(width: context.w(4)),
+                            Icon(
+                              Icons.chevron_right,
+                              size: 16,
+                              color: AppColors.gray600,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: context.h(16)),
+                  
+                  // 학습 카드들 (2개 가로 배치)
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildLearningCard(
+                          context,
+                          title: '제목 제목 제목',
+                          tag: '#태그태그',
+                          onTap: () {
+                            // TODO: 학습 카드 상세로 이동
+                          },
+                        ),
+                        SizedBox(width: context.w(16)),
+                        _buildLearningCard(
+                          context,
+                          title: '제목 제목 제목',
+                          tag: '#태그태그',
+                          onTap: () {
+                            // TODO: 학습 카드 상세로 이동
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -512,6 +551,73 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  // 학습 카드 위젯
+  Widget _buildLearningCard(
+    BuildContext context, {
+    required String title,
+    required String tag,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: context.w(234),
+        height: context.h(163),
+        decoration: ShapeDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment(0.50, -0.00),
+            end: Alignment(0.50, 1.00),
+            colors: [Color(0xFFD9D9D9), Color(0xFF737373)],
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              left: context.w(16),
+              top: context.h(92),
+              child: Text(
+                title,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontFamily: 'Pretendard',
+                  fontWeight: FontWeight.w600,
+                  height: 1.25,
+                ),
+              ),
+            ),
+            Positioned(
+              left: context.w(16),
+              top: context.h(127),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: ShapeDecoration(
+                  color: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
+                child: Text(
+                  tag,
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontSize: 13,
+                    fontFamily: 'Pretendard',
+                    fontWeight: FontWeight.w400,
+                    height: 1.23,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

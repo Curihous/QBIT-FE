@@ -142,7 +142,7 @@ class _QbitAppState extends State<QbitApp> {
       String fullPath = path;
       if (queryParams.isNotEmpty) {
         final queryString = queryParams.entries
-            .map((e) => '${e.key}=${e.value}')
+            .map((e) => '${Uri.encodeComponent(e.key)}=${Uri.encodeComponent(e.value)}')
             .join('&');
         fullPath = '$path?$queryString';
       }
@@ -153,7 +153,21 @@ class _QbitAppState extends State<QbitApp> {
       
       // 안전하게 GoRouter로 이동
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        AppRouter.router.go(fullPath);
+        try {
+          AppRouter.router.go(fullPath);
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('GoRouter 이동 실패: $e');
+            debugPrint('대신 쿼리 파라미터에 따라 직접 처리');
+          }
+          // 실패 시 쿼리 파라미터에 따라 직접 처리
+          final success = queryParams['success'] == 'true';
+          if (success) {
+            AppRouter.router.go('/trade');
+          } else {
+            AppRouter.router.go('/alpaca-auth');
+          }
+        }
       });
     } else {
       // 카카오 SDK가 자동으로 Deep Link 처리

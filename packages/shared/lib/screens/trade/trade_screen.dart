@@ -23,7 +23,9 @@ import 'package:qbit_shared/widgets/trade/portfolio_chart_widget.dart';
 import 'package:qbit_shared/widgets/trade/portfolio_overview_chart.dart';
 import 'package:qbit_services/api/portfolio_api_service.dart';
 import 'package:qbit_services/models/portfolio_overview_model.dart';
+import 'package:qbit_services/models/portfolio_position_model.dart';
 import 'package:qbit_services/models/asset_model.dart';
+import 'package:qbit_shared/widgets/home/portfolio_positions_widget.dart';
 import 'package:qbit_services/models/stock_ranking_model.dart';
 import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/api/api_client.dart';
@@ -57,6 +59,10 @@ class _TradeScreenState extends State<TradeScreen> {
   int? _selectedTimestamp; // 터치된 시점의 타임스탬프
   String _selectedPeriod = '1M'; // 선택된 기간: '1D', '1W', '1M'
   bool _isPortfolioLoading = false; // 포트폴리오 오버뷰 로딩 상태
+  
+  // 포트폴리오 포지션 관련
+  List<PortfolioPosition> _positions = [];
+  bool _isLoadingPositions = false;
 
   @override
   void initState() {
@@ -72,7 +78,10 @@ class _TradeScreenState extends State<TradeScreen> {
         });
       }
       await _loadUserAssets(); // 연동 후 자산 데이터 다시 로드
-      await _loadPortfolioOverview(); // 포트폴리오 오버뷰도 다시 로드
+      await Future.wait([
+        _loadPortfolioOverview(), // 포트폴리오 오버뷰도 다시 로드
+        _loadPortfolioPositions(), // 포트폴리오 포지션도 다시 로드
+      ]);
     };
   }
 
@@ -90,7 +99,10 @@ class _TradeScreenState extends State<TradeScreen> {
       
       // 포트폴리오 오버뷰 로드 (Alpaca 연결된 경우만)
       if (_isAlpacaConnected) {
-        await _loadPortfolioOverview();
+        await Future.wait([
+          _loadPortfolioOverview(),
+          _loadPortfolioPositions(),
+        ]);
       }
       
       await _loadStockRanking();
@@ -253,6 +265,42 @@ class _TradeScreenState extends State<TradeScreen> {
         });
       }
       // 에러 발생 시 기존 데이터 유지
+    }
+  }
+
+  // 포트폴리오 포지션 로드
+  Future<void> _loadPortfolioPositions() async {
+    if (!mounted) return;
+    
+    setState(() {
+      _isLoadingPositions = true;
+    });
+
+    try {
+      final response = await PortfolioApiService.getPositions(
+        page: 0,
+        size: 10,
+      );
+
+      if (!mounted) return;
+      
+      if (response != null) {
+        setState(() {
+          _positions = response.content;
+          _isLoadingPositions = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingPositions = false;
+        });
+      }
+    } catch (e) {
+      print('포트폴리오 포지션 로드 실패: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingPositions = false;
+        });
+      }
     }
   }
 
@@ -1454,6 +1502,28 @@ class _TradeScreenState extends State<TradeScreen> {
 
             // 디바이더  
             SizedBox(height: context.h(28)),
+
+            // 포트폴리오 포지션 섹션 (오버뷰 아래, 해외 주요 지수 위)
+            if (_isAlpacaConnected)
+              if (_isLoadingPositions)
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.symmetric(vertical: context.h(20)),
+                  child: const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                )
+              else if (_positions.isNotEmpty) ...[
+                PortfolioPositionsWidget(
+                  positions: _positions,
+                  onViewAll: () {
+                    // TODO: 전체 포트폴리오 상세 화면으로 이동
+                    // context.push('/portfolio-detail');
+                  },
+                ),
+                // 세 번째 종목과 해외 주요 지수 사이 여백 추가 (해외 주요 지수 <-> 해외 종목 순위 사이 여백과 동일: 9 + 20 = 29)
+                SizedBox(height: context.h(29)),
+              ],
 
             // 해외 주요 지수 섹션 (디바이더 아래)
             _buildOverseasIndicesSection(),

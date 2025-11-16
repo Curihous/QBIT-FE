@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import 'package:qbit_services/api/api_client.dart';
 import 'package:qbit_services/models/portfolio_overview_model.dart';
+import 'package:qbit_services/models/portfolio_position_model.dart';
 
 class PortfolioApiService {
   static Dio get _dio => ApiClient.instance;
@@ -52,6 +53,41 @@ class PortfolioApiService {
       }
     } catch (error) {
       logger.e('포트폴리오 오버뷰 조회 에러: $error');
+      if (error is DioException) {
+        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('Dio 에러 상태코드: ${error.response?.statusCode}');
+      }
+      return null;
+    }
+  }
+
+  /// 포트폴리오 포지션 조회
+  /// [page] - 페이지 번호 (기본값: 0)
+  /// [size] - 페이지 크기 (기본값: 10)
+  static Future<PortfolioPositionPageResponse?> getPositions({
+    int page = 0,
+    int size = 10,
+  }) async {
+    try {
+      logger.i('포트폴리오 포지션 조회 시작 (page: $page, size: $size)');
+      
+      final response = await _dio.get(
+        '/portfolios/positions',
+        queryParameters: {
+          'page': page,
+          'size': size,
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        logger.i('포트폴리오 포지션 조회 성공');
+        return PortfolioPositionPageResponse.fromJson(response.data as Map<String, dynamic>);
+      } else {
+        logger.e('포트폴리오 포지션 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('포트폴리오 포지션 조회 에러: $error');
       if (error is DioException) {
         logger.e('Dio 에러 상세: ${error.response?.data}');
         logger.e('Dio 에러 상태코드: ${error.response?.statusCode}');
