@@ -43,6 +43,40 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
     super.dispose();
   }
 
+  /// 검색 결과를 심볼명 관련도순으로 정렬
+  List<StockModel> _sortBySymbolRelevance(List<StockModel> results, String query) {
+    final queryUpper = query.toUpperCase();
+    
+    results.sort((a, b) {
+      final aSymbol = a.symbol.toUpperCase();
+      final bSymbol = b.symbol.toUpperCase();
+      
+      // 1. 심볼이 검색어와 정확히 일치
+      final aExactMatch = aSymbol == queryUpper;
+      final bExactMatch = bSymbol == queryUpper;
+      if (aExactMatch && !bExactMatch) return -1;
+      if (!aExactMatch && bExactMatch) return 1;
+      if (aExactMatch && bExactMatch) return 0;
+      
+      // 2. 심볼이 검색어로 시작
+      final aStartsWith = aSymbol.startsWith(queryUpper);
+      final bStartsWith = bSymbol.startsWith(queryUpper);
+      if (aStartsWith && !bStartsWith) return -1;
+      if (!aStartsWith && bStartsWith) return 1;
+      
+      // 3. 심볼에 검색어 포함
+      final aContains = aSymbol.contains(queryUpper);
+      final bContains = bSymbol.contains(queryUpper);
+      if (aContains && !bContains) return -1;
+      if (!aContains && bContains) return 1;
+      
+      // 4. 알파벳 순
+      return aSymbol.compareTo(bSymbol);
+    });
+    
+    return results;
+  }
+
   Future<void> _searchStocks(String query) async {
     if (query.trim().isEmpty) {
       setState(() {
@@ -69,8 +103,10 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
       
       final results = await StockApiService.searchStocks(query.trim(), assetClass: assetClass);
       if (mounted) {
+        // 심볼명 관련도순으로 정렬
+        final sortedResults = _sortBySymbolRelevance(results ?? [], query.trim());
         setState(() {
-          _searchResults = results ?? [];
+          _searchResults = sortedResults;
           _isLoading = false;
         });
       }
