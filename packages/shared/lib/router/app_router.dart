@@ -15,6 +15,7 @@ import 'package:qbit_shared/screens/trade/stock_search_screen.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/stock_detail_navigation.dart';
 import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
 import 'package:qbit_shared/screens/report/trade_report_screen.dart';
+import 'package:qbit_shared/screens/report/trade_report_intro_screen.dart';
 import 'package:qbit_shared/screens/report/ai_report_detail_screen.dart';
 import 'package:qbit_shared/screens/cards/learning_card_detail_screen.dart';
 import 'package:qbit_shared/screens/column/column_detail_screen.dart';
@@ -160,6 +161,15 @@ class AppRouter {
       GoRoute(
         path: '/trade-report/:tradeCycleId',
         name: 'trade-report',
+        builder: (context, state) {
+          final idStr = state.pathParameters['tradeCycleId'] ?? '0';
+          final tradeCycleId = int.tryParse(idStr) ?? 0;
+          return TradeReportIntroScreen(tradeCycleId: tradeCycleId);
+        },
+      ),
+      GoRoute(
+        path: '/trade-report-detail/:tradeCycleId',
+        name: 'trade-report-detail',
         builder: (context, state) {
           final idStr = state.pathParameters['tradeCycleId'] ?? '0';
           final tradeCycleId = int.tryParse(idStr) ?? 0;

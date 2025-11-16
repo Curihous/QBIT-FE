@@ -12,18 +12,25 @@ class EnvConfig {
     if (_initialized) return;
     
     try {
-      // Flutter 앱은 프로젝트 루트의 .env 파일을 로드
-      await dotenv.load(fileName: ".env");
+      // Flutter 앱은 assets 폴더의 .env 파일을 로드
+      await dotenv.load(fileName: "assets/.env");
       _initialized = true;
-      logger.i('환경 변수 로드 완료: .env');
+      logger.i('환경 변수 로드 완료: assets/.env');
     } catch (e) {
-      logger.e('환경 변수 로드 실패: $e');
-      // 개발 환경에서는 기본값 사용, 릴리스에서는 예외 발생
-      if (kDebugMode) {
-        logger.w('개발 모드: 기본값 사용');
+      // assets/.env가 없으면 프로젝트 루트의 .env 파일 시도
+      try {
+        await dotenv.load(fileName: ".env");
         _initialized = true;
-      } else {
-        throw StateError('환경 변수 로드 실패: $e. 릴리스 빌드에서는 환경 변수가 필수입니다.');
+        logger.i('환경 변수 로드 완료: .env (프로젝트 루트)');
+      } catch (e2) {
+        logger.e('환경 변수 로드 실패: $e2');
+        // 개발 환경에서는 기본값 사용, 릴리스에서는 예외 발생
+        if (kDebugMode) {
+          logger.w('개발 모드: 기본값 사용');
+          _initialized = true;
+        } else {
+          throw StateError('환경 변수 로드 실패: $e2. 릴리스 빌드에서는 환경 변수가 필수입니다.');
+        }
       }
     }
   }
