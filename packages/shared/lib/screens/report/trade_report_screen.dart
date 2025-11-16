@@ -175,7 +175,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
           children: [
                       Text(
                         '노현선님의 투자유형은',
-                        style: AppFonts.b2Regular.copyWith(
+                        style: AppFonts.b1Regular.copyWith(
                           color: AppColors.gray900,
                           height: 1.4,
                         ),
@@ -184,7 +184,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                       Text(
                         '변화를 엿보는 성장형',
                         style: AppFonts.t2Bold.copyWith(
-                          color: AppColors.primary,
+                          color: AppColors.primaryDark,
                           height: 1.3,
                         ),
                       ),
@@ -219,7 +219,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                 child: Container(
         width: double.infinity,
                   constraints: BoxConstraints(
-                    minHeight: context.h(300),
+                    minHeight: context.h(280),
                   ),
                   padding: EdgeInsets.only(
                     left: context.w(20),
@@ -238,12 +238,13 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (dateRangeText.isNotEmpty) ...[
+                        SizedBox(height: context.h(8)),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             Text(
                               dateRangeText,
-                              style: AppFonts.c1.copyWith(
+                              style: AppFonts.b2Regular.copyWith(
                                 color: const Color(0xFF7F7F7F), // Gray-600
                                 fontFamily: 'Pretendard',
                               ),
@@ -811,7 +812,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                         SizedBox(width: context.w(6)),
                         Text(
                           dateText,
-                          style: AppFonts.b2Semibold.copyWith(
+                          style: AppFonts.b2Regular.copyWith(
                             color: AppColors.gray600,
                           ),
                         ),
