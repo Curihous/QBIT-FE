@@ -593,20 +593,39 @@ class _StockOrderTabState extends State<StockOrderTab> {
         status: null,
       );
       
-      if (mounted && response != null) {
+      if (!mounted) return;
+      
+      if (response != null) {
         List<OrderHistoryModel> orders = [];
         
         if (response['content'] != null) {
-          orders = (response['content'] as List)
-              .map((json) => OrderHistoryModel.fromJson(json))
-              .toList();
+          // 각 항목에 대해 try/catch를 사용하여 유효하지 않은 항목은 건너뛰기
+          for (final item in response['content'] as List) {
+            try {
+              if (item is Map<String, dynamic>) {
+                final order = OrderHistoryModel.fromJson(item);
+                orders.add(order);
+              } else {
+                logger.w('주문 내역 항목이 Map이 아닙니다: ${item.runtimeType}');
+              }
+            } catch (e) {
+              logger.w('주문 내역 항목 파싱 실패, 건너뜀: $e');
+              // 유효하지 않은 항목은 건너뛰고 계속 진행
+            }
+          }
         }
         
-        // 필터링
+        // 필터링 (대소문자 정규화)
         if (_historyFilter == '매수') {
-          orders = orders.where((order) => order.side.toUpperCase() == 'BUY').toList();
+          orders = orders.where((order) {
+            final side = order.side.toLowerCase();
+            return side == 'buy';
+          }).toList();
         } else if (_historyFilter == '매도') {
-          orders = orders.where((order) => order.side.toUpperCase() == 'SELL').toList();
+          orders = orders.where((order) {
+            final side = order.side.toLowerCase();
+            return side == 'sell';
+          }).toList();
         }
         
         // 최신순 정렬
@@ -618,6 +637,11 @@ class _StockOrderTabState extends State<StockOrderTab> {
         });
         
         logger.i('주문 내역 로드 완료: ${orders.length}개');
+      } else {
+        setState(() {
+          _isLoadingHistory = false;
+        });
+        logger.w('주문 내역 응답이 null입니다');
       }
     } catch (error) {
       logger.e('주문 내역 조회 에러: $error');
@@ -641,6 +665,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
   
   String _getStatusLabel(OrderHistoryModel order) {
     final status = order.status.toLowerCase();
+    final side = order.side.toLowerCase(); // 대소문자 정규화
     final filledQuantity = double.tryParse(order.filledQuantity) ?? 0.0;
     final quantity = double.tryParse(order.quantity) ?? 0.0;
     
@@ -650,17 +675,17 @@ class _StockOrderTabState extends State<StockOrderTab> {
     
     if (filledQuantity > 0) {
       if (filledQuantity >= quantity) {
-        return order.side == 'buy' ? '매수 완료' : '매도 완료';
+        return side == 'buy' ? '매수 완료' : '매도 완료';
       } else {
-        return order.side == 'buy' ? '매수 부분체결' : '매도 부분체결';
+        return side == 'buy' ? '매수 부분체결' : '매도 부분체결';
       }
     }
     
     if (status == 'filled' || status == 'partially_filled') {
       if (status == 'partially_filled') {
-        return order.side == 'buy' ? '매수 부분체결' : '매도 부분체결';
+        return side == 'buy' ? '매수 부분체결' : '매도 부분체결';
       } else {
-        return order.side == 'buy' ? '매수 완료' : '매도 완료';
+        return side == 'buy' ? '매수 완료' : '매도 완료';
       }
     } else if (status == 'accepted' || status == 'pending_new' || status == 'new') {
       return order.type == 'limit' ? '지정가 대기' : '시장가 대기';
@@ -671,6 +696,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
   
   Color _getStatusColor(OrderHistoryModel order) {
     final status = order.status.toLowerCase();
+    final side = order.side.toLowerCase(); // 대소문자 정규화
     final filledQuantity = double.tryParse(order.filledQuantity) ?? 0.0;
     
     if (status == 'canceled' || status == 'cancelled') {
@@ -678,11 +704,11 @@ class _StockOrderTabState extends State<StockOrderTab> {
     }
     
     if (filledQuantity > 0) {
-      return order.side == 'buy' ? AppColors.profit : AppColors.loss;
+      return side == 'buy' ? AppColors.profit : AppColors.loss;
     }
     
     if (status == 'filled' || status == 'partially_filled') {
-      return order.side == 'buy' ? AppColors.profit : AppColors.loss;
+      return side == 'buy' ? AppColors.profit : AppColors.loss;
     } else if (status == 'accepted' || status == 'pending_new' || status == 'new') {
       return AppColors.primary;
     } else {

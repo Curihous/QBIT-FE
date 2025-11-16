@@ -39,8 +39,8 @@ class StockOrderFormState extends State<StockOrderForm> {
   int _quantity = 1;
   double _price = 0.0;
   
-  // 통화 전환 상태
-  bool _isShowingKRW = true; // true: 원화, false: 달러
+  // 통화 전환 상태 (미국 주식 폼에서는 기본 USD 사용)
+  bool _isShowingKRW = false; // true: 원화, false: 달러
   
   // 입력 필드 컨트롤러
   final TextEditingController _quantityController = TextEditingController();
