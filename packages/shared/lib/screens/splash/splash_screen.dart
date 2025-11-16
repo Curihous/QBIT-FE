@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 
 // 앱 실행 시 뜨는 최초 스플래시 화면 > 2초 후 login_screen으로 이동
@@ -54,13 +55,10 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              'Qbit',
-              style: GoogleFonts.shrikhand(
-                fontSize: 60,
-                fontWeight: FontWeight.w500,
-                color: Colors.white,
-              ),
+            SvgPicture.asset(
+              'assets/images/Qbit_logo_intro_white.svg',
+              width: 134,
+              height: 59,
             ),
           ],
         ),

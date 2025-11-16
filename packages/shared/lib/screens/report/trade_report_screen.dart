@@ -1,15 +1,71 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:qbit_shared/widgets/common/common_widgets.dart';
 import 'package:qbit_shared/widgets/common/header_back.dart';
-import 'package:qbit_shared/widgets/common/button/big_black_button.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
+import 'package:qbit_services/api/report_api_service.dart';
+import 'package:qbit_services/api/order_api_service.dart';
+import 'package:qbit_services/models/trade_report_model.dart';
+import 'package:qbit_services/models/trade_cycle_report_model.dart';
+import 'package:qbit_shared/widgets/chart/candlestick_chart.dart';
 
-class TradeReportScreen extends StatelessWidget {
-  const TradeReportScreen({super.key});
+class TradeReportScreen extends StatefulWidget {
+  final int tradeCycleId;
+
+  const TradeReportScreen({
+    super.key,
+    required this.tradeCycleId,
+  });
+
+  @override
+  State<TradeReportScreen> createState() => _TradeReportScreenState();
+}
+
+class _TradeReportScreenState extends State<TradeReportScreen> {
+  bool _isLoading = true;
+  TradeReport? _report;
+  String? _error;
+  ReportTradeCycleResponse? _cycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReport();
+  }
+
+  Future<void> _loadReport() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final results = await Future.wait([
+        ReportApiService.getTradeReport(widget.tradeCycleId),
+        OrderApiService.getReportTradeCycle(widget.tradeCycleId),
+      ]);
+
+      final TradeReport? report = results[0] as TradeReport?;
+      final ReportTradeCycleResponse? cycle =
+          results[1] as ReportTradeCycleResponse?;
+
+      if (!mounted) return;
+
+      setState(() {
+        _report = report;
+        _cycle = cycle;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _error = '리포트를 불러오지 못했습니다.\n다시 시도해 주세요.';
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,64 +74,625 @@ class TradeReportScreen extends StatelessWidget {
       appBar: HeaderBack(
         title: '매매 리포트',
       ),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
+      body: _buildBody(context),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: AppColors.primary,
         ),
-        child: Stack(
+      );
+    }
+
+    if (_error != null || _report == null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Positioned(
-              left: context.w(22),
-              top: context.h(80),
-              child: Text(
-                '보유 주식 전량 매도 완료',
-                style: AppFonts.b1Regular.copyWith(color: AppColors.gray900),
-              ),
+            Text(
+              _error ?? '리포트를 불러오지 못했습니다.',
+              style: AppFonts.b1Regular.copyWith(color: AppColors.gray600),
+              textAlign: TextAlign.center,
             ),
-            
-            Positioned(
-              left: context.w(22),
-              top: context.h(110),
-              child: SizedBox(
-                width: context.w(342),
-                child: Text(
-                  '이번 매매, 전략적으로 어땠을까요?\n지금 리포트를 확인해보세요.',
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: _loadReport,
+              child: const Text('다시 시도'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final report = _report!;
+    final cycle = _cycle;
+
+    // 상단 카드에 사용할 값들 (없으면 기본값)
+    String dateRangeText = '';
+    String symbolText = '-';
+    String realizedPlRateText = '--%';
+    String realizedPlAmountText = '-- USD';
+    Color realizedPlAmountColor = AppColors.gray900;
+
+    if (cycle != null) {
+      final start = cycle.startDate;
+      final end = cycle.endDate ?? start;
+      dateRangeText =
+          '${start.year}.${start.month.toString().padLeft(2, '0')}.${start.day.toString().padLeft(2, '0')}'
+          ' - '
+          '${end.year}.${end.month.toString().padLeft(2, '0')}.${end.day.toString().padLeft(2, '0')}';
+
+      symbolText = cycle.symbol;
+
+      final rate = cycle.profitLossRate;
+      // 상세 응답에는 금액 필드가 없으므로, 최대 투입 금액과 손익률로 추정
+      final amount = cycle.totalInvestmentAmount * rate / 100;
+
+      final rateSign = rate > 0 ? '+' : rate < 0 ? '-' : '';
+      final amountSign = amount > 0 ? '+' : amount < 0 ? '-' : '';
+
+      realizedPlRateText = '$rateSign${rate.abs().toStringAsFixed(2)}%';
+      realizedPlAmountText =
+          '$amountSign${amount.abs().toStringAsFixed(2)} USD';
+      realizedPlAmountColor =
+          amount >= 0 ? AppColors.loss : AppColors.profit;
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // 상단 헤더 영역 (투자 유형 소개 + 부엉이)
+          Container(
+            color: AppColors.secondaryLight,
+            padding: EdgeInsets.only(
+              left: context.w(20),
+              right: context.w(20),
+              top: context.h(20),
+              bottom: context.h(20),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '노현선님의 투자유형은',
+                        style: AppFonts.b2Regular.copyWith(
+                          color: AppColors.gray900,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '변화를 기회로 보는 성장형',
+                        style: AppFonts.t2Bold.copyWith(
+                          color: AppColors.primary,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: context.w(12)),
+                Container(
+                  width: context.w(122),
+                  height: context.h(122),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(25),
+                  ),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      'assets/icons/trade/trade_report_screen/owl_head.svg',
+                      width: context.w(90),
+                      height: context.h(90),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // 메인 내용 영역
+          Container(
+            color: AppColors.gray30,
+            padding: EdgeInsets.symmetric(
+              horizontal: context.w(16),
+              vertical: context.h(16),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 요약 카드 (기간 / 종목 / 실현 손익 + 4개 지표)
+                Container(
+                  width: double.infinity,
+                  constraints: BoxConstraints(
+                    minHeight: context.h(260),
+                  ),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: context.w(20),
+                    vertical: context.h(18),
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(25),
+                      topRight: Radius.circular(25),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (dateRangeText.isNotEmpty) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              dateRangeText,
+                              style: AppFonts.c1.copyWith(
+                                color: AppColors.gray600,
+                              ),
+                            ),
+                            const Icon(
+                              Icons.chevron_right,
+                              size: 18,
+                              color: AppColors.gray300,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                      ],
+                      // 종목 + 수익률 배지
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              symbolText,
+                              style: AppFonts.t2Bold.copyWith(
+                                color: AppColors.gray900,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (cycle != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: realizedPlAmountColor,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                realizedPlRateText,
+                                style: AppFonts.c1.copyWith(
+                                  color: realizedPlAmountColor,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // 실현 손익 (금액)
+                      Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              '실현 손익',
+                              style: AppFonts.c1.copyWith(
+                                color: AppColors.gray600,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              realizedPlAmountText,
+                              style: AppFonts.t2Bold.copyWith(
+                                color: realizedPlAmountColor,
+                                fontSize: 28,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // 4개의 요약 지표 카드
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSummaryStatCard(
+                              title: '최대 손실폭',
+                              value: cycle != null
+                                  ? '${cycle.profitLossRate < 0 ? cycle.profitLossRate.abs().toStringAsFixed(2) : 0.toStringAsFixed(2)}%'
+                                  : '--',
+                            ),
+                          ),
+                          SizedBox(width: context.w(12)),
+                          Expanded(
+                            child: _buildSummaryStatCard(
+                              title: '최대 투입 금액',
+                              value: cycle != null
+                                  ? '\$${cycle.totalInvestmentAmount.toStringAsFixed(2)}'
+                                  : '--',
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: context.h(10)),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildSummaryStatCard(
+                              title: '평균 매수가',
+                              value: cycle != null
+                                  ? '\$${cycle.averageBuyPrice.toStringAsFixed(2)}'
+                                  : '--',
+                            ),
+                          ),
+                          SizedBox(width: context.w(12)),
+                          Expanded(
+                            child: _buildSummaryStatCard(
+                              title: '평균 매도가',
+                              value: cycle != null &&
+                                      cycle.averageSellPrice != null
+                                  ? '\$${cycle.averageSellPrice!.toStringAsFixed(2)}'
+                                  : '--',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // 상세 분석 차트
+                if (cycle != null && cycle.chartData.isNotEmpty) ...[
+                  Text(
+                    '상세 분석',
+                    style: AppFonts.t2Bold.copyWith(
+                      color: AppColors.gray900,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    height: context.h(260),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: CandlestickChart(
+                      candles: cycle.chartData,
+                      interval: cycle.interval,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                // 전체 평가
+                Text(
+                  '전체 매매 평가',
                   style: AppFonts.t2Bold.copyWith(
                     color: AppColors.gray900,
-                    height: 1.6, 
+                    fontWeight: FontWeight.w600,
                   ),
-                  textAlign: TextAlign.left,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color.fromRGBO(0, 0, 0, 0.04),
+                        offset: Offset(0, 4),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    report.overallEvaluation,
+                    style: AppFonts.b1Regular.copyWith(color: AppColors.gray600),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // 시장 상황
+                Text(
+                  '시장 상황',
+                  style: AppFonts.t2Bold.copyWith(
+                    color: AppColors.gray900,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color.fromRGBO(0, 0, 0, 0.04),
+                        offset: Offset(0, 4),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    report.marketContext,
+                    style: AppFonts.b1Regular.copyWith(color: AppColors.gray600),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // 매수 분석
+                Text(
+                  '매수 타이밍 분석',
+                  style: AppFonts.t2Bold.copyWith(
+                    color: AppColors.gray900,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildIndicatorSection('RSI', report.buyRsi),
+                const SizedBox(height: 8),
+                _buildIndicatorSection('MACD', report.buyMacd),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color.fromRGBO(0, 0, 0, 0.04),
+                        offset: Offset(0, 4),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        report.buyEvaluation,
+                        style: AppFonts.b1Regular
+                            .copyWith(color: AppColors.gray600),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        report.buyImprovement,
+                        style: AppFonts.b1Regular
+                            .copyWith(color: AppColors.gray600),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // 매도 분석
+                Text(
+                  '매도 타이밍 분석',
+                  style: AppFonts.t2Bold.copyWith(
+                    color: AppColors.gray900,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _buildIndicatorSection('RSI', report.sellRsi),
+                const SizedBox(height: 8),
+                _buildIndicatorSection('MACD', report.sellMacd),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: const [
+                      BoxShadow(
+                        color: Color.fromRGBO(0, 0, 0, 0.04),
+                        offset: Offset(0, 4),
+                        blurRadius: 12,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        report.sellEvaluation,
+                        style: AppFonts.b1Regular
+                            .copyWith(color: AppColors.gray600),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        report.sellImprovement,
+                        style: AppFonts.b1Regular
+                            .copyWith(color: AppColors.gray600),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                // 추천 학습 카드
+                if (report.learningCards.isNotEmpty) ...[
+                  Text(
+                    '추천 학습',
+                    style: AppFonts.t2Bold.copyWith(
+                      color: AppColors.gray900,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLearningCardsSection(report),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIndicatorSection(String label, TradeReportIndicator indicator) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.gray30,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label ${indicator.value.toStringAsFixed(2)}',
+            style: AppFonts.b2Semibold.copyWith(color: AppColors.gray900),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            indicator.analysis,
+            style: AppFonts.c1.copyWith(color: AppColors.gray600),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLearningCardsSection(TradeReport report) {
+    // 최대 3개까지만 노출
+    final cards = report.learningCards.take(3).toList();
+
+    // 카드별 배경 이미지 경로
+    final imagePaths = [
+      'assets/icons/trade/trade_report_screen/demo_bg1.png',
+      'assets/icons/trade/trade_report_screen/demo_bg2.png',
+      'assets/icons/trade/trade_report_screen/demo_bg3.png',
+    ];
+
+    return SizedBox(
+      height: 163,
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (int i = 0; i < cards.length; i++) ...[
+              SizedBox(
+                width: 234,
+                height: 163,
+                child: _buildLearningCard(
+                  cards[i],
+                  imagePaths[i % imagePaths.length],
+                ),
+              ),
+              if (i < cards.length - 1) const SizedBox(width: 12),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLearningCard(
+      TradeReportLearningCard card, String imageAssetPath) {
+    // 제목은 두 줄까지만, 너무 길면 잘라서 표시
+    final title = card.title;
+    final categoryLabel =
+        card.category.isNotEmpty ? card.category : '학습 카드';
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        height: 163,
+        decoration: BoxDecoration(
+          color: AppColors.secondaryBG,
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 배경 이미지
+            Image.asset(
+              imageAssetPath,
+              fit: BoxFit.cover,
+            ),
+            // 그라디언트 오버레이
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.bottomCenter,
+                  end: Alignment.topCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.55),
+                    Colors.black.withOpacity(0.1),
+                  ],
                 ),
               ),
             ),
-            
-            // 부엉이
-            Positioned(
-              left: 0,
-              right: 0,
-              top: context.h(200),
-              child: Center(
-                child: SvgPicture.asset(
-                  'assets/images/characters/owl-report.svg',
-                  width: context.w(300),
-                  height: context.h(300),
-                ),
-              ),
-            ),
-            
-            // AI 리포트 확인 버튼
-            Positioned(
-              left: context.w(16),
-              right: context.w(16),
-              top: context.h(580),
-              child: BigBlackButton(
-                text: 'AI 리포트 확인',
-                onPressed: () {
-                  // TODO: AI 리포트 확인 로직 구현
-                  _handleReportCheck(context);
-                },
+            // 텍스트
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.4),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      categoryLabel,
+                      style: AppFonts.c2.copyWith(
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppFonts.b1Semibold.copyWith(
+                      color: Colors.white,
+                      height: 1.3,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -84,45 +701,41 @@ class TradeReportScreen extends StatelessWidget {
     );
   }
 
-  // AI 리포트 확인 처리
-  void _handleReportCheck(BuildContext context) async {
-    try {
-      // 로딩 표시
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
+  /// 상단 4개 요약 지표 카드
+  Widget _buildSummaryStatCard({
+    required String title,
+    required String value,
+  }) {
+    return Container(
+      height: 72,
+      decoration: BoxDecoration(
+        color: AppColors.secondaryBG,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.secondaryMain,
+          width: 1,
         ),
-      );
-
-      // 목업 데이터 로딩 시뮬레이션
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // 로딩 닫기
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
-      
-      if (context.mounted) {
-        // AI 리포트 상세 페이지로 이동
-        context.push('/ai-report-detail');
-      }
-    } catch (error) {
-      // 로딩 닫기
-      if (context.mounted) {
-        Navigator.of(context).pop();
-      }
-      
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('리포트 확인 중 오류가 발생했습니다: $error'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            title,
+            style: AppFonts.c1.copyWith(
+              color: AppColors.gray600,
+            ),
           ),
-        );
-      }
-    }
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: AppFonts.b2Semibold.copyWith(
+              color: AppColors.gray900,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

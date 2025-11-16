@@ -158,9 +158,13 @@ class AppRouter {
         },
       ),
       GoRoute(
-        path: '/trade-report',
+        path: '/trade-report/:tradeCycleId',
         name: 'trade-report',
-        builder: (context, state) => const TradeReportScreen(),
+        builder: (context, state) {
+          final idStr = state.pathParameters['tradeCycleId'] ?? '0';
+          final tradeCycleId = int.tryParse(idStr) ?? 0;
+          return TradeReportScreen(tradeCycleId: tradeCycleId);
+        },
       ),
       GoRoute(
         path: '/ai-report-detail',

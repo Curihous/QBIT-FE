@@ -1015,7 +1015,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       profitLossText: '$profitLossRateText · $profitLossAmountText',
       profitLossColor: profitLossColor,
       onReportTap: () {
-        context.push('/trade-report');
+        context.push('/trade-report/${cycle.tradeCycleId}');
       },
     );
   }

@@ -3,6 +3,7 @@ import 'package:logger/logger.dart';
 import 'package:qbit_services/api/api_client.dart';
 import 'package:qbit_services/models/order_model.dart';
 import 'package:qbit_services/models/trade_cycle_response.dart';
+import 'package:qbit_services/models/trade_cycle_report_model.dart';
 import 'package:qbit_shared/models/order_history_model.dart';
 
 class OrderApiService {
@@ -222,8 +223,8 @@ class OrderApiService {
         'size': size,
       };
       
-      print('💡 거래 사이클 API 호출: /trading/trade-cycles');
-      final response = await _dio.get('/trading/trade-cycles', queryParameters: queryParams);
+      print('💡 거래 사이클 API 호출: /trade-cycles');
+      final response = await _dio.get('/trade-cycles', queryParameters: queryParams);
       
       print('💡 거래 사이클 API 응답 상태코드: ${response.statusCode}');
       
@@ -250,5 +251,22 @@ class OrderApiService {
       }
       return null;
     }
+  }
+
+  /// 특정 거래 사이클 상세 조회 (리포트용 차트/매매 포인트 포함)
+  static Future<ReportTradeCycleResponse?> getReportTradeCycle(
+      int tradeCycleId) async {
+    try {
+      final response =
+          await _dio.get('/trade-cycles/$tradeCycleId');
+
+      if (response.statusCode == 200 && response.data != null) {
+        return ReportTradeCycleResponse.fromJson(
+            response.data as Map<String, dynamic>);
+      }
+    } catch (e) {
+      logger.e('거래 사이클 상세 조회 에러: $e');
+    }
+    return null;
   }
 }
