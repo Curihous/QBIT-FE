@@ -96,18 +96,17 @@ class TradeCycleItem extends StatelessWidget {
                   ),
                 ),
 
-                SizedBox(width: context.w(12)),
+                SizedBox(width: context.w(8)),
 
-                // 리포트 아이콘 (우측으로 붙되 살짝 안쪽에 위치)
                 GestureDetector(
                   onTap: onReportTap,
                   child: SizedBox(
-                    width: context.w(28),
-                    height: context.h(28),
+                    width: context.w(24),
+                    height: context.h(24),
                     child: SvgPicture.asset(
                       'assets/icons/trade/order_history_screen/report.svg',
-                      width: context.w(24),
-                      height: context.h(24),
+                      width: context.w(16),
+                      height: context.h(16),
                     ),
                   ),
                 ),

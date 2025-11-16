@@ -1504,7 +1504,7 @@ class _TradeScreenState extends State<TradeScreen> {
                   ),
                 )
               else if (_positions.isNotEmpty) ...[
-                SizedBox(height: context.h(24)),
+                SizedBox(height: context.h(16)),
                 PortfolioPositionsWidget(
                   positions: _positions,
                   onViewAll: () {
@@ -1512,7 +1512,7 @@ class _TradeScreenState extends State<TradeScreen> {
                     // context.push('/portfolio-detail');
                   },
                 ),
-                SizedBox(height: context.h(24)),
+                SizedBox(height: context.h(28)),
                 Container(
                   width: double.infinity,
                   height: 8,
