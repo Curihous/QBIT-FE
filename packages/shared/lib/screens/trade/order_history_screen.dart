@@ -235,6 +235,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String? _searchSymbol;
   Timer? _searchDebounce;
+  bool _isSearchVisible = false;
   
   // 삭제 관련 상태
   int? _selectedOrderId;
@@ -561,11 +562,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               ),
             ),
           
-          // 검색바 (개별 탭일 때만 표시)
-          if (_selectedTab == '개별') _buildSearchBar(),
-          
-          // 필터 버튼
+          // 필터 버튼 및 검색바
           _buildFilterButtons(),
+          
+          // 검색바 (검색 아이콘 클릭 시 표시)
+          if (_isSearchVisible) _buildInlineSearchBar(),
           
           // 내용
           Expanded(
@@ -578,7 +579,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   Widget _buildTabSelector() {
     return Container(
-      padding: EdgeInsets.only(left: context.w(20), right: context.w(20), top: 0, bottom: context.h(16)),
+      padding: EdgeInsets.only(left: context.w(20), right: context.w(20), top: 0, bottom: context.h(4)),
       child: Row(
         children: [
           GestureDetector(
@@ -727,7 +728,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     
     return Container(
       padding: EdgeInsets.symmetric(horizontal: context.w(16)),
-      margin: EdgeInsets.only(top: context.h(8), bottom: context.h(8)),
+      margin: EdgeInsets.only(top: context.h(4), bottom: context.h(8)),
       child: Row(
         children: [
           FilterButton(
@@ -756,7 +757,99 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               _fetchOrders();
             },
           ),
+          const Spacer(),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _isSearchVisible = !_isSearchVisible;
+                if (!_isSearchVisible) {
+                  // 검색바 닫을 때 검색 초기화
+                  _searchController.clear();
+                  _searchSymbol = null;
+                  _fetchOrders();
+                }
+              });
+            },
+            child: Icon(
+              _isSearchVisible ? Icons.close : Icons.search,
+              size: 24,
+              color: AppColors.gray900,
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInlineSearchBar() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: context.w(16)),
+      margin: EdgeInsets.only(top: context.h(8), bottom: context.h(8)),
+      child: Container(
+        width: double.infinity,
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        decoration: BoxDecoration(
+          color: AppColors.gray50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: AppColors.gray200,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.search,
+              color: AppColors.gray600,
+              size: 20,
+            ),
+            SizedBox(width: context.w(12)),
+            Expanded(
+              child: TextField(
+                controller: _searchController,
+                autofocus: true,
+                style: AppFonts.b1Regular.copyWith(
+                  color: AppColors.gray900,
+                ),
+                decoration: InputDecoration(
+                  hintText: '종목 심볼 (예: AAPL)',
+                  hintStyle: AppFonts.b1Regular.copyWith(
+                    color: AppColors.gray400,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  focusedErrorBorder: InputBorder.none,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ),
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _searchController,
+              builder: (context, value, child) {
+                if (value.text.isEmpty) return const SizedBox.shrink();
+                return GestureDetector(
+                  onTap: () {
+                    _searchController.clear();
+                    setState(() {
+                      _searchSymbol = null;
+                    });
+                    _fetchOrders();
+                  },
+                  child: Icon(
+                    Icons.clear,
+                    color: AppColors.gray600,
+                    size: 20,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
