@@ -159,13 +159,27 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
 
     try {
       // 사용자 포트폴리오 종목 가져오기
+      debugPrint('📰 포트폴리오 종목 조회 시작...');
       final positions = await StockApiService.getPositions();
       final tickers = positions ?? <String>[];
+      
+      debugPrint('📰 포트폴리오 종목 조회 결과:');
+      debugPrint('  - positions: $positions');
+      debugPrint('  - tickers: $tickers');
+      debugPrint('  - tickers.length: ${tickers.length}');
+      
+      if (tickers.isEmpty) {
+        debugPrint('⚠️ 보유 종목이 없습니다. 인기 칼럼을 반환할 수 있습니다.');
+      }
       
       // 상위 3개 종목만 사용 (API 권장사항)
       final topTickers = tickers.take(3).toList();
       
-      debugPrint('📰 칼럼 추천 요청 시작 - 보유 종목: $tickers, 사용할 종목: $topTickers');
+      debugPrint('📰 칼럼 추천 요청 시작:');
+      debugPrint('  - 전체 보유 종목: $tickers');
+      debugPrint('  - 사용할 종목 (상위 3개): $topTickers');
+      debugPrint('  - 전송할 ticker 개수: ${topTickers.length}');
+      
       final response = await AiApiService.recommendColumn(topTickers);
       
       debugPrint('📰 칼럼 추천 응답:');

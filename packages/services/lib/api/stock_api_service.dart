@@ -568,65 +568,126 @@ class StockApiService {
   /// 보유 종목 리스트 조회
   /// GET /portfolios/positions
   /// marketValue 순으로 정렬된 상위 3개 종목의 심볼 리스트 반환
+  /// 페이징 지원: 모든 페이지를 가져와서 전체 종목을 정렬
   static Future<List<String>?> getPositions() async {
     try {
       logger.i('보유 종목 리스트 조회 시작');
       
-      final response = await _dio.get(
-        '/portfolios/positions',
-      ).timeout(const Duration(seconds: 10));
+      List<Map<String, dynamic>> allPositions = [];
+      int currentPage = 0;
+      bool hasNext = true;
       
-      if (response.statusCode == 200) {
-        logger.i('보유 종목 리스트 조회 성공');
-        logger.i('응답 데이터: ${response.data}');
+      // 페이징 처리: 모든 페이지를 가져옴
+      while (hasNext) {
+        final response = await _dio.get(
+          '/portfolios/positions',
+          queryParameters: {
+            'page': currentPage,
+            'size': 100, // 한 번에 많이 가져오기
+          },
+        ).timeout(const Duration(seconds: 10));
         
-        List<Map<String, dynamic>> positions = [];
-        
-        if (response.data is List) {
-          // 리스트 형태로 반환되는 경우
-          positions = (response.data as List)
-              .whereType<Map<String, dynamic>>()
-              .toList();
-        } else if (response.data is Map<String, dynamic>) {
-          // 맵 형태로 반환되는 경우 (예: {content: [...]})
-          final data = response.data as Map<String, dynamic>;
-          if (data['content'] is List) {
-            positions = (data['content'] as List)
+        if (response.statusCode == 200) {
+          logger.i('보유 종목 리스트 조회 성공 (페이지 $currentPage)');
+          
+          List<Map<String, dynamic>> positions = [];
+          
+          if (response.data is List) {
+            // 리스트 형태로 반환되는 경우
+            positions = (response.data as List)
                 .whereType<Map<String, dynamic>>()
                 .toList();
-          } else if (data['positions'] is List) {
-            positions = (data['positions'] as List)
-                .whereType<Map<String, dynamic>>()
-                .toList();
+            hasNext = false; // 리스트 형태면 페이징 없음
+          } else if (response.data is Map<String, dynamic>) {
+            // 페이징된 응답 구조: {currentPage, pageSize, totalElements, totalPages, hasNext, content}
+            final data = response.data as Map<String, dynamic>;
+            
+            if (data['content'] is List) {
+              positions = (data['content'] as List)
+                  .whereType<Map<String, dynamic>>()
+                  .toList();
+              // hasNext 필드 확인
+              hasNext = data['hasNext'] as bool? ?? false;
+              // hasNext가 없으면 totalPages와 currentPage로 계산
+              if (!hasNext && data['totalPages'] != null && data['currentPage'] != null) {
+                final totalPages = (data['totalPages'] as num?)?.toInt() ?? 1;
+                final currentPageNum = (data['currentPage'] as num?)?.toInt() ?? 0;
+                hasNext = currentPageNum < totalPages - 1;
+              }
+            } else if (data['positions'] is List) {
+              positions = (data['positions'] as List)
+                  .whereType<Map<String, dynamic>>()
+                  .toList();
+              hasNext = false;
+            } else {
+              // 다른 구조일 수 있음
+              logger.w('예상하지 못한 응답 구조: ${data.keys}');
+              hasNext = false;
+            }
+          }
+          
+          allPositions.addAll(positions);
+          
+          if (!hasNext || positions.isEmpty) {
+            break;
+          }
+          
+          currentPage++;
+        } else {
+          logger.e('보유 종목 리스트 조회 실패: ${response.statusCode}');
+          break;
+        }
+      }
+      
+      if (allPositions.isEmpty) {
+        logger.i('보유 종목 없음');
+        return [];
+      }
+      
+      logger.i('전체 보유 종목 개수: ${allPositions.length}');
+      
+      // marketValue 순으로 정렬 (내림차순)
+      // marketValue는 문자열 또는 숫자로 올 수 있음
+      allPositions.sort((a, b) {
+        double aValue = 0.0;
+        double bValue = 0.0;
+        
+        // marketValue 파싱 (문자열 또는 숫자)
+        if (a['marketValue'] != null) {
+          if (a['marketValue'] is num) {
+            aValue = (a['marketValue'] as num).toDouble();
+          } else if (a['marketValue'] is String) {
+            aValue = double.tryParse(a['marketValue'] as String) ?? 0.0;
           }
         }
         
-        if (positions.isEmpty) {
-          logger.i('보유 종목 없음');
-          return [];
+        if (b['marketValue'] != null) {
+          if (b['marketValue'] is num) {
+            bValue = (b['marketValue'] as num).toDouble();
+          } else if (b['marketValue'] is String) {
+            bValue = double.tryParse(b['marketValue'] as String) ?? 0.0;
+          }
         }
         
-        // marketValue 순으로 정렬 (내림차순)
-        positions.sort((a, b) {
-          final aValue = (a['marketValue'] as num?)?.toDouble() ?? 0.0;
-          final bValue = (b['marketValue'] as num?)?.toDouble() ?? 0.0;
-          return bValue.compareTo(aValue);
-        });
-        
-        // 상위 3개 종목의 심볼 추출
-        final tickers = positions
-            .take(3)
-            .map((item) => item['symbol'] as String?)
-            .where((symbol) => symbol != null && symbol.isNotEmpty)
-            .cast<String>()
-            .toList();
-        
-        logger.i('보유 종목 개수: ${positions.length}, 상위 3개: $tickers');
-        return tickers;
-      } else {
-        logger.e('보유 종목 리스트 조회 실패: ${response.statusCode}');
-        return null;
+        return bValue.compareTo(aValue);
+      });
+      
+      // 상위 3개 종목의 심볼 추출
+      final tickers = allPositions
+          .take(3)
+          .map((item) => item['symbol'] as String?)
+          .where((symbol) => symbol != null && symbol.isNotEmpty)
+          .cast<String>()
+          .toList();
+      
+      logger.i('상위 3개 종목: $tickers');
+      logger.i('상위 3개 종목 상세:');
+      for (int i = 0; i < tickers.length && i < allPositions.length; i++) {
+        final pos = allPositions[i];
+        logger.i('  ${i + 1}. ${pos['symbol']}: marketValue=${pos['marketValue']}');
       }
+      
+      return tickers;
     } on TimeoutException catch (error) {
       logger.e('보유 종목 리스트 조회 타임아웃: $error');
       return null;

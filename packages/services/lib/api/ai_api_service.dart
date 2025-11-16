@@ -38,10 +38,22 @@ class AiApiService {
     _initialize();
     
     try {
+      logger.i('📰 칼럼 추천 API 요청:');
+      logger.i('  - 엔드포인트: POST /news/columns/recommend');
+      logger.i('  - 요청 tickers: $tickers');
+      logger.i('  - ticker 개수: ${tickers.length}');
+      
+      final requestData = {'tickers': tickers};
+      logger.i('  - 요청 데이터: $requestData');
+      
       final response = await _dio.post(
         '/news/columns/recommend',
-        data: {'tickers': tickers},
+        data: requestData,
       );
+
+      logger.i('📰 칼럼 추천 API 응답:');
+      logger.i('  - 상태코드: ${response.statusCode}');
+      logger.i('  - 응답 데이터: ${response.data}');
 
       return RecommendColumnResponse.fromJson(response.data);
     } on DioException catch (e) {
