@@ -1048,7 +1048,8 @@ class _TradeScreenState extends State<TradeScreen> {
               });
               _loadStockRanking();
             },
-            groupPadding: EdgeInsets.only(top: context.h(0), bottom: context.h(12)),
+            // 필터와 종목 순위 리스트 사이 간격을 조금 더 촘촘하게
+            groupPadding: EdgeInsets.only(top: context.h(0), bottom: context.h(6)),
             ),
           ),
           // 종목 순위 리스트 (5개씩 4페이지)
@@ -1147,64 +1148,60 @@ class _TradeScreenState extends State<TradeScreen> {
           height: 56,
           decoration: BoxDecoration(
             color: isSelected ? AppColors.background : AppColors.white,
-            border: Border(
-              top: BorderSide(
-                width: 1,
-                color: AppColors.borderLight, // Gray-100
-              ),
+            border: const Border(
               bottom: BorderSide(
                 width: 1,
-                color: AppColors.borderLight, // Gray-100
+                color: AppColors.gray100, // 아래쪽 divider만
               ),
             ),
           ),
           child: Row(
-              children: [
-                // 순위
-                SizedBox(
-                  width: 24,
-                  child: Text(
-                    stock.rank.toString(),
-                    textAlign: TextAlign.center,
-                    style: AppFonts.b2Regular.copyWith(color: AppColors.primary),
+            children: [
+              // 순위
+              SizedBox(
+                width: 24,
+                child: Text(
+                  stock.rank.toString(),
+                  textAlign: TextAlign.center,
+                  style: AppFonts.b2Regular.copyWith(color: AppColors.gray600),
+                ),
+              ),
+              const SizedBox(width: 10),
+              // 종목명
+              Expanded(
+                flex: 2,
+                child: Text(
+                  stock.name,
+                  style: AppFonts.b1Regular.copyWith(
+                    color: AppColors.gray900,
+                    fontWeight: FontWeight.w400,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              // 가격
+              SizedBox(
+                width: 80,
+                child: Text(
+                  '\$${stock.price.toStringAsFixed(2)}',
+                  textAlign: TextAlign.center,
+                  style: AppFonts.b1Regular.copyWith(color: AppColors.gray900),
+                ),
+              ),
+              // 변동률
+              SizedBox(
+                width: 80,
+                child: Text(
+                  '${stock.changePercentage >= 0 ? '+' : ''}${stock.changePercentage.toStringAsFixed(2)}%',
+                  textAlign: TextAlign.center,
+                  style: AppFonts.b1Regular.copyWith(
+                    color: AppColors.loss, // 등락 텍스트는 항상 빨간색
                   ),
                 ),
-                const SizedBox(width: 10),
-                // 종목명
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    stock.name,
-                    style: AppFonts.b1Regular.copyWith(
-                      color: AppColors.gray900,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                // 가격
-                SizedBox(
-                  width: 80,
-                  child: Text(
-                    '\$${stock.price.toStringAsFixed(2)}',
-                    textAlign: TextAlign.center,
-                    style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
-                  ),
-                ),
-                // 변동률
-                SizedBox(
-                  width: 80,
-                  child: Text(
-                    '${stock.changePercentage >= 0 ? '+' : ''}${stock.changePercentage.toStringAsFixed(2)}%',
-                    textAlign: TextAlign.center,
-                    style: AppFonts.b2Regular.copyWith(
-                      color: stock.isPositive ? AppColors.profit : AppColors.loss,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
+          ),
         ),
       ),
     );
