@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:qbit_shared/widgets/common/header_back.dart';
 import 'package:qbit_shared/widgets/common/button/filter_button.dart';
 import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
-import 'package:qbit_shared/screens/trade/stock_detail/stock_detail_navigation.dart';
+import 'package:qbit_shared/screens/trade/stock_detail/stock_detail_navigation_screen.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:go_router/go_router.dart';

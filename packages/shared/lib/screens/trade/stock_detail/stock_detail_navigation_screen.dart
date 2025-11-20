@@ -7,13 +7,13 @@ import 'package:qbit_shared/screens/trade/stock_detail/stock_order_tab.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/stock_market_tab.dart';
 import 'package:qbit_shared/widgets/common/header_back.dart';
 
-class StockDetailNavigation extends StatefulWidget {
+class StockDetailNavigationScreen extends StatefulWidget {
   final String symbol;
   final String name;
   final String assetClass;
   final String? binanceSymbol;
 
-  const StockDetailNavigation({
+  const StockDetailNavigationScreen({
     super.key,
     required this.symbol,
     required this.name,
@@ -22,10 +22,10 @@ class StockDetailNavigation extends StatefulWidget {
   });
 
   @override
-  State<StockDetailNavigation> createState() => _StockDetailNavigationState();
+  State<StockDetailNavigationScreen> createState() => _StockDetailNavigationScreenState();
 }
 
-class _StockDetailNavigationState extends State<StockDetailNavigation> {
+class _StockDetailNavigationScreenState extends State<StockDetailNavigationScreen> {
   int _selectedTabIndex = 0; // 0: 차트, 1: 호가, 2: 주문, 3: 시세
   
   // 가격 정보 상태 (차트/호가에서 사용)
@@ -168,3 +168,4 @@ class _StockDetailNavigationState extends State<StockDetailNavigation> {
     });
   }
 }
+

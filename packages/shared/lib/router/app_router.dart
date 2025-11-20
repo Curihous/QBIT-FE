@@ -12,7 +12,7 @@ import 'package:qbit_shared/screens/trade/trade_screen.dart';
 import 'package:qbit_shared/screens/trade/order_history_screen.dart';
 import 'package:qbit_shared/screens/trade/order_detail_screen.dart';
 import 'package:qbit_shared/screens/trade/stock_search_screen.dart';
-import 'package:qbit_shared/screens/trade/stock_detail/stock_detail_navigation.dart';
+import 'package:qbit_shared/screens/trade/stock_detail/stock_detail_navigation_screen.dart';
 import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
 import 'package:qbit_shared/screens/report/trade_report_screen.dart';
 import 'package:qbit_shared/screens/report/trade_report_intro_screen.dart';
@@ -150,7 +150,7 @@ class AppRouter {
           final binanceSymbol = state.uri.queryParameters['binanceSymbol'] != null
               ? Uri.decodeComponent(state.uri.queryParameters['binanceSymbol']!)
               : null;
-          return StockDetailNavigation(
+          return StockDetailNavigationScreen(
             symbol: symbol,
             name: name,
             assetClass: assetClass,
