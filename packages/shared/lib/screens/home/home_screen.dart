@@ -1,10 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qbit_shared/widgets/common/bottom_navigation_bar.dart';
 import 'package:qbit_shared/widgets/common/header_home.dart';
-import 'package:qbit_shared/screens/study/study_screen.dart';
-import 'package:qbit_shared/screens/record/record_screen.dart';
-import 'package:qbit_shared/screens/trade/trade_screen.dart';
-import 'package:qbit_shared/screens/my/my_screen.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +21,7 @@ import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -35,49 +31,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
-
-  final List<Widget> _screens = [
-    const HomeContentScreen(),
-    const StudyScreen(),
-    const RecordScreen(),
-    const TradeScreen(),
-    const MyScreen(),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: [
-          _screens[_currentIndex],
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: CustomBottomNavigationBar(
-              currentIndex: _currentIndex,
-              onTap: (index) {
-                setState(() {
-                  _currentIndex = index;
-                });
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class HomeContentScreen extends StatefulWidget {
-  const HomeContentScreen({super.key});
-
-  @override
-  State<HomeContentScreen> createState() => _HomeContentScreenState();
-}
-
-class _HomeContentScreenState extends State<HomeContentScreen> {
   String _userNickname = '';
   String _currentDate = '';
   RecommendColumnResponse? _columnResponse;

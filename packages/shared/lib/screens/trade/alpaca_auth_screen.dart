@@ -120,8 +120,8 @@ class AlpacaAuthScreen extends StatelessWidget {
           // 연동 성공 콜백 실행
           onSuccess?.call();
           
-          // 성공 시 투자 화면으로 이동
-          context.go('/trade');
+          // 성공 시 홈 화면으로 이동 (네비게이션 화면)
+          context.go('/home');
           
           // 성공 메시지 표시
           ScaffoldMessenger.of(context).showSnackBar(

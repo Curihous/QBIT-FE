@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:qbit_shared/screens/splash/splash_screen.dart';
 import 'package:qbit_shared/screens/splash/login_screen.dart';
+import 'package:qbit_shared/layout/main_layout.dart';
 import 'package:qbit_shared/screens/home/home_screen.dart';
 import 'package:qbit_shared/screens/study/study_screen.dart';
 import 'package:qbit_shared/screens/record/record_screen.dart';
@@ -48,27 +49,7 @@ class AppRouter {
       GoRoute(
         path: '/home',
         name: 'home',
-        builder: (context, state) => const HomeScreen(),
-      ),
-      GoRoute(
-        path: '/study',
-        name: 'study',
-        builder: (context, state) => const StudyScreen(),
-      ),
-      GoRoute(
-        path: '/record',
-        name: 'record',
-        builder: (context, state) => const RecordScreen(),
-      ),
-      GoRoute(
-        path: '/trade',
-        name: 'trade',
-        builder: (context, state) => const TradeScreen(),
-      ),
-      GoRoute(
-        path: '/my',
-        name: 'my',
-        builder: (context, state) => const MyScreen(),
+        builder: (context, state) => const MainLayout(),
       ),
       GoRoute(
         path: '/alpaca-auth',
@@ -99,8 +80,8 @@ class AppRouter {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) {
               if (success) {
-                // 성공 시 투자 화면으로 이동
-                context.go('/trade');
+                // 성공 시 홈 화면으로 이동 (네비게이션 화면)
+                context.go('/home');
               } else {
                 // 실패 시 Alpaca 인증 화면으로 이동
                 context.go('/alpaca-auth');
