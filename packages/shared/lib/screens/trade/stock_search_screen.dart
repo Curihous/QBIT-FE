@@ -7,6 +7,7 @@ import 'package:qbit_services/models/stock_model.dart';
 import 'package:qbit_shared/widgets/stock_search_screen/stock_search_item.dart';
 import 'package:qbit_shared/widgets/common/header_back.dart';
 import 'package:qbit_shared/widgets/common/button/filter_button.dart';
+import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
 
 // 종목 검색 화면
 class StockSearchScreen extends StatefulWidget {
@@ -281,13 +282,15 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
       );
     }
     
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: _searchResults.length,
+    return HorizontalInset.block(
+      child: ListView.builder(
+        padding: EdgeInsets.zero,
+        itemCount: _searchResults.length,
       itemBuilder: (context, index) {
         final stock = _searchResults[index];
         return _buildStockItem(stock);
       },
+      ),
     );
   }
 

@@ -25,6 +25,7 @@ import 'package:kakao_flutter_sdk_auth/kakao_flutter_sdk_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
+import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -469,8 +470,7 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
         child: Column(
           children: [
             // 사용자를 위한 소식 섹션
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+            HorizontalInset.text(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -489,8 +489,7 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: context.w(16)),
+                    child: HorizontalInset.block(
                       child: Row(
                         children: [
                           Text(
@@ -555,16 +554,16 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
                       ),
                     )
                   else if (_columnResponse != null)
-                    _buildColumnCard(_columnResponse!.column as models.Column),
+                    _buildColumnCard(_columnResponse!.column as models.Column                  ),
                 ],
               ),
             ),
             // 추천 이론 학습 섹션
             SizedBox(height: context.h(20)),
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.symmetric(horizontal: context.w(20), vertical: context.h(20)),
-              child: Column(
+            HorizontalInset.text(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: context.h(20)),
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 헤더: 제목 + 더 학습하기 링크
@@ -665,6 +664,7 @@ class _HomeContentScreenState extends State<HomeContentScreen> {
                 ],
               ),
             ),
+              ),
             // 내 종목 보기 섹션 (추천 이론 학습 아래)
             SizedBox(height: context.h(20)), // 뉴스 칼럼과 추천 이론 학습 사이 여백과 동일
             if (_isLoadingPositions)

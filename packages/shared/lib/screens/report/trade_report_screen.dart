@@ -5,6 +5,7 @@ import 'package:qbit_shared/widgets/common/header_back.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
+import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
 import 'package:qbit_services/api/report_api_service.dart';
 import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/models/trade_report_model.dart';
@@ -160,13 +161,11 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
           // 상단 헤더 영역 (투자 유형 소개 + 부엉이)
           Container(
             color: AppColors.secondaryLight,
-            padding: EdgeInsets.only(
-              left: context.w(20),
-              right: context.w(20),
-              top: context.h(20),
-              bottom: context.h(20),
+            padding: EdgeInsets.symmetric(
+              vertical: context.h(20),
             ),
-            child: Row(
+            child: HorizontalInset.text(
+              child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
@@ -198,6 +197,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                 ),
               ],
             ),
+            ),
           ),
 
           Stack(
@@ -222,11 +222,11 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                     minHeight: context.h(280),
                   ),
                   padding: EdgeInsets.only(
-                    left: context.w(20),
-                    right: context.w(20),
                     top: context.h(18),
                     bottom: context.h(4),
                   ),
+            child: HorizontalInset.text(
+              child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
                     borderRadius: const BorderRadius.only(
@@ -392,6 +392,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                   ),
                 ),
               ),
+            ),
             ],
           ),
 
@@ -399,10 +400,10 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
           Container(
             color: AppColors.gray30,
             padding: EdgeInsets.symmetric(
-              horizontal: context.w(16),
               vertical: context.h(16),
             ),
-            child: Column(
+            child: HorizontalInset.block(
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 12),
@@ -440,12 +441,12 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
                 ],
 
                 // 전체 평가
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: context.w(20),
-                    vertical: context.h(20),
-                  ),
+                HorizontalInset.text(
+                  child: Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(
+                      vertical: context.h(20),
+                    ),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
@@ -489,13 +490,11 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
             Container(
               width: double.infinity,
               color: const Color(0xFFFCE6B3), // Secondary-Light
-              padding: EdgeInsets.only(
-              left: context.w(16),
-              right: context.w(16),
-                top: context.h(24),
-                bottom: context.h(24),
+              padding: EdgeInsets.symmetric(
+                vertical: context.h(24),
               ),
-              child: Column(
+              child: HorizontalInset.block(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
@@ -516,10 +515,10 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
           Container(
             color: AppColors.gray30,
             padding: EdgeInsets.symmetric(
-              horizontal: context.w(16),
               vertical: context.h(16),
             ),
-            child: Column(
+            child: HorizontalInset.block(
+              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 시장 상황
@@ -604,9 +603,9 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
           Container(
             color: AppColors.gray30,
             padding: EdgeInsets.symmetric(
-              horizontal: context.w(16),
               vertical: context.h(24),
             ),
+            child: HorizontalInset.block(
               child: BigBlackButton(
               text: '거래 일지 모아보기',
                 onPressed: () {
@@ -789,12 +788,12 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 헤더 (제목 + 날짜 + 접기/열기 버튼)
-          Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: context.w(20),
-              vertical: context.h(16),
-            ),
-            child: Row(
+          HorizontalInset.text(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                vertical: context.h(16),
+              ),
+              child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
@@ -841,21 +840,21 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
           // 확장된 내용
           if (isExpanded) ...[
             // 설명 텍스트 (연한 초록색 배경)
-            Container(
-              width: double.infinity,
-              margin: EdgeInsets.symmetric(horizontal: context.w(20)),
-              padding: EdgeInsets.symmetric(
-                horizontal: context.w(20),
-                vertical: context.h(16),
-              ),
-              decoration: BoxDecoration(
+            HorizontalInset.text(
+              child: Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(
+                  vertical: context.h(16),
+                ),
+                decoration: BoxDecoration(
                 color: AppColors.background.withOpacity(0.5), // Primary-BG: #E6F4F1 with 50% opacity
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(
-                evaluation,
-                style: AppFonts.b1Regular.copyWith(
-                  color: const Color(0xFF323232),
+                child: Text(
+                  evaluation,
+                  style: AppFonts.b1Regular.copyWith(
+                    color: const Color(0xFF323232),
+                  ),
                 ),
               ),
             ),
@@ -863,8 +862,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
             SizedBox(height: context.h(16)),
 
             // 기술적 지표들 (2열 - RSI, MACD만 API 데이터 사용)
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+            HorizontalInset.text(
               child: Row(
                 children: [
                   Expanded(
@@ -915,19 +913,18 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
             SizedBox(height: context.h(16)),
 
             // 구분선
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: AppColors.gray100,
-              indent: context.w(20),
-              endIndent: context.w(20),
+            HorizontalInset.text(
+              child: Divider(
+                height: 1,
+                thickness: 1,
+                color: AppColors.gray100,
+              ),
             ),
 
             SizedBox(height: context.h(16)),
 
             // 개선 방안
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+            HorizontalInset.text(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

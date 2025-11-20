@@ -3,6 +3,7 @@ import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/widgets/common/header_basic.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
+import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
 import 'package:qbit_services/api/learning_card_api_service.dart';
 import 'package:qbit_services/api/report_api_service.dart';
 import 'package:qbit_services/api/order_api_service.dart';
@@ -195,8 +196,7 @@ class _StudyScreenState extends State<StudyScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   SizedBox(height: context.h(20)),
-                  Padding(
-                    padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+                  HorizontalInset.startText(
                     child: Text(
                       _userNickname.isNotEmpty 
                           ? '$_userNickname님을 위한 추천'
@@ -215,7 +215,6 @@ class _StudyScreenState extends State<StudyScreen> {
                   if (_isLoadingRecommended)
                     Container(
                       height: context.h(163),
-                      padding: EdgeInsets.symmetric(horizontal: context.w(20)),
                       child: const Center(
                         child: CircularProgressIndicator(),
                       ),
@@ -223,7 +222,6 @@ class _StudyScreenState extends State<StudyScreen> {
                   else if (_recommendedCards.isEmpty)
                     Container(
                       height: context.h(163),
-                      padding: EdgeInsets.symmetric(horizontal: context.w(20)),
                       child: Center(
                         child: Text(
                           '추천 카드가 없습니다',
@@ -234,10 +232,10 @@ class _StudyScreenState extends State<StudyScreen> {
                       ),
                     )
                   else
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: EdgeInsets.symmetric(horizontal: context.w(20)),
-                      child: Row(
+                    HorizontalInset.block(
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
                         children: [
                           ..._recommendedCards.asMap().entries.map((entry) {
                             final index = entry.key;
@@ -258,6 +256,7 @@ class _StudyScreenState extends State<StudyScreen> {
                           }),
                         ],
                       ),
+                      ),
                     ),
                   SizedBox(height: context.h(20)), // 하단 여백
                 ],
@@ -265,8 +264,7 @@ class _StudyScreenState extends State<StudyScreen> {
             ),
             
             // 레벨별 학습 섹션
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+            HorizontalInset.text(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

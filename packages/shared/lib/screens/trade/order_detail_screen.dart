@@ -4,6 +4,7 @@ import 'package:qbit_shared/widgets/common/header_back.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
+import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
 import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/api/exchange_rate_api_service.dart';
 import 'package:intl/intl.dart';
@@ -375,9 +376,10 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final side = order['side'] as String?;
     final canCancel = status == 'new' || status == 'accepted' || status == 'pending_new';
 
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: context.w(24)),
-      child: Column(
+    return HorizontalInset.text(
+      child: Container(
+        padding: EdgeInsets.zero,
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 대기중인 주문이면 "대기중인 내역" 헤더와 주문 취소 버튼

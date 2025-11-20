@@ -6,6 +6,8 @@ import 'package:qbit_shared/widgets/common/header_back.dart';
 import 'package:qbit_shared/widgets/common/button/big_black_button.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
+import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_services/auth/alpaca_auth_service.dart';
 
 class AlpacaAuthScreen extends StatelessWidget {
@@ -31,28 +33,33 @@ class AlpacaAuthScreen extends StatelessWidget {
           children: [
             // 제목
             Positioned(
-              left: 22,
               top: 120,
-              child: Text(
-                '계좌 연결 후 모의투자 바로 시작',
-                style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
+              left: 0,
+              right: 0,
+              child: HorizontalInset.startText(
+                child: Text(
+                  '계좌 연결 후 모의투자 바로 시작',
+                  style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
+                ),
               ),
             ),
             
             // 설명 텍스트
             Positioned(
-              left: 22,
               top: 160,
-              child: SizedBox(
-                width: 342,
-                height: 67,
-                child: Text(
-                  '모의투자를 위해서는 Alpaca 계좌가 필요해요.\n회원가입 후 \'Allow\'를 눌러 연동을 마쳐주세요.',
-                  style: AppFonts.b1Regular.copyWith(
-                    color: AppColors.gray900,
-                    height: 1.6, // lineheight 조정
+              left: 0,
+              right: 0,
+              child: HorizontalInset.startText(
+                child: SizedBox(
+                  height: 67,
+                  child: Text(
+                    '모의투자를 위해서는 Alpaca 계좌가 필요해요.\n회원가입 후 \'Allow\'를 눌러 연동을 마쳐주세요.',
+                    style: AppFonts.b1Regular.copyWith(
+                      color: AppColors.gray900,
+                      height: 1.6, // lineheight 조정
+                    ),
+                    textAlign: TextAlign.left,
                   ),
-                  textAlign: TextAlign.left,
                 ),
               ),
             ),
@@ -70,14 +77,16 @@ class AlpacaAuthScreen extends StatelessWidget {
             
             // Alpaca 계좌 연결 버튼
             Positioned(
-              left: 16,
-              right: 16,
+              left: 0,
+              right: 0,
               top: 580,
-              child: BigBlackButton(
-                text: 'Alpaca 계좌 연결',
-                onPressed: () {
-                  _handleAlpacaAuth(context);
-                },
+              child: HorizontalInset.block(
+                child: BigBlackButton(
+                  text: 'Alpaca 계좌 연결',
+                  onPressed: () {
+                    _handleAlpacaAuth(context);
+                  },
+                ),
               ),
             ),
           ],

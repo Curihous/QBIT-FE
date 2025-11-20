@@ -595,9 +595,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   Widget _buildTabSelector() {
-    return Container(
-      padding: EdgeInsets.only(left: context.w(20), right: context.w(20), top: 0, bottom: context.h(12)),
-      child: Row(
+    return HorizontalInset.text(
+      child: Container(
+        padding: EdgeInsets.only(top: 0, bottom: context.h(12)),
+        child: Row(
         children: [
           GestureDetector(
             onTap: () => setState(() => _selectedTab = '개별'),
@@ -649,6 +650,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
