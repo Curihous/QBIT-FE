@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import '../../models/portfolio_history.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/app_fonts.dart';
+import 'package:qbit_shared/models/portfolio_history.dart';
+import 'package:qbit_shared/theme/app_colors.dart';
+import 'package:qbit_shared/theme/app_fonts.dart';
 
 // 데모용 포트폴리오 차트 위젯
 class PortfolioChartWidget extends StatelessWidget {

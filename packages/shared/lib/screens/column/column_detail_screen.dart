@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:qbit_shared/widgets/common/header_back.dart';
+import 'package:qbit_shared/widgets/common/header/header_back.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
-import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 import 'package:qbit_services/api/ai_api_service.dart';
 import 'package:qbit_services/models/column.dart' as models;
 import 'package:qbit_services/models/recommend_column_response.dart';

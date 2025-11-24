@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
-import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 import 'package:qbit_services/websocket/crypto_market_websocket.dart';
 
 class StockMarketTab extends StatefulWidget {

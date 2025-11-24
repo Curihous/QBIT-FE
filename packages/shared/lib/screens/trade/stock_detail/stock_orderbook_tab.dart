@@ -4,8 +4,8 @@ import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_services/models/orderbook_model.dart';
 import 'package:qbit_services/websocket/crypto_orderbook_websocket.dart';
-import 'package:qbit_shared/widgets/trade/orderbook_widget.dart';
-import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/widgets/trade/orderbook/orderbook_widget.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 
 class StockOrderbookTab extends StatefulWidget {
   final String symbol;

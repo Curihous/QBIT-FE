@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../widgets/common/header_back.dart';
-import '../../widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/widgets/common/header/header_back.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 import '../../utils/responsive_utils.dart';
 
 class LearningCardDetailScreen extends StatefulWidget {

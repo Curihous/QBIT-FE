@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qbit_shared/widgets/common/bottom_navigation_bar.dart';
+import 'package:qbit_shared/widgets/common/nav/bottom_navigation_bar.dart';
 import 'package:qbit_shared/screens/home/home_screen.dart';
 import 'package:qbit_shared/screens/study/study_screen.dart';
 import 'package:qbit_shared/screens/record/record_screen.dart';

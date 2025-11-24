@@ -4,10 +4,10 @@ import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/models/stock_model.dart';
-import 'package:qbit_shared/widgets/stock_search_screen/stock_search_item.dart';
-import 'package:qbit_shared/widgets/common/header_back.dart';
+import 'package:qbit_shared/widgets/search/stock_search_item.dart';
+import 'package:qbit_shared/widgets/common/header/header_back.dart';
 import 'package:qbit_shared/widgets/common/button/filter_button.dart';
-import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 
 // 종목 검색 화면
 class StockSearchScreen extends StatefulWidget {

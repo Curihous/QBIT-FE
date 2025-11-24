@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
-import 'package:qbit_shared/widgets/common/header_basic.dart';
+import 'package:qbit_shared/widgets/common/header/header_basic.dart';
 
 class RecordScreen extends StatelessWidget {
   const RecordScreen({super.key});

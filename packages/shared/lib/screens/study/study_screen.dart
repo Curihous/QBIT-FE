@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
-import 'package:qbit_shared/widgets/common/header_basic.dart';
+import 'package:qbit_shared/widgets/common/header/header_basic.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
-import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 import 'package:qbit_services/api/learning_card_api_service.dart';
 import 'package:qbit_services/api/report_api_service.dart';
 import 'package:qbit_services/api/order_api_service.dart';

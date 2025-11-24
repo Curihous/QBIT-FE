@@ -3,7 +3,7 @@ import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_services/models/portfolio_position_model.dart';
-import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 
 class PortfolioPositionsWidget extends StatelessWidget {
   final List<PortfolioPosition> positions;

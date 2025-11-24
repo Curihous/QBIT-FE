@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:qbit_shared/widgets/common/header_back.dart';
+import 'package:qbit_shared/widgets/common/header/header_back.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_shared/widgets/common/button/big_black_button.dart';
-import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 
 class TradeReportIntroScreen extends StatelessWidget {
   final int tradeCycleId;

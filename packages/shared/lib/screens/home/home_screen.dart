@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:qbit_shared/widgets/common/header_home.dart';
+import 'package:qbit_shared/widgets/common/header/header_home.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -15,12 +15,12 @@ import 'package:qbit_services/models/recommend_column_response.dart';
 import 'package:qbit_services/models/column.dart' as models;
 import 'package:qbit_services/models/learning_card_model.dart';
 import 'package:qbit_services/models/portfolio_position_model.dart';
-import 'package:qbit_shared/widgets/home/portfolio_positions_widget.dart';
+import 'package:qbit_shared/widgets/trade/portfolio/portfolio_positions_widget.dart';
 import 'package:kakao_flutter_sdk_auth/kakao_flutter_sdk_auth.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
-import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatefulWidget {

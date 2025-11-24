@@ -9,7 +9,7 @@ import 'package:qbit_shared/widgets/chart/candlestick_chart_v2.dart';
 import 'package:qbit_shared/widgets/chart/volume_chart_v2.dart';
 import 'package:qbit_shared/widgets/chart/rsi_indicators_v2.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
-import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/api/exchange_rate_api_service.dart';
 import 'package:qbit_services/models/candle_model.dart';

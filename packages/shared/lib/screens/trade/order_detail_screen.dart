@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:qbit_shared/widgets/common/header_back.dart';
+import 'package:qbit_shared/widgets/common/header/header_back.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
-import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 import 'package:qbit_services/api/order_api_service.dart';
 import 'package:qbit_services/api/exchange_rate_api_service.dart';
 import 'package:intl/intl.dart';

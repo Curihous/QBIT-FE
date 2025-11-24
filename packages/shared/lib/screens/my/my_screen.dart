@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
-import 'package:qbit_shared/widgets/common/header_basic.dart';
-import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/widgets/common/header/header_basic.dart';
+import 'package:qbit_shared/layout/horizontal_inset.dart';
 
 class MyScreen extends StatefulWidget {
   const MyScreen({super.key});
