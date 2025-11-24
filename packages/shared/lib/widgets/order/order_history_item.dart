@@ -32,7 +32,7 @@ class OrderHistoryItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 매수(RED), 매도(BLUE) - 프로젝트 공통 규칙에 맞춰 색상 매핑
-    final sideColor = isBuy ? AppColors.loss : AppColors.profit;
+    final sideColor = isBuy ? AppColors.chartRed : AppColors.chartBlue;
 
     return Container(
       // 컴포넌트 간 간격

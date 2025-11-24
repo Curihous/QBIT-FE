@@ -44,7 +44,7 @@ class BigBlackButton extends StatelessWidget {
           backgroundColor: isDisabled 
               ? AppColors.gray150 
               : (backgroundColor ?? AppColors.gray900),
-          foregroundColor: textColor ?? AppColors.white,
+          foregroundColor: textColor ?? AppColors.gray0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -60,7 +60,7 @@ class BigBlackButton extends StatelessWidget {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    textColor ?? AppColors.white,
+                    textColor ?? AppColors.gray0,
                   ),
                 ),
               )
@@ -81,7 +81,7 @@ class BigBlackButton extends StatelessWidget {
                     style: AppFonts.b1Bold.copyWith(
                       fontSize: fontSize ?? 16,
                       fontWeight: fontWeight ?? FontWeight.w600,
-                      color: textColor ?? AppColors.white,
+                      color: textColor ?? AppColors.gray0,
                     ),
                   ),
                 ],

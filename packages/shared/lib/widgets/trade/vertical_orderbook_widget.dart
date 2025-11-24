@@ -114,7 +114,7 @@ class _VerticalOrderBookWidgetState extends State<VerticalOrderBookWidget> {
                   child: Text(
                     _formatPrice(entry.orderBookEntry.price),
                     style: AppFonts.b2Semibold.copyWith(
-                      color: entry.isBid ? AppColors.profit : AppColors.loss,
+                      color: entry.isBid ? AppColors.chartBlue : AppColors.chartRed,
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                     ),
                   ),
@@ -150,7 +150,7 @@ class _VerticalOrderBookWidgetState extends State<VerticalOrderBookWidget> {
                                     : AppColors.orderBookAskBg,
                                 border: isSelected 
                                     ? Border.all(
-                                        color: entry.isBid ? AppColors.profit : AppColors.loss, 
+                                        color: entry.isBid ? AppColors.chartBlue : AppColors.chartRed, 
                                         width: 1)
                                     : null,
                                 borderRadius: BorderRadius.circular(4),
@@ -224,7 +224,7 @@ class _VerticalOrderBookWidgetState extends State<VerticalOrderBookWidget> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: AppColors.primaryBG,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.gray300),
       ),

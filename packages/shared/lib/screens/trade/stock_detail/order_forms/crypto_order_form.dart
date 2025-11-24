@@ -72,7 +72,7 @@ class _CryptoOrderFormState extends State<CryptoOrderForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('수량을 입력해주세요'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
           ),
         );
         return;
@@ -82,7 +82,7 @@ class _CryptoOrderFormState extends State<CryptoOrderForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('가격을 입력해주세요'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
           ),
         );
         return;
@@ -93,7 +93,7 @@ class _CryptoOrderFormState extends State<CryptoOrderForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('USDT 금액을 입력해주세요'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
           ),
         );
         return;
@@ -111,7 +111,7 @@ class _CryptoOrderFormState extends State<CryptoOrderForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('시장가 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
           ),
         );
         return;
@@ -158,7 +158,7 @@ class _CryptoOrderFormState extends State<CryptoOrderForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('주문 검증 실패: ${validation.errors.join(', ')}\n최소 주문 수량: ${rules.minOrderSize}개'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
             duration: Duration(seconds: 4),
           ),
         );
@@ -414,7 +414,7 @@ class _CryptoOrderFormState extends State<CryptoOrderForm> {
               width: context.w(188),
               height: (availableHeight * 0.06).clamp(40.0, 50.0),
               decoration: BoxDecoration(
-                color: widget.selectedOrderTab == '매도' ? AppColors.loss : AppColors.profit,
+                color: widget.selectedOrderTab == '매도' ? AppColors.chartRed : AppColors.chartBlue,
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Center(
@@ -423,7 +423,7 @@ class _CryptoOrderFormState extends State<CryptoOrderForm> {
                     : Text(
                         widget.selectedOrderTab == '매도' ? '매도' : '매수',
                         style: AppFonts.t1Bold.copyWith(
-                          color: AppColors.white,
+                          color: AppColors.gray0,
                         ),
                       ),
               ),

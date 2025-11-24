@@ -17,7 +17,6 @@ import 'package:qbit_shared/screens/trade/stock_detail/stock_detail_navigation_s
 import 'package:qbit_shared/screens/trade/alpaca_auth_screen.dart';
 import 'package:qbit_shared/screens/report/trade_report_screen.dart';
 import 'package:qbit_shared/screens/report/trade_report_intro_screen.dart';
-import 'package:qbit_shared/screens/report/ai_report_detail_screen.dart';
 import 'package:qbit_shared/screens/cards/learning_card_detail_screen.dart';
 import 'package:qbit_shared/screens/column/column_detail_screen.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
@@ -91,7 +90,7 @@ class AppRouter {
           
           // 로딩 화면 표시
           return Scaffold(
-            backgroundColor: AppColors.background,
+            backgroundColor: AppColors.primaryBG,
             body: const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -156,11 +155,6 @@ class AppRouter {
           final tradeCycleId = int.tryParse(idStr) ?? 0;
           return TradeReportScreen(tradeCycleId: tradeCycleId);
         },
-      ),
-      GoRoute(
-        path: '/ai-report-detail',
-        name: 'ai-report-detail',
-        builder: (context, state) => const AIReportDetailScreen(),
       ),
       GoRoute(
         path: '/learning-card/:cardType',
@@ -246,7 +240,7 @@ class _RootScreenState extends State<_RootScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background, // 소프트 배경
+      backgroundColor: AppColors.primaryBG, // 소프트 배경
       body: const Center(
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary), // 메인 민트색

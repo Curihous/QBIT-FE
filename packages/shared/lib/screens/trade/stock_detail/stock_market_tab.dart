@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
+import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
 import 'package:qbit_services/websocket/crypto_market_websocket.dart';
 
 class StockMarketTab extends StatefulWidget {
@@ -53,9 +54,10 @@ class _StockMarketTabState extends State<StockMarketTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      child: Center(
+    return HorizontalInset.text(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -80,6 +82,7 @@ class _StockMarketTabState extends State<StockMarketTab> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -69,7 +69,7 @@ class ErrorWidget extends StatelessWidget {
             Icon(
               icon ?? Icons.error_outline,
               size: 64,
-              color: AppColors.error,
+              color: Color(0xFFF44336),
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
@@ -152,7 +152,7 @@ class DividerWidget extends StatelessWidget {
     return Container(
       height: height ?? 1,
       margin: margin ?? const EdgeInsets.symmetric(vertical: AppSpacing.md),
-      color: color ?? AppColors.border,
+      color: color ?? AppColors.gray200,
     );
   }
 }
@@ -197,7 +197,7 @@ class BottomNavigationBarWidget extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(
-          top: BorderSide(color: AppColors.borderLight, width: 1),
+          top: BorderSide(color: AppColors.gray100, width: 1),
         ),
       ),
       child: Padding(

@@ -123,7 +123,7 @@ class StockOrderFormState extends State<StockOrderForm> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('수량은 1주 이상이어야 합니다'),
-          backgroundColor: AppColors.loss,
+          backgroundColor: AppColors.chartRed,
         ),
       );
       return;
@@ -135,7 +135,7 @@ class StockOrderFormState extends State<StockOrderForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('가격을 입력해주세요'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
           ),
         );
         return;
@@ -146,7 +146,7 @@ class StockOrderFormState extends State<StockOrderForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('환율 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
           ),
         );
         return;
@@ -157,7 +157,7 @@ class StockOrderFormState extends State<StockOrderForm> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('시장 가격 정보를 불러올 수 없습니다. 잠시 후 다시 시도해주세요'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
           ),
         );
         return;
@@ -498,7 +498,7 @@ class StockOrderFormState extends State<StockOrderForm> {
                   decoration: BoxDecoration(
                     color: isButtonDisabled
                         ? AppColors.gray300
-                        : (widget.selectedOrderTab == '매도' ? AppColors.loss : AppColors.profit),
+                        : (widget.selectedOrderTab == '매도' ? AppColors.chartRed : AppColors.chartBlue),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
@@ -507,7 +507,7 @@ class StockOrderFormState extends State<StockOrderForm> {
                         : Text(
                             widget.selectedOrderTab == '매도' ? '매도' : '매수',
                             style: AppFonts.t1Bold.copyWith(
-                              color: AppColors.white,
+                              color: AppColors.gray0,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),

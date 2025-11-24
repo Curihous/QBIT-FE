@@ -417,7 +417,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.gray0,
       appBar: const TopAppBar(),
       body: SingleChildScrollView(
         child: Column(
@@ -458,7 +458,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ? '$_currentDate, $_userNickname님을 위한 소식'
                                 : '$_currentDate, 큐빗을 위한 소식',
                               style: AppFonts.b1Semibold.copyWith(
-                                color: AppColors.white,
+                                color: AppColors.gray0,
                               ),
                             ),
                           ),

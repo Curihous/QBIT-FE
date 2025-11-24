@@ -880,7 +880,7 @@ class _TradeScreenState extends State<TradeScreen> {
                         bottom: 40,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: AppColors.surfaceVariant,
+                            color: AppColors.gray50,
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Center(
@@ -898,7 +898,7 @@ class _TradeScreenState extends State<TradeScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: ShapeDecoration(
-                            color: AppColors.surfaceVariant,
+                            color: AppColors.gray50,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                           ),
                           child: Text(
@@ -976,7 +976,7 @@ class _TradeScreenState extends State<TradeScreen> {
                                 child: Text(
                                 '계좌 연결하기',
                                   textAlign: TextAlign.center,
-                                  style: AppFonts.b2Semibold.copyWith(color: AppColors.white),
+                                  style: AppFonts.b2Semibold.copyWith(color: AppColors.gray0),
                 ),
               ),
             ],
@@ -1147,7 +1147,7 @@ class _TradeScreenState extends State<TradeScreen> {
           margin: EdgeInsets.zero,
           height: 56,
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.background : AppColors.white,
+            color: isSelected ? AppColors.primaryBG : AppColors.gray0,
             border: const Border(
               bottom: BorderSide(
                 width: 1,
@@ -1196,7 +1196,7 @@ class _TradeScreenState extends State<TradeScreen> {
                   '${stock.changePercentage >= 0 ? '+' : ''}${stock.changePercentage.toStringAsFixed(2)}%',
                   textAlign: TextAlign.center,
                   style: AppFonts.b1Regular.copyWith(
-                    color: AppColors.loss, // 등락 텍스트는 항상 빨간색
+                    color: AppColors.chartRed, // 등락 텍스트는 항상 빨간색
                   ),
                 ),
               ),
@@ -1449,12 +1449,12 @@ class _TradeScreenState extends State<TradeScreen> {
               Icon(
                 isPositive ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
                 size: 16,
-                color: isPositive ? AppColors.profit : AppColors.loss,
+                color: isPositive ? AppColors.chartBlue : AppColors.chartRed,
               ),
               Text(
                 change,
                 style: AppFonts.b2Regular.copyWith(
-                  color: isPositive ? AppColors.profit : AppColors.loss, // Chart-Red : Blue
+                  color: isPositive ? AppColors.chartBlue : AppColors.chartRed, // Chart-Red : Blue
                   height: 1.71,
                 ),
               ),

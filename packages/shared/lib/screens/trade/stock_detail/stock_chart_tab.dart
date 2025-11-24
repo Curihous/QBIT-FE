@@ -9,6 +9,7 @@ import 'package:qbit_shared/widgets/chart/candlestick_chart_v2.dart';
 import 'package:qbit_shared/widgets/chart/volume_chart_v2.dart';
 import 'package:qbit_shared/widgets/chart/rsi_indicators_v2.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
+import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
 import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/api/exchange_rate_api_service.dart';
 import 'package:qbit_services/models/candle_model.dart';
@@ -463,7 +464,10 @@ class _StockChartTabState extends State<StockChartTab> {
     
     return Container(
       height: 86,
-      padding: EdgeInsets.fromLTRB(context.w(20), context.h(20), context.w(20), 0),
+      padding: EdgeInsets.only(top: context.h(20)),
+      child: HorizontalInset.text(
+        child: Container(
+          padding: EdgeInsets.only(bottom: 0),
       child: Stack(
         children: [
           // 종목명 (위쪽)
@@ -572,12 +576,17 @@ class _StockChartTabState extends State<StockChartTab> {
           ),
         ],
       ),
+        ),
+      ),
     );
   }
 
   Widget _buildIntervalSelector() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: context.w(36), vertical: 0),
+    return HorizontalInset.custom(
+      start: context.w(36),
+      end: context.w(36),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -709,6 +718,7 @@ class _StockChartTabState extends State<StockChartTab> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -993,7 +1003,7 @@ class _StockChartTabState extends State<StockChartTab> {
       if (_candleData!.candles.length >= 2) {
         final previousPrice = _candleData!.candles[_candleData!.candles.length - 2].close;
         final change = _currentRealTimePrice! - previousPrice;
-        return change >= 0 ? AppColors.profit : AppColors.loss;
+        return change >= 0 ? AppColors.chartBlue : AppColors.chartRed;
       }
     }
     
@@ -1006,7 +1016,7 @@ class _StockChartTabState extends State<StockChartTab> {
     final previousCandle = _candleData!.candles[_candleData!.candles.length - 2];
     
     final change = currentCandle.close - previousCandle.close;
-    return change >= 0 ? AppColors.profit : AppColors.loss;
+    return change >= 0 ? AppColors.chartBlue : AppColors.chartRed;
   }
 
   bool _isPriceUp() {

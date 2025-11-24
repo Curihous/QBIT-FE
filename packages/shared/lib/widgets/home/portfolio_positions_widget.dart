@@ -98,7 +98,7 @@ class PortfolioPositionsWidget extends StatelessWidget {
         : '${plpcPercent.toStringAsFixed(3)}%';
     
     // 손익률 색상 (양수: 수익 색상, 음수: 손실 색상)
-    final plpcColor = unrealizedPlpc >= 0 ? AppColors.profit : AppColors.loss;
+    final plpcColor = unrealizedPlpc >= 0 ? AppColors.chartBlue : AppColors.chartRed;
 
     // 해외 종목 순위처럼 양옆에 여백이 있는 구분선을 위해 Inset.block으로 감싸기
     return Inset.block(

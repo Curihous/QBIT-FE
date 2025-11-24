@@ -80,8 +80,8 @@ class AppFonts {
   
   // Button Styles
   static const TextStyle btn1 = TextStyle(
-    fontSize: 20,
-    height: 23/20, // line-height: 23px
+    fontSize: 18,
+    height: 23/18, // line-height: 23px
     fontWeight: FontWeight.w600, // SemiBold
     fontFamily: fontFamily,
   );
@@ -89,6 +89,13 @@ class AppFonts {
   static const TextStyle btn2 = TextStyle(
     fontSize: 14,
     height: 17/14, // line-height: 17px
+    fontWeight: FontWeight.w600, // SemiBold
+    fontFamily: fontFamily,
+  );
+  
+  static const TextStyle btn3 = TextStyle(
+    fontSize: 13,
+    height: 17/13, // line-height: 17px
     fontWeight: FontWeight.w600, // SemiBold
     fontFamily: fontFamily,
   );

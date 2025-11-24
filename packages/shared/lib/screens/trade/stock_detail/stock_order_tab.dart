@@ -704,11 +704,11 @@ class _StockOrderTabState extends State<StockOrderTab> {
     }
     
     if (filledQuantity > 0) {
-      return side == 'buy' ? AppColors.loss : AppColors.profit;
+      return side == 'buy' ? AppColors.chartRed : AppColors.chartBlue;
     }
     
     if (status == 'filled' || status == 'partially_filled') {
-      return side == 'buy' ? AppColors.loss : AppColors.profit;
+      return side == 'buy' ? AppColors.chartRed : AppColors.chartBlue;
     } else if (status == 'accepted' || status == 'pending_new' || status == 'new') {
       return AppColors.primary;
     } else {
@@ -826,7 +826,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('수량은 1주 이상이어야 합니다'),
-          backgroundColor: AppColors.loss,
+          backgroundColor: AppColors.chartRed,
         ),
       );
       return;
@@ -837,7 +837,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('가격을 입력해주세요'),
-          backgroundColor: AppColors.loss,
+          backgroundColor: AppColors.chartRed,
         ),
       );
       return;
@@ -848,7 +848,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('USDT 금액을 입력해주세요'),
-          backgroundColor: AppColors.loss,
+          backgroundColor: AppColors.chartRed,
         ),
       );
       return;
@@ -859,7 +859,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('환율 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요'),
-          backgroundColor: AppColors.loss,
+          backgroundColor: AppColors.chartRed,
         ),
       );
       return;
@@ -970,7 +970,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('주문 검증 실패: ${validation.errors.join(', ')}\n최소 주문 수량: ${rules.minOrderSize}개'),
-                backgroundColor: AppColors.loss,
+                backgroundColor: AppColors.chartRed,
                 duration: Duration(seconds: 4),
               ),
             );
@@ -1070,7 +1070,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('주문 접수에 실패했습니다\n잠시 후 다시 시도해주세요'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
             duration: Duration(seconds: 3),
           ),
         );
@@ -1092,7 +1092,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMessage),
-          backgroundColor: AppColors.loss,
+          backgroundColor: AppColors.chartRed,
           duration: Duration(seconds: 4),
         ),
       );
@@ -1113,7 +1113,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('매수 가능 금액을 확인할 수 없습니다'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
           ),
         );
         return;
@@ -1127,7 +1127,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('매수 가능 금액이 부족합니다'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
           ),
         );
         return;
@@ -1141,7 +1141,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('최대 수량 계산 중 오류가 발생했습니다'),
-          backgroundColor: AppColors.loss,
+          backgroundColor: AppColors.chartRed,
         ),
       );
     }
@@ -1165,12 +1165,12 @@ class _StockOrderTabState extends State<StockOrderTab> {
             Icon(
               Icons.error_outline,
               size: context.w(64),
-              color: AppColors.error,
+              color: Color(0xFFF44336),
             ),
             SizedBox(height: context.h(16)),
             Text(
               _error!,
-              style: AppFonts.b1Semibold.copyWith(color: AppColors.error),
+              style: AppFonts.b1Semibold.copyWith(color: Color(0xFFF44336)),
               textAlign: TextAlign.center,
             ),
             SizedBox(height: context.h(16)),
@@ -1292,7 +1292,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
           Text(
             '${executionStrength.toStringAsFixed(2)}%',
             style: AppFonts.b2Semibold.copyWith(
-              color: executionStrength > 50 ? AppColors.profit : AppColors.loss,
+              color: executionStrength > 50 ? AppColors.chartBlue : AppColors.chartRed,
             ),
           ),
         ],
@@ -1530,7 +1530,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('주문 접수에 실패했습니다\n잠시 후 다시 시도해주세요'),
-            backgroundColor: AppColors.loss,
+            backgroundColor: AppColors.chartRed,
             duration: Duration(seconds: 3),
           ),
         );
@@ -1552,7 +1552,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(errorMessage),
-          backgroundColor: AppColors.loss,
+          backgroundColor: AppColors.chartRed,
           duration: Duration(seconds: 4),
         ),
       );
@@ -1733,7 +1733,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('주문 상세를 열 수 없습니다'),
-                backgroundColor: AppColors.loss,
+                backgroundColor: AppColors.chartRed,
               ),
             );
           }
@@ -1862,7 +1862,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                           ),
                           child: Icon(
                             Icons.check_circle,
-                            color: orderType == '매수' ? AppColors.loss : AppColors.profit,
+                            color: orderType == '매수' ? AppColors.chartRed : AppColors.chartBlue,
                             size: context.w(25),
                           ),
                         ),
@@ -1871,7 +1871,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                         Text(
                           '$symbol $orderType 주문 요청 성공',
                           style: AppFonts.t1Bold.copyWith(
-                            color: orderType == '매수' ? AppColors.loss : AppColors.profit,
+                            color: orderType == '매수' ? AppColors.chartRed : AppColors.chartBlue,
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1905,7 +1905,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                             width: double.infinity,
                             height: 48,
                             decoration: BoxDecoration(
-                              color: orderType == '매수' ? AppColors.loss : AppColors.profit,
+                              color: orderType == '매수' ? AppColors.chartRed : AppColors.chartBlue,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Center(

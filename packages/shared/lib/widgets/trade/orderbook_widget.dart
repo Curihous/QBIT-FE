@@ -118,7 +118,7 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
             children: [
               Text(
                 '매수',
-                style: AppFonts.b2Semibold.copyWith(color: AppColors.profit),
+                style: AppFonts.b2Semibold.copyWith(color: AppColors.chartBlue),
               ),
               const SizedBox(height: 8),
               Expanded(
@@ -141,10 +141,10 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
                           color: isSelected 
-                              ? AppColors.profit.withOpacity(0.1)
-                              : AppColors.profit.withOpacity(0.05),
+                              ? AppColors.chartBlue.withOpacity(0.1)
+                              : AppColors.chartBlue.withOpacity(0.05),
                           border: isSelected 
-                              ? Border.all(color: AppColors.profit, width: 1)
+                              ? Border.all(color: AppColors.chartBlue, width: 1)
                               : null,
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -154,7 +154,7 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                             Text(
                               _formatPrice(bid.price),
                               style: AppFonts.b2Semibold.copyWith(
-                                color: AppColors.profit,
+                                color: AppColors.chartBlue,
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                               ),
                             ),
@@ -185,7 +185,7 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
             children: [
               Text(
                 '매도',
-                style: AppFonts.b2Semibold.copyWith(color: AppColors.loss),
+                style: AppFonts.b2Semibold.copyWith(color: AppColors.chartRed),
               ),
               const SizedBox(height: 8),
               Expanded(
@@ -208,10 +208,10 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         decoration: BoxDecoration(
                           color: isSelected 
-                              ? AppColors.loss.withOpacity(0.1)
-                              : AppColors.loss.withOpacity(0.05),
+                              ? AppColors.chartRed.withOpacity(0.1)
+                              : AppColors.chartRed.withOpacity(0.05),
                           border: isSelected 
-                              ? Border.all(color: AppColors.loss, width: 1)
+                              ? Border.all(color: AppColors.chartRed, width: 1)
                               : null,
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -221,7 +221,7 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
                             Text(
                               _formatPrice(ask.price),
                               style: AppFonts.b2Semibold.copyWith(
-                                color: AppColors.loss,
+                                color: AppColors.chartRed,
                                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
                               ),
                             ),
@@ -260,7 +260,7 @@ class _OrderBookWidgetState extends State<OrderBookWidget> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: AppColors.primaryBG,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: AppColors.gray300),
       ),

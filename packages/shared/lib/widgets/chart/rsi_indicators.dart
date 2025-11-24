@@ -189,9 +189,9 @@ class RSIIndicators extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildRSILevel('과매수', 80, AppColors.loss),
+              _buildRSILevel('과매수', 80, AppColors.chartRed),
               _buildRSILevel('중립', 50, AppColors.gray600),
-              _buildRSILevel('과매도', 20, AppColors.profit),
+              _buildRSILevel('과매도', 20, AppColors.chartBlue),
             ],
           ),
         ],

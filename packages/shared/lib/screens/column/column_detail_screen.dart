@@ -156,7 +156,7 @@ class _ColumnDetailScreenState extends State<ColumnDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
+      backgroundColor: AppColors.gray0,
       appBar: const HeaderBack(title: '칼럼'),
       body: _isLoading
           ? const Center(

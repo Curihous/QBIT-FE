@@ -155,7 +155,7 @@ class CandlestickChart extends StatelessWidget {
           BarChartRodData(
             fromY: candle.open,
             toY: candle.close,
-            color: isPositive ? AppColors.profit : AppColors.loss,
+            color: isPositive ? AppColors.chartBlue : AppColors.chartRed,
             width: 4,
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(2),
@@ -166,14 +166,14 @@ class CandlestickChart extends StatelessWidget {
           BarChartRodData(
             fromY: candle.high,
             toY: candle.high,
-            color: isPositive ? AppColors.profit : AppColors.loss,
+            color: isPositive ? AppColors.chartBlue : AppColors.chartRed,
             width: 1,
           ),
           // 저가 선
           BarChartRodData(
             fromY: candle.low,
             toY: candle.low,
-            color: isPositive ? AppColors.profit : AppColors.loss,
+            color: isPositive ? AppColors.chartBlue : AppColors.chartRed,
             width: 1,
           ),
         ],

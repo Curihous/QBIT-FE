@@ -147,12 +147,12 @@ Color _getStatusColor(OrderModel order) {
   // 체결 수량 기반 판단
   if (filledQuantity > 0) {
     // 완전 체결 또는 부분 체결 모두 매수/매도 색상 사용
-    return order.side == 'buy' ? AppColors.profit : AppColors.loss;
+    return order.side == 'buy' ? AppColors.chartBlue : AppColors.chartRed;
   }
   
   // 상태 기반 판단
   if (status == 'filled' || status == 'partially_filled') {
-    return order.side == 'buy' ? AppColors.profit : AppColors.loss;
+    return order.side == 'buy' ? AppColors.chartBlue : AppColors.chartRed;
   } else if (status == 'accepted' || status == 'pending_new' || status == 'new') {
     return AppColors.primary; // 기본 색상 (대기 중)
   } else {
@@ -1025,7 +1025,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     final profitLossAmountText = '\$${profitLossAmount.abs().toStringAsFixed(2)}';
     
     // 손익률 색상 (양수: 빨간색, 음수: 파란색)
-    final profitLossColor = profitLossRate >= 0 ? AppColors.loss : AppColors.profit;
+    final profitLossColor = profitLossRate >= 0 ? AppColors.chartRed : AppColors.chartBlue;
     
     print('💡 _buildCycleItem - symbol: ${cycle.symbol}, rate: $profitLossRate, amount: $profitLossAmount');
     print('💡 포맷팅된 텍스트: $profitLossRateText · $profitLossAmountText');

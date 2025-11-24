@@ -142,7 +142,7 @@ class VolumeChart extends StatelessWidget {
         barRods: [
           BarChartRodData(
             toY: candle.volume,
-            color: isPositive ? AppColors.profit : AppColors.loss,
+            color: isPositive ? AppColors.chartBlue : AppColors.chartRed,
             width: 2,
             borderRadius: const BorderRadius.vertical(
               top: Radius.circular(2),

@@ -5,6 +5,7 @@ import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_services/models/orderbook_model.dart';
 import 'package:qbit_services/websocket/crypto_orderbook_websocket.dart';
 import 'package:qbit_shared/widgets/trade/orderbook_widget.dart';
+import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
 
 class StockOrderbookTab extends StatefulWidget {
   final String symbol;
@@ -146,12 +147,12 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
             Icon(
               Icons.error_outline,
               size: 64,
-              color: AppColors.error,
+              color: Color(0xFFF44336),
             ),
             const SizedBox(height: 16),
             Text(
               _error!,
-              style: AppFonts.b1Semibold.copyWith(color: AppColors.error),
+              style: AppFonts.b1Semibold.copyWith(color: Color(0xFFF44336)),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
@@ -166,9 +167,10 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
 
     // 암호화폐가 아닌 경우
     if (widget.assetClass != 'crypto') {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        child: const Center(
+      return HorizontalInset.text(
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: const Center(
           child: Text(
             '호가창은 암호화폐만 지원됩니다',
             textAlign: TextAlign.center,
@@ -178,6 +180,7 @@ class _StockOrderbookTabState extends State<StockOrderbookTab> {
               fontFamily: 'Pretendard',
             ),
           ),
+        ),
         ),
       );
     }

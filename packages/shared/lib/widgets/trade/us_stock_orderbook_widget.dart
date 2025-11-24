@@ -1,4 +1,4 @@
-import 'dart:async';
+﻿import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
@@ -253,8 +253,6 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
                   '가격(USD)',
                   style: AppFonts.c1.copyWith(
                     color: AppColors.gray600,
-                    fontWeight: FontWeight.w400,
-                    fontSize: 13,
                   ),
                   textAlign: TextAlign.left,
                 ),
@@ -262,8 +260,6 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
                   '수량',
                   style: AppFonts.c1.copyWith(
                     color: AppColors.gray600,
-                    fontWeight: FontWeight.w400,
-                    fontSize: 13,
                   ),
                   textAlign: TextAlign.right,
                 ),
@@ -299,7 +295,7 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
     required bool isCurrentPrice,
     required bool shouldBlink,
   }) {
-    final priceColor = level.isBid ? AppColors.profit : AppColors.loss;
+    final priceColor = level.isBid ? AppColors.chartBlue : AppColors.chartRed;
     final volumeBarColor = level.isBid ? AppColors.orderBookBidBg : AppColors.orderBookAskBg;
     final backgroundColor = isCurrentPrice 
         ? (shouldBlink ? AppColors.gray200 : AppColors.primary.withOpacity(0.1))
@@ -362,8 +358,6 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
                         level.price.toStringAsFixed(2),
                         style: AppFonts.b2Semibold.copyWith(
                           color: isCurrentPrice ? AppColors.primary : AppColors.gray900,
-                          fontSize: 14,
-                          height: 1.0,
                         ),
                       ),
                       SizedBox(height: context.h(1)),
@@ -371,8 +365,6 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
                         '${level.percentFromReference >= 0 ? '+' : ''}${level.percentFromReference.toStringAsFixed(1)}%',
                         style: AppFonts.c2.copyWith(
                           color: priceColor,
-                          fontSize: 11,
-                          height: 1.0,
                         ),
                       ),
                     ],
@@ -383,8 +375,6 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
                     (level.volumeFactor * _currentVolume).toInt().toString(),
                     style: AppFonts.b2Regular.copyWith(
                       color: priceColor,
-                      fontSize: 14,
-                      height: 1.0,
                     ),
                   ),
                 ],

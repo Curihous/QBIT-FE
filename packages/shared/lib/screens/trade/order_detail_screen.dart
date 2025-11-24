@@ -252,7 +252,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
 
     final symbol = order['symbol'] as String? ?? '';
     final isBuy = side == 'buy';
-    final stepColor = isBuy ? AppColors.profit : AppColors.loss;
+    final stepColor = isBuy ? AppColors.chartBlue : AppColors.chartRed;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -463,6 +463,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           
           SizedBox(height: context.h(32)),
         ],
+        ),
       ),
     );
   }

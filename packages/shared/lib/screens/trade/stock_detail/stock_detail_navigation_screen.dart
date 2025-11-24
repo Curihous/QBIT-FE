@@ -6,6 +6,8 @@ import 'package:qbit_shared/screens/trade/stock_detail/stock_orderbook_tab.dart'
 import 'package:qbit_shared/screens/trade/stock_detail/stock_order_tab.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/stock_market_tab.dart';
 import 'package:qbit_shared/widgets/common/header_back.dart';
+import 'package:qbit_shared/widgets/common/padding/horizontal_inset.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 
 class StockDetailNavigationScreen extends StatefulWidget {
   final String symbol;
@@ -96,8 +98,11 @@ class _StockDetailNavigationScreenState extends State<StockDetailNavigationScree
 
   Widget _buildBottomTabNavigation() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(72, 16, 72, 44),
-      child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      child: HorizontalInset.custom(
+        start: context.w(72),
+        end: context.w(72),
+        child: Container(
         width: 249,
         height: 49,
         decoration: ShapeDecoration(
@@ -116,6 +121,7 @@ class _StockDetailNavigationScreenState extends State<StockDetailNavigationScree
             _buildTabItem('시세', 3),
           ],
         ),
+      ),
       ),
     );
   }

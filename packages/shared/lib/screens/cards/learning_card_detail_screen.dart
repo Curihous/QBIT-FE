@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/common/header_back.dart';
+import '../../widgets/common/padding/horizontal_inset.dart';
+import '../../utils/responsive_utils.dart';
 
 class LearningCardDetailScreen extends StatefulWidget {
   final String cardType;
@@ -48,9 +50,10 @@ class _LearningCardDetailScreenState extends State<LearningCardDetailScreen> {
           children: [
             // PageView for card content
             Positioned(
-              left: 16,
+              left: 0,
               top: 80,
-              child: Container(
+              child: HorizontalInset.startBlock(
+                child: Container(
                 width: 360,
                 height: 450,
                 clipBehavior: Clip.antiAlias,
@@ -78,12 +81,14 @@ class _LearningCardDetailScreenState extends State<LearningCardDetailScreen> {
                 ),
               ),
             ),
+            ),
             
             // 카테고리 태그
             Positioned(
-              left: 16,
+              left: 0,
               top: 40,
-              child: Container(
+              child: HorizontalInset.startBlock(
+                child: Container(
                 height: 28,
                 padding: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: ShapeDecoration(
@@ -111,36 +116,40 @@ class _LearningCardDetailScreenState extends State<LearningCardDetailScreen> {
                 ),
               ),
             ),
+            ),
             
             // 페이지 인디케이터
             Positioned(
-              left: 171,
+              left: 0,
+              right: 0,
               top: 550,
-              child: Container(
-                height: 28,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: ShapeDecoration(
-                  color: const Color(0xFFD1D5DB), // Gray-300
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      '${_currentPage + 1}/$_totalPages',
-                      style: TextStyle(
-                        color: const Color(0xFF323232), // Gray-900
-                        fontSize: 13,
-                        fontFamily: 'Pretendard',
-                        fontWeight: FontWeight.w400,
-                        height: 1.23,
-                      ),
+              child: Center(
+                child: Container(
+                  height: 28,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  decoration: ShapeDecoration(
+                    color: const Color(0xFFD1D5DB), // Gray-300
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(99),
                     ),
-                  ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Text(
+                        '${_currentPage + 1}/$_totalPages',
+                        style: TextStyle(
+                          color: const Color(0xFF323232), // Gray-900
+                          fontSize: 13,
+                          fontFamily: 'Pretendard',
+                          fontWeight: FontWeight.w400,
+                          height: 1.23,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
