@@ -148,9 +148,9 @@ class _StockDetailNavigationScreenState extends State<StockDetailNavigationScree
   }
 
   PreferredSizeWidget _buildCustomAppBar() {
-    return HeaderBack(
-      title: widget.symbol,
-      backgroundColor: Colors.white,
+    return AppHeader(
+      title: widget.name,
+      onBack: () => context.pop(),
     );
   }
 

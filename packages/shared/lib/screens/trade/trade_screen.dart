@@ -1469,13 +1469,7 @@ class _TradeScreenState extends State<TradeScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: HeaderBasic(
-        title: '모의투자',
-        onAlarmPressed: () {
-          // 알림 기능
-        },
-        onSettingPressed: () {
-          // 설정 기능
-        },
+        title: '거래',
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.only(
