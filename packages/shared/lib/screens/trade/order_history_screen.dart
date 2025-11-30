@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:qbit_shared/widgets/common/header/header_back.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qbit_shared/widgets/common/button/filter_button.dart';
 import 'package:qbit_shared/layout/horizontal_inset.dart';
 import 'package:qbit_shared/screens/trade/stock_detail/stock_detail_navigation_screen.dart';
@@ -542,9 +543,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppHeader(
+      appBar: HeaderBack(
         title: '주문 내역',
-        onBack: () => context.pop(),
       ),
       body: Column(
         children: [

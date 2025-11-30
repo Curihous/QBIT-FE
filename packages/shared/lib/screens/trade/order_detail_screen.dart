@@ -76,9 +76,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppHeader(
+      appBar: HeaderBack(
         title: '주문 상세',
-        onBack: () => context.pop(),
       ),
       body: _isLoading
           ? const Center(

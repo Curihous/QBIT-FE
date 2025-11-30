@@ -6,6 +6,7 @@ import 'package:qbit_services/api/stock_api_service.dart';
 import 'package:qbit_services/models/stock_model.dart';
 import 'package:qbit_shared/widgets/search/stock_search_item.dart';
 import 'package:qbit_shared/widgets/common/header/header_back.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qbit_shared/widgets/common/button/filter_button.dart';
 import 'package:qbit_shared/layout/horizontal_inset.dart';
 
@@ -125,9 +126,8 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppHeader(
+      appBar: HeaderBack(
         title: '주식 검색',
-        onBack: () => context.pop(),
       ),
       body: Column(
         children: [

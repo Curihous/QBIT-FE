@@ -16,25 +16,8 @@ class _MyScreenState extends State<MyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppHeader(
+      appBar: HeaderBasic(
         title: '마이페이지',
-        showBack: false,
-        actions: [
-          IconButton(
-            icon: SvgPicture.asset(
-              'assets/icons/navigation/top-nav-alarm.svg',
-              height: 26,
-            ),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: SvgPicture.asset(
-              'assets/icons/navigation/top-nav-setting.svg',
-              height: 26,
-            ),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

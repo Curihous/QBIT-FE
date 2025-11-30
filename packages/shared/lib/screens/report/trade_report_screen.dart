@@ -75,9 +75,8 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppHeader(
+      appBar: HeaderBack(
         title: '트레이딩 리포트',
-        onBack: () => context.pop(),
       ),
       body: _buildBody(context),
     );

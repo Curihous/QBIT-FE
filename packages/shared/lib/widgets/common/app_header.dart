@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
+import 'package:qbit_shared/utils/responsive_utils.dart';
 
 class AppHeader extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
@@ -24,7 +25,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     this.actions,
     this.backgroundColor = Colors.white,
     this.contentColor = AppColors.gray900,
-    this.centerTitle = true,
+    this.centerTitle = false,
     this.elevation = 0,
     this.leadingIcon,
   });
@@ -35,6 +36,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
       backgroundColor: backgroundColor,
       elevation: elevation,
       centerTitle: centerTitle,
+      titleSpacing: showBack ? 0 : context.w(20), // 0 for back button, 20 for no back button (text alignment)
       leading: showBack
           ? IconButton(
               icon: leadingIcon ?? Icon(Icons.arrow_back_ios, color: contentColor, size: 24),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:qbit_shared/widgets/common/header/header_back.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
@@ -156,8 +157,13 @@ class _ColumnDetailScreenState extends State<ColumnDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+<<<<<<< HEAD
       backgroundColor: AppColors.gray0,
       appBar: const HeaderBack(title: '칼럼'),
+=======
+      backgroundColor: AppColors.white,
+      appBar: HeaderBack(title: '칼럼'),
+>>>>>>> 884b9f1 (fix: 반응형 유틸리티 수정)
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(),

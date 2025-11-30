@@ -20,9 +20,8 @@ class TradeReportIntroScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppHeader(
+      appBar: HeaderBack(
         title: 'AI 트레이딩 리포트',
-        onBack: () => context.pop(),
       ),
       body: Container(
         width: double.infinity,
