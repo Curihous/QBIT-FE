@@ -716,7 +716,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // 하단 정보 (하단만 radius 10, 높이 66)
           Container(
             width: double.infinity,
-            height: context.h(66),
+            // height: context.h(66), // Removed fixed height to prevent overflow
             padding: EdgeInsets.symmetric(
               horizontal: context.w(16),
               vertical: context.h(12),
