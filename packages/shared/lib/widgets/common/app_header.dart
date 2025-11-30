@@ -32,24 +32,56 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: backgroundColor,
-      elevation: elevation,
-      centerTitle: centerTitle,
-      titleSpacing: showBack ? 0 : context.w(20), // 0 for back button, 20 for no back button (text alignment)
-      leading: showBack
-          ? IconButton(
-              icon: leadingIcon ?? Icon(Icons.arrow_back_ios, color: contentColor, size: 24),
-              onPressed: onBack ?? () => Navigator.of(context).pop(),
-            )
-          : null,
-      title: titleWidget ?? (title != null
-          ? Text(
-              title!,
-              style: AppFonts.t2Bold.copyWith(color: contentColor),
-            )
-          : null),
-      actions: actions,
+    return Container(
+      color: backgroundColor,
+      child: SafeArea(
+        bottom: false,
+        child: Container(
+          height: kToolbarHeight,
+          padding: EdgeInsets.symmetric(horizontal: context.w(16)),
+          child: Row(
+            children: [
+              // Leading (Back Button or Custom)
+              if (showBack || leadingIcon != null)
+                Container(
+                  width: 40,
+                  alignment: Alignment.centerLeft,
+                  child: leadingIcon ??
+                      GestureDetector(
+                        onTap: onBack ?? () => Navigator.of(context).pop(),
+                        behavior: HitTestBehavior.opaque,
+                        child: Icon(
+                          Icons.arrow_back,
+                          color: contentColor,
+                          size: 24,
+                        ),
+                      ),
+                )
+              else if (centerTitle)
+                // If center title and no back button, add spacer to balance
+                const SizedBox(width: 40),
+
+              // Title
+              Expanded(
+                child: titleWidget ??
+                    (title != null
+                        ? Text(
+                            title!,
+                            style: AppFonts.t2Semibold.copyWith(
+                              color: contentColor,
+                              fontSize: 18,
+                            ),
+                            textAlign: centerTitle ? TextAlign.center : TextAlign.left,
+                          )
+                        : const SizedBox()),
+              ),
+
+              // Actions
+              if (actions != null) ...actions! else if (centerTitle) const SizedBox(width: 40),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
