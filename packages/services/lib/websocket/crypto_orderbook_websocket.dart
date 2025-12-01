@@ -26,7 +26,6 @@ class CryptoOrderBookWebSocket {
         (data) {
           try {
             final jsonData = jsonDecode(data);
-            logger.d('WebSocket 데이터 수신: $jsonData');
             
             // WebSocket 응답 형식에 맞게 데이터 변환
             final transformedData = {
@@ -44,7 +43,8 @@ class CryptoOrderBookWebSocket {
             final orderBook = OrderBookModel.fromJson(transformedData);
             _orderBookController.add(orderBook);
           } catch (e) {
-            logger.e('WebSocket 데이터 파싱 에러: $e');
+            // logger.d('WebSocket 데이터 수신: $jsonData');
+            logger.e('Stack trace: ${StackTrace.current}');
           }
         },
         onError: (error) {

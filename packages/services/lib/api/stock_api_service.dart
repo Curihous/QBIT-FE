@@ -379,7 +379,9 @@ class StockApiService {
       // 현재 토큰 상태 확인
       final currentToken = await ApiClient.debugTokenStatus();
       
-      final response = await _dio.get('/stocks/$symbol');
+      // URL 인코딩 (슬래시가 포함된 심볼 처리)
+      final encodedSymbol = Uri.encodeComponent(symbol);
+      final response = await _dio.get('/stocks/$encodedSymbol');
       
       if (response.statusCode == 200) {
         logger.i('종목 상세 정보 조회 성공');
@@ -701,6 +703,99 @@ class StockApiService {
     }
   }
 
+  /// 전체 보유 종목 리스트 조회 (상세 정보 포함)
+  /// GET /portfolios/positions
+  static Future<List<Map<String, dynamic>>?> getPortfolioPositions() async {
+    try {
+      logger.i('전체 보유 종목 리스트 조회 시작');
+      
+      List<Map<String, dynamic>> allPositions = [];
+      int currentPage = 0;
+      bool hasNext = true;
+      
+      while (hasNext) {
+        final response = await _dio.get(
+          '/portfolios/positions',
+          queryParameters: {
+            'page': currentPage,
+            'size': 100,
+          },
+        ).timeout(const Duration(seconds: 10));
+        
+        if (response.statusCode == 200) {
+          List<Map<String, dynamic>> positions = [];
+          
+          if (response.data is List) {
+            positions = (response.data as List)
+                .whereType<Map<String, dynamic>>()
+                .toList();
+            hasNext = false;
+          } else if (response.data is Map<String, dynamic>) {
+            final data = response.data as Map<String, dynamic>;
+            
+            if (data['content'] is List) {
+              positions = (data['content'] as List)
+                  .whereType<Map<String, dynamic>>()
+                  .toList();
+              hasNext = data['hasNext'] as bool? ?? false;
+              if (!hasNext && data['totalPages'] != null && data['currentPage'] != null) {
+                final totalPages = (data['totalPages'] as num?)?.toInt() ?? 1;
+                final currentPageNum = (data['currentPage'] as num?)?.toInt() ?? 0;
+                hasNext = currentPageNum < totalPages - 1;
+              }
+            } else if (data['positions'] is List) {
+              positions = (data['positions'] as List)
+                  .whereType<Map<String, dynamic>>()
+                  .toList();
+              hasNext = false;
+            } else {
+              hasNext = false;
+            }
+          }
+          
+          allPositions.addAll(positions);
+          
+          if (!hasNext || positions.isEmpty) {
+            break;
+          }
+          currentPage++;
+        } else {
+          logger.e('전체 보유 종목 리스트 조회 실패: ${response.statusCode}');
+          break;
+        }
+      }
+      
+      // marketValue 순으로 정렬 (내림차순)
+      allPositions.sort((a, b) {
+        double aValue = 0.0;
+        double bValue = 0.0;
+        
+        if (a['marketValue'] != null) {
+          if (a['marketValue'] is num) {
+            aValue = (a['marketValue'] as num).toDouble();
+          } else if (a['marketValue'] is String) {
+            aValue = double.tryParse(a['marketValue'] as String) ?? 0.0;
+          }
+        }
+        
+        if (b['marketValue'] != null) {
+          if (b['marketValue'] is num) {
+            bValue = (b['marketValue'] as num).toDouble();
+          } else if (b['marketValue'] is String) {
+            bValue = double.tryParse(b['marketValue'] as String) ?? 0.0;
+          }
+        }
+        
+        return bValue.compareTo(aValue);
+      });
+      
+      return allPositions;
+    } catch (error) {
+      logger.e('전체 보유 종목 리스트 조회 에러: $error');
+      return null;
+    }
+  }
+
   /// 포지션 상세 정보 조회 (매수 가능 금액 및 보유 수량)
   /// GET /portfolios/positions/detail?symbol={symbol}
   static Future<Map<String, dynamic>?> getPositionDetail(String symbol) async {
@@ -730,6 +825,12 @@ class StockApiService {
       logger.e('포지션 상세 정보 조회 타임아웃: $error');
       return null;
     } catch (error) {
+      // 404는 포지션이 없는 경우로 간주하여 에러 로그를 남기지 않음
+      if (error is DioException && error.response?.statusCode == 404) {
+        logger.i('포지션 정보 없음 (보유하지 않음): $symbol');
+        return null;
+      }
+      
       logger.e('포지션 상세 정보 조회 에러: $error');
       if (error is DioException) {
         logger.e('Dio 에러 상세: 상태코드 ${error.response?.statusCode}');

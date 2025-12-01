@@ -12,19 +12,25 @@ import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/websocket/crypto_orderbook_websocket.dart';
 import 'package:qbit_services/websocket/crypto_market_websocket.dart';
 import 'package:qbit_services/websocket/us_stock_market_websocket.dart';
+import 'package:qbit_services/repository/orderbook_repository.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:qbit_shared/widgets/trade/orderbook/vertical_orderbook_widget.dart';
 import 'package:qbit_shared/widgets/trade/orderbook/us_stock_orderbook_widget.dart';
 import 'package:qbit_services/models/stock_detail_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qbit_shared/screens/trade/stock_detail/stock_order_form.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_shared/utils/stock_price_parser.dart';
 import 'package:logger/logger.dart';
-import 'package:qbit_shared/screens/trade/stock_detail/order_forms/crypto_order_form.dart';
-import 'package:qbit_shared/screens/trade/stock_detail/order_forms/stock_order_form.dart';
+
 import 'package:qbit_services/models/order_model.dart';
 import 'package:qbit_shared/widgets/common/button/filter_button.dart';
+import 'package:qbit_shared/widgets/trade/order_confirmation_dialog.dart';
+import 'package:qbit_shared/widgets/trade/order_success_dialog.dart';
 import 'package:go_router/go_router.dart';
+
+/// 주식 상세 화면의 주문 탭 위젯
+/// 매수/매도 주문 폼, 호가창, 주문 내역을 표시하고 주문 제출 기능을 제공합니다.
 
 // OrderModel - API 응답 데이터 모델 (주문 내역용)
 class OrderHistoryModel {
@@ -146,12 +152,11 @@ class _StockOrderTabState extends State<StockOrderTab> {
   bool _isLoading = true;
   bool _isLoadingOrderBook = false;
   String? _error;
-  CryptoOrderBookWebSocket? _webSocket;
-  CryptoMarketWebSocket? _marketWebSocket; // 암호화폐 시장가용 WebSocket
-  UsStockMarketWebSocket? _usStockMarketWebSocket; // 미국 주식 시장가용 WebSocket
-  StreamSubscription<OrderBookModel>? _orderBookSubscription; // 호가창 WebSocket 구독
-  StreamSubscription<double>? _marketPriceSubscription; // 암호화폐 시장가 WebSocket 구독
-  StreamSubscription<PolygonEvent>? _usStockPriceSubscription; // 미국 주식 시장가 WebSocket 구독
+  OrderBookRepository? _repository;
+  CryptoOrderBookWebSocket? _webSocket; // Added direct WebSocket
+  StreamSubscription<OrderBookModel>? _orderBookSubscription;
+  StreamSubscription<double>? _marketPriceSubscription;
+  StreamSubscription<PolygonEvent>? _usStockPriceSubscription;
   
   // 주문 관련 상태
   int _quantity = 1;
@@ -244,15 +249,11 @@ class _StockOrderTabState extends State<StockOrderTab> {
   void dispose() {
     // WebSocket 구독 취소
     _orderBookSubscription?.cancel();
+    _repository?.dispose();
+    _webSocket?.disconnect(); // Disconnect direct WebSocket
+    _webSocket?.dispose();
     _marketPriceSubscription?.cancel();
     _usStockPriceSubscription?.cancel();
-    
-    // WebSocket 연결 해제
-    _webSocket?.disconnect();
-    _webSocket?.dispose();
-    _marketWebSocket?.disconnect();
-    _marketWebSocket?.dispose();
-    _usStockMarketWebSocket?.close();
     
     _quantityController.dispose();
     _priceController.dispose();
@@ -329,6 +330,12 @@ class _StockOrderTabState extends State<StockOrderTab> {
       
       // 포지션 정보 로드
       await _loadPositionInfo();
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     } catch (error) {
       if (!mounted) return;
       
@@ -403,15 +410,16 @@ class _StockOrderTabState extends State<StockOrderTab> {
         if (binanceSymbol.isNotEmpty) {
           // 기존 WebSocket 연결 해제 및 구독 취소
           _marketPriceSubscription?.cancel();
-          await _marketWebSocket?.disconnect();
-          _marketWebSocket?.dispose();
+          _repository?.dispose(); // 기존 리포지토리 해제
+          _repository = OrderBookRepository(); // 새로운 리포지토리 생성
           
-          // 새로운 WebSocket 연결
-          _marketWebSocket = CryptoMarketWebSocket();
-          await _marketWebSocket!.connect(binanceSymbol);
+          await _repository!.connect(
+            assetClass: 'crypto',
+            symbol: binanceSymbol,
+          );
           
           // WebSocket에서 실시간 가격 받기 (구독 저장)
-          _marketPriceSubscription = _marketWebSocket!.lastPriceStream.listen((price) {
+          _marketPriceSubscription = _repository!.marketPriceStream.listen((price) {
             if (mounted) {
               setState(() {
                 _currentMarketPrice = price;
@@ -440,38 +448,20 @@ class _StockOrderTabState extends State<StockOrderTab> {
             try {
               // 기존 WebSocket 연결 해제
               _usStockPriceSubscription?.cancel();
-              await _usStockMarketWebSocket?.close();
+              // 미국 주식 실시간 가격 구독 (OrderBookRepository에 기능 추가 필요)
+              // 현재는 UsStockOrderBookWidget이 자체적으로 처리하므로 여기서는 생략하거나
+              // 추후 OrderBookRepository에 통합
               
-              // 새로운 WebSocket 연결
-              _usStockMarketWebSocket = UsStockMarketWebSocket(apiKey);
-              await _usStockMarketWebSocket!.connect(initialSymbols: [widget.symbol]);
-              _usStockMarketWebSocket!.subscribe([widget.symbol], trade: true, quote: true);
-              
-              // WebSocket에서 실시간 가격 받기
-              _usStockPriceSubscription = _usStockMarketWebSocket!.stream.listen((event) {
+              // 임시: REST API로 초기 가격만 로드
+              final quote = await StockApiService.getUsStockQuote(widget.symbol);
+              if (quote != null && quote['last'] != null && quote['last']['price'] != null) {
                 if (mounted) {
-                  double? price;
-                  if (event is PolygonTrade) {
-                    price = event.price;
-                  } else if (event is PolygonQuote) {
-                    // Quote의 경우 bid/ask 중간값 사용
-                    price = (event.bidPrice + event.askPrice) / 2;
-                  }
-                  
-                  if (price != null && price > 0) {
-                    setState(() {
-                      _currentMarketPrice = price!;
-                    });
-                    logger.i('미국 주식 현재 가격 업데이트 (WebSocket): $_currentMarketPrice');
-                  }
+                  setState(() {
+                    _currentMarketPrice = (quote['last']['price'] as num).toDouble();
+                  });
+                  logger.i('미국 주식 현재 가격 업데이트 (REST API): $_currentMarketPrice');
                 }
-              }, onError: (error) {
-                logger.w('WebSocket 스트림 에러: $error');
-                // 재시도 제한 확인 후 REST API로 폴백
-                if (_marketPriceRetryCount < _maxRetries && _currentMarketPrice == 0.0) {
-                  _loadMarketPriceFromRestApi();
-                }
-              });
+              }
             } catch (wsError) {
               logger.w('WebSocket 연결 실패, REST API만 사용: $wsError');
               // WebSocket 실패해도 REST API로 이미 가격을 가져왔으므로 문제없음
@@ -560,6 +550,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
       logger.e('포지션 정보 로드 에러: $error');
     }
   }
+
   
   /// 주문 내역 조회
   Future<void> _loadOrderHistory() async {
@@ -741,84 +732,60 @@ class _StockOrderTabState extends State<StockOrderTab> {
   Future<void> _loadOrderBook() async {
     setState(() {
       _isLoadingOrderBook = true;
-      _isLoading = true;
+      // _isLoading = true; // 메인 로딩은 _loadData에서 관리
     });
 
     try {
-      // 1. 초기 스냅샷 로드 - 자산군별 분기 필요
-      OrderBookModel? orderBook;
+      // 1. 초기 스냅샷 로드
       if (widget.assetClass == 'crypto') {
-        // 암호화폐 호가창 (현재 지원)
-        // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
         final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
         if (binanceSymbol.isEmpty) {
-          if (mounted) {
-            setState(() {
-              _isLoadingOrderBook = false;
-              _isLoading = false;
-            });
-          }
+          if (mounted) setState(() => _isLoadingOrderBook = false);
           return;
         }
         
-        orderBook = await StockApiService.getCryptoOrderBook(binanceSymbol)
-            .timeout(
-              const Duration(seconds: 10),
-              onTimeout: () => null,
-            );
-      } else {
-        // TODO: Polygon API 결제 후 미국 주식 호가창 지원 예정
-        // orderBook = await StockApiService.getStockOrderBook(widget.symbol)
-        //     .timeout(
-        //       const Duration(seconds: 10),
-        //       onTimeout: () => null,
-        //     );
-        orderBook = null; // 현재는 비크립토 호가창 미지원
-      }
-      
-      if (mounted) {
-        setState(() {
-          _orderBook = orderBook;
-          _isLoadingOrderBook = false;
-          _isLoading = false;
-        });
-      }
-
-      // 2. WebSocket 연결 시작 
-      if (widget.assetClass == 'crypto' && mounted) {
-        // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
-        final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
-        if (binanceSymbol.isNotEmpty) {
-          // 기존 WebSocket 연결 해제 및 구독 취소
-          _orderBookSubscription?.cancel();
-          await _webSocket?.disconnect();
-          _webSocket?.dispose();
-          
-          // 새로운 WebSocket 연결
-          _webSocket = CryptoOrderBookWebSocket();
-          await _webSocket!.connect(binanceSymbol);
-          
-          // WebSocket 스트림 구독 (구독 저장)
-          _orderBookSubscription = _webSocket!.orderBookStream.listen((updatedOrderBook) {
-            if (mounted) {
-              setState(() {
-                _orderBook = updatedOrderBook;
-              });
-            }
-          });
+        // 스냅샷 로드
+        try {
+          final orderBook = await StockApiService.getCryptoOrderBook(binanceSymbol);
+          if (mounted && orderBook != null) {
+            setState(() {
+              _orderBook = orderBook;
+              _isLoadingOrderBook = false;
+            });
+          }
+        } catch (e) {
+          logger.w('스냅샷 로드 실패 (WebSocket으로 계속 진행): $e');
         }
+        
+        // 2. WebSocket 연결
+        _orderBookSubscription?.cancel();
+        _webSocket?.disconnect();
+        
+        _webSocket = CryptoOrderBookWebSocket();
+        
+        // 스트림 구독 (연결 전에 구독하여 데이터 유실 방지)
+        _orderBookSubscription = _webSocket!.orderBookStream.listen((updatedOrderBook) {
+          // logger.d('StockOrderTab: WebSocket 데이터 수신');
+          if (mounted) {
+            setState(() {
+              _orderBook = updatedOrderBook;
+              _isLoadingOrderBook = false;
+            });
+          }
+        });
+        
+        await _webSocket!.connect(binanceSymbol);
+      } else {
+         // US Stock Logic
+         _orderBook = null;
+         if (mounted) setState(() => _isLoadingOrderBook = false);
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _orderBook = null;
-          _isLoadingOrderBook = false;
-          _isLoading = false;
-        });
-      }
-      print('호가창 데이터 로드 중 에러: $e');
+      logger.e('호가창 데이터 로드 실패: $e');
+      if (mounted) setState(() => _isLoadingOrderBook = false);
     }
   }
+
 
   Future<void> _handleOrderSubmit() async {
     // 입력 검증
@@ -867,42 +834,42 @@ class _StockOrderTabState extends State<StockOrderTab> {
 
     try {
       // 주문 확인 다이얼로그
+      String quantityText;
+      String? limitPriceText;
+      String? totalAmountText;
+      
+      if (widget.assetClass == 'crypto' && _selectedOrderType == '지정가') {
+        final rules = _stockDetail?.toOrderRules() ?? OrderRules.crypto(
+          minOrderSize: 0.000223249,
+          minTradeIncrement: 0.000000001,
+          priceIncrement: 0.01,
+        );
+        final normalizedQty = rules.normalizeQuantity(_quantity.toDouble());
+        final normalizedPrice = rules.normalizePrice(_price);
+        quantityText = normalizedQty.toStringAsFixed(9);
+        limitPriceText = '${normalizedPrice.toStringAsFixed(2)} USD';
+        totalAmountText = '${(normalizedQty * normalizedPrice).toStringAsFixed(2)} USD';
+      } else if (widget.assetClass == 'crypto' && _selectedOrderType == '시장가') {
+        final estimatedQty = (_marketOrderAmount / _currentMarketPrice).toStringAsFixed(9);
+        quantityText = estimatedQty;
+        limitPriceText = null;
+        totalAmountText = '${_marketOrderAmount.toStringAsFixed(2)} USDT';
+      } else {
+        quantityText = _quantity.toStringAsFixed(0);
+        limitPriceText = '${_price.toStringAsFixed(0)}원';
+        totalAmountText = '${(_quantity * _price).toStringAsFixed(0)}원';
+      }
+      
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: Text('주문 확인'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('종목: ${widget.symbol}'),
-              Text('구분: $_selectedOrderTab'),
-              Text('주문타입: $_selectedOrderType'),
-              if (widget.assetClass == 'crypto' && _selectedOrderType == '지정가') ...[
-                Text('수량: ${(_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizeQuantity(_quantity.toDouble()).toStringAsFixed(9)}개'),
-                Text('가격: ${(_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizePrice(_price).toStringAsFixed(2)} USD'),
-                Text('총액: ${((_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizeQuantity(_quantity.toDouble()) * (_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizePrice(_price)).toStringAsFixed(2)} USD'),
-              ] else if (widget.assetClass == 'crypto' && _selectedOrderType == '시장가') ...[
-                Text('금액: ${_marketOrderAmount.toStringAsFixed(2)} USDT'),
-                Text('예상 수량: ${(_marketOrderAmount / _currentMarketPrice).toStringAsFixed(9)}개'),
-                Text('가격: 시장가'),
-              ] else ...[
-                Text('수량: $_quantity주'),
-                Text('가격: ${_price.toStringAsFixed(0)}원'),
-                Text('총액: ${(_quantity * _price).toStringAsFixed(2)}원'),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text('취소'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text('확인'),
-            ),
-          ],
+        builder: (context) => OrderConfirmationDialog(
+          symbol: widget.symbol,
+          orderType: _selectedOrderTab,
+          orderMethod: _selectedOrderType,
+          quantity: quantityText,
+          limitPrice: limitPriceText,
+          assetClass: widget.assetClass,
+          totalAmount: totalAmountText,
         ),
       );
 
@@ -1208,7 +1175,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                               isLoading: _isLoadingOrderBook,
                               onRefresh: () async {
                                 // WebSocket 재연결
-                                await _webSocket?.disconnect();
+                                _repository?.disconnect();
                                 await _loadOrderBook();
                               },
                             )
@@ -1340,22 +1307,13 @@ class _StockOrderTabState extends State<StockOrderTab> {
         // 내역 탭이면 주문 내역 표시, 아니면 주문 폼 표시
         if (_selectedOrderTab == '내역')
           _buildOrderHistoryContent()
-        else if (widget.assetClass == 'crypto')
-          CryptoOrderForm(
-            symbol: widget.symbol,
-            selectedOrderTab: _selectedOrderTab,
-            stockDetail: _stockDetail,
-            currentMarketPrice: _currentMarketPrice,
-            onSubmit: _handleOrderSubmitFromForm,
-            onSetMaxQuantity: _setMaxQuantity,
-            isSubmitting: _isSubmittingOrder,
-          )
         else
           StockOrderForm(
             key: _stockOrderFormKey,
             symbol: widget.symbol,
             selectedOrderTab: _selectedOrderTab,
-            exchangeRate: _exchangeRate,
+            assetClass: widget.assetClass,
+            exchangeRate: widget.assetClass == 'crypto' ? null : _exchangeRate,
             tickSizeInKrw: _tickSizeInKrw,
             buyingPower: _buyingPower,
             positionQuantity: _positionQuantity,
@@ -1378,37 +1336,32 @@ class _StockOrderTabState extends State<StockOrderTab> {
   ) async {
     try {
       // 주문 확인 다이얼로그
+      String? totalAmount;
+      if (limitPrice != null && quantity.isNotEmpty) {
+        try {
+          final price = double.tryParse(limitPrice.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
+          final qty = double.tryParse(quantity.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
+          if (widget.assetClass == 'crypto') {
+            totalAmount = '${(price * qty).toStringAsFixed(2)} USD';
+          } else {
+            totalAmount = '${(price * qty).toStringAsFixed(0)}원';
+          }
+        } catch (e) {
+          totalAmount = null;
+        }
+      }
+      
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: Text('주문 확인'),
-          content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-              Text('종목: ${widget.symbol}'),
-              Text('구분: $orderType'),
-              Text('주문타입: $orderMethod'),
-              if (orderMethod == '시장가') ...[
-                Text('수량: $quantity${widget.assetClass == 'crypto' ? '개' : '주'}'),
-                Text('가격: 시장가'),
-              ] else ...[
-                Text('수량: $quantity${widget.assetClass == 'crypto' ? '개' : '주'}'),
-                Text('가격: ${limitPrice ?? 'N/A'}${widget.assetClass == 'crypto' ? ' USD' : ' USD'}'),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text('취소'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text('확인'),
-                        ),
-                      ],
-                    ),
+        builder: (context) => OrderConfirmationDialog(
+          symbol: widget.symbol,
+          orderType: orderType,
+          orderMethod: orderMethod,
+          quantity: quantity,
+          limitPrice: limitPrice,
+          assetClass: widget.assetClass,
+          totalAmount: totalAmount,
+        ),
       );
 
       if (confirmed != true) return;
@@ -1814,121 +1767,20 @@ class _StockOrderTabState extends State<StockOrderTab> {
     required String totalAmount,
     required String currency,
   }) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.5),
       builder: (BuildContext context) {
-        return Material(
-          color: Colors.transparent,
-          child: Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: Colors.black.withOpacity(0.5),
-            child: Stack(
-              children: [
-                // 팝업 컨테이너
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: SafeArea(
-                    child: Container(
-                      width: double.infinity,
-                      constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.5,
-                        minHeight: 320,
-                      ),
-                  decoration: ShapeDecoration(
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(context.w(20)),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 아이콘
-                        Container(
-                          width: context.w(50),
-                          height: context.h(50),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFF5F5F5),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.check_circle,
-                            color: orderType == '매수' ? AppColors.chartRed : AppColors.chartBlue,
-                            size: context.w(25),
-                          ),
-                        ),
-                        SizedBox(height: context.h(16)),
-                        // 성공 메시지
-                        Text(
-                          '$symbol $orderType 주문 요청 성공',
-                          style: AppFonts.t1Bold.copyWith(
-                            color: orderType == '매수' ? AppColors.chartRed : AppColors.chartBlue,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: context.h(24)),
-                        // 주문 상세 정보
-                        Container(
-                          padding: EdgeInsets.all(context.w(16)),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFF8F9FA),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              _buildOrderDetailRow(orderMethod == '시장가' ? '주문타입' : '지정가', orderMethod == '시장가' ? orderMethod : '$price$currency'),
-                              SizedBox(height: 12),
-                              _buildOrderDetailRow('수량', '$quantity${currency == '원' ? '주' : '개'}'),
-                              SizedBox(height: 12),
-                              _buildOrderDetailRow('총액', totalAmount == '체결 후 확인 가능' ? totalAmount : '$totalAmount$currency'),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 24),
-                        // 확인 버튼
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: orderType == '매수' ? AppColors.chartRed : AppColors.chartBlue,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '확인',
-                                style: AppFonts.t1Bold.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        return OrderSuccessDialog(
+          symbol: symbol,
+          orderType: orderType,
+          orderMethod: orderMethod,
+          price: price,
+          quantity: quantity,
+          totalAmount: totalAmount,
+          currency: currency,
         );
       },
     );

@@ -126,10 +126,8 @@ class _RecordScreenState extends State<RecordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const HeaderBasic(
+      appBar: HeaderBasic(
         title: '기록',
-        onAlarmPressed: null,
-        onSettingPressed: null,
       ),
       body: Stack(
         children: [

@@ -27,5 +27,13 @@ class StockPriceParser {
     final price = double.tryParse(priceValue.toString());
     return price != null && price > 0 ? price : null;
   }
+
+  /// 일반적인 숫자 파싱 (기본값 0.0)
+  static double parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
 }
 

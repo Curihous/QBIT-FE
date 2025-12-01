@@ -100,7 +100,9 @@ class OrderRequest {
   final OrderType type;
   @JsonKey(unknownEnumValue: TimeInForce.unknown)
   final TimeInForce timeInForce;
+  @JsonKey(includeIfNull: false)
   final String? limitPrice;
+  @JsonKey(includeIfNull: false)
   final String? stopPrice;
 
   OrderRequest({

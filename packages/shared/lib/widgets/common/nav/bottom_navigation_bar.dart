@@ -95,12 +95,12 @@ class CustomBottomNavigationBar extends StatelessWidget {
       ),
     );
 
-    // 하단 시스템 UI 영역을 피하도록 SafeArea 적용
-    return SafeArea(
-      top: false,
-      left: false,
-      right: false,
-      bottom: true,
+    // iOS와 Android 모두 직접 패딩 사용 (SafeArea는 MainLayout의 Positioned에서 처리)
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: context.h(0),
+      ),
       child: navigationBar,
     );
   }

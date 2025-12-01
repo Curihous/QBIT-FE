@@ -77,8 +77,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: HeaderBack(
-        title: '주문 내역',
-        onBackPressed: () => context.pop(),
+        title: '주문 상세',
       ),
       body: _isLoading
           ? const Center(

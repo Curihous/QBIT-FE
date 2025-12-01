@@ -189,7 +189,7 @@ class _CandlestickPainter extends CustomPainter {
 
       textPainter.paint(
         canvas,
-        Offset(size.width - textPainter.width - 8, y - textPainter.height / 2),
+        Offset(size.width - textPainter.width - 12, y - textPainter.height / 2),
       );
     }
   }

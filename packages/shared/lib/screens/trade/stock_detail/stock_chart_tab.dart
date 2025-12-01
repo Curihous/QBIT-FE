@@ -16,6 +16,8 @@ import 'package:qbit_services/models/candle_model.dart';
 import 'package:qbit_services/websocket/crypto_market_websocket.dart';
 import 'package:qbit_services/websocket/us_stock_market_websocket.dart';
 
+/// 주식 상세 화면의 차트 탭 위젯
+/// 캔들스틱 차트, 거래량 차트, RSI 지표를 표시하고 실시간 가격 업데이트를 제공합니다.
 class StockChartTab extends StatefulWidget {
   final String symbol;
   final String name;
@@ -66,8 +68,11 @@ class _StockChartTabState extends State<StockChartTab> {
     _marketWebSocket?.disconnect();
     _marketWebSocket?.dispose();
     _usStockStreamSubscription?.cancel();
-    _usStockWebSocket?.close();
-    _usStockWebSocket?.dispose();
+    // Singleton이므로 close/dispose 하지 않음
+    // 구독 해제는 하지 않음 (다른 탭에서 사용 중일 수 있음)
+    // 실제로는 구독 카운트를 관리하거나, 모든 화면이 닫힐 때만 해제해야 함
+    // _usStockWebSocket?.close();
+    // _usStockWebSocket?.dispose();
     super.dispose();
   }
 
@@ -190,7 +195,8 @@ class _StockChartTabState extends State<StockChartTab> {
 
   Future<void> _connectUsStockRealtime() async {
     if (!_isUsStock) return;
-    if (_usStockWebSocket != null) return;
+    // Singleton 사용 시 _usStockWebSocket 체크 로직 변경
+    // if (_usStockWebSocket != null) return; 
 
     final apiKey = dotenv.env['POLYGON_API_KEY'];
     if (apiKey == null || apiKey.isEmpty) {
@@ -209,15 +215,19 @@ class _StockChartTabState extends State<StockChartTab> {
     final symbol = widget.symbol.trim();
     if (symbol.isEmpty) return;
 
-    final ws = UsStockMarketWebSocket(apiKey);
+    // Singleton 인스턴스 사용
+    final ws = UsStockMarketWebSocket.instance;
     _usStockWebSocket = ws;
 
     try {
       // A (Aggregate Second) 채널 사용 - 더 자주 업데이트
-      await ws.connect(initialSymbols: []);
+      await ws.connect(apiKey: apiKey, initialSymbols: []);
       ws.subscribe([symbol], trade: false, aggregateMinute: false, aggregateSecond: true, quote: false);
       
       _usStockStreamSubscription = ws.stream.listen((event) {
+        // 내 심볼에 대한 이벤트인지 확인
+        if (event.symbol != symbol) return;
+
         double? price;
         if (event is PolygonTrade) {
           price = event.price;

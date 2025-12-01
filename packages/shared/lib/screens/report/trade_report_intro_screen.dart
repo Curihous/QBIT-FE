@@ -21,7 +21,7 @@ class TradeReportIntroScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: HeaderBack(
-        title: '매매 리포트',
+        title: 'AI 트레이딩 리포트',
       ),
       body: Container(
         width: double.infinity,

@@ -40,8 +40,7 @@ class _LearningCardDetailScreenState extends State<LearningCardDetailScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7F7), // Gray-30
       appBar: HeaderBack(
-        title: '',
-        backgroundColor: const Color(0xFFF7F7F7), // Gray-30
+        title: '학습 카드',
       ),
       body: Container(
         width: double.infinity,

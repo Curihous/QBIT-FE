@@ -3,6 +3,8 @@ import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/layout/horizontal_inset.dart';
 import 'package:qbit_services/websocket/crypto_market_websocket.dart';
 
+/// 주식 상세 화면의 시세 탭 위젯
+/// 실시간 체결가 정보를 표시하고 WebSocket을 통해 실시간 업데이트를 제공합니다.
 class StockMarketTab extends StatefulWidget {
   final String symbol; // 화면 표시용 기본 심볼
   final String name;

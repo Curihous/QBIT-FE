@@ -632,8 +632,7 @@ class _HomeScreenState extends State<HomeScreen> {
               PortfolioPositionsWidget(
                 positions: _positions,
                 onViewAll: () {
-                  // TODO: 전체 포트폴리오 상세 화면으로 이동
-                  // context.push('/portfolio-detail');
+                  context.push('/portfolio-positions');
                 },
               ),
             // 하단 여백 추가
@@ -716,7 +715,7 @@ class _HomeScreenState extends State<HomeScreen> {
           // 하단 정보 (하단만 radius 10, 높이 66)
           Container(
             width: double.infinity,
-            height: context.h(66),
+            // height: context.h(66), // Removed fixed height to prevent overflow
             padding: EdgeInsets.symmetric(
               horizontal: context.w(16),
               vertical: context.h(12),
