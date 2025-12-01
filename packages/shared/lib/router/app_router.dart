@@ -20,6 +20,7 @@ import 'package:qbit_shared/screens/report/trade_report_intro_screen.dart';
 import 'package:qbit_shared/screens/cards/learning_card_detail_screen.dart';
 import 'package:qbit_shared/screens/column/column_detail_screen.dart';
 import 'package:qbit_shared/screens/portfolio/portfolio_positions_screen.dart';
+import 'package:qbit_shared/screens/portfolio/portfolio_position_detail_screen.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/api_client.dart';
@@ -59,7 +60,10 @@ class AppRouter {
       GoRoute(
         path: '/order-history',
         name: 'order-history',
-        builder: (context, state) => const OrderHistoryScreen(),
+        builder: (context, state) {
+          final symbol = state.uri.queryParameters['symbol'];
+          return OrderHistoryScreen(initialSymbol: symbol);
+        },
       ),
       GoRoute(
         path: '/order-detail/:orderId',
@@ -181,6 +185,14 @@ class AppRouter {
         path: '/portfolio-positions',
         name: 'portfolio-positions',
         builder: (context, state) => const PortfolioPositionsScreen(),
+      ),
+      GoRoute(
+        path: '/portfolio-positions/detail/:symbol',
+        name: 'portfolio-position-detail',
+        builder: (context, state) {
+          final symbol = Uri.decodeComponent(state.pathParameters['symbol'] ?? '');
+          return PortfolioPositionDetailScreen(symbol: symbol);
+        },
       ),
     ],
   );

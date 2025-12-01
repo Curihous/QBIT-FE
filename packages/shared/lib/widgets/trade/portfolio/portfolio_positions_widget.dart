@@ -8,11 +8,13 @@ import 'package:qbit_shared/layout/horizontal_inset.dart';
 class PortfolioPositionsWidget extends StatelessWidget {
   final List<PortfolioPosition> positions;
   final VoidCallback? onViewAll;
+  final Function(PortfolioPosition)? onItemTap;
 
   const PortfolioPositionsWidget({
     super.key,
     required this.positions,
     this.onViewAll,
+    this.onItemTap,
   });
 
   @override
@@ -114,29 +116,55 @@ class PortfolioPositionsWidget extends StatelessWidget {
     // 손익률 색상 (양수: 수익 색상, 음수: 손실 색상)
     final plpcColor = unrealizedPlpc >= 0 ? AppColors.chartBlue : AppColors.chartRed;
 
-    return Inset.block(
-      child: Container(
-        width: double.infinity,
-        padding: EdgeInsets.symmetric(horizontal: context.w(4), vertical: context.h(12)),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              width: 1,
-              color: AppColors.gray100,
+    return GestureDetector(
+      onTap: () => onItemTap?.call(position),
+      behavior: HitTestBehavior.opaque,
+      child: Inset.block(
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: context.w(4), vertical: context.h(12)),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                width: 1,
+                color: AppColors.gray100,
+              ),
             ),
           ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // 왼쪽: 심볼과 평균가/수량
-            Expanded(
-              child: Column(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 왼쪽: 심볼과 평균가/수량
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      position.symbol,
+                      style: AppFonts.b1Regular.copyWith(
+                        color: AppColors.gray900,
+                        fontSize: 16,
+                      ),
+                    ),
+                    SizedBox(height: context.h(4)),
+                    Text(
+                      '내 평균 $avgPriceText • $quantityText',
+                      style: AppFonts.c1.copyWith(
+                        color: AppColors.gray600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // 오른쪽: 시장가치와 손익률
+              Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    position.symbol,
+                    '\$ ${marketValue.toStringAsFixed(2)}',
                     style: AppFonts.b1Regular.copyWith(
                       color: AppColors.gray900,
                       fontSize: 16,
@@ -144,38 +172,16 @@ class PortfolioPositionsWidget extends StatelessWidget {
                   ),
                   SizedBox(height: context.h(4)),
                   Text(
-                    '내 평균 $avgPriceText • $quantityText',
+                    plpcText,
                     style: AppFonts.c1.copyWith(
-                      color: AppColors.gray600,
+                      color: plpcColor,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
                 ],
               ),
-            ),
-            
-            // 오른쪽: 시장가치와 손익률
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '\$ ${marketValue.toStringAsFixed(2)}',
-                  style: AppFonts.b1Regular.copyWith(
-                    color: AppColors.gray900,
-                    fontSize: 16,
-                  ),
-                ),
-                SizedBox(height: context.h(4)),
-                Text(
-                  plpcText,
-                  style: AppFonts.c1.copyWith(
-                    color: plpcColor,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

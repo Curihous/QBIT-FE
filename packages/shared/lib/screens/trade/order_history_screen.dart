@@ -217,7 +217,12 @@ String _formatQuantityAndPrice(OrderModel order) {
 
 
 class OrderHistoryScreen extends StatefulWidget {
-  const OrderHistoryScreen({super.key});
+  final String? initialSymbol;
+
+  const OrderHistoryScreen({
+    super.key,
+    this.initialSymbol,
+  });
 
   @override
   State<OrderHistoryScreen> createState() => _OrderHistoryScreenState();
@@ -248,6 +253,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   @override
   void initState() {
     super.initState();
+    print('OrderHistoryScreen initState - initialSymbol: ${widget.initialSymbol}');
+    if (widget.initialSymbol != null) {
+      _searchSymbol = widget.initialSymbol;
+      _searchController.text = widget.initialSymbol!;
+      _isSearchVisible = true;
+      print('Set _searchSymbol to: $_searchSymbol');
+    }
     _searchController.addListener(_onSearchChanged);
     _fetchOrders();
     _fetchTradeCycles();

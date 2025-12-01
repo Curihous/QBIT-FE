@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
@@ -8,6 +9,7 @@ import 'package:qbit_shared/utils/stock_price_parser.dart';
 import 'package:intl/intl.dart';
 
 import 'package:qbit_shared/widgets/common/button/filter_button.dart';
+import 'package:qbit_shared/widgets/common/empty_widget.dart';
 
 class PortfolioPositionsScreen extends StatefulWidget {
   const PortfolioPositionsScreen({super.key});
@@ -61,10 +63,6 @@ class _PortfolioPositionsScreenState extends State<PortfolioPositionsScreen> {
           final aVal = StockPriceParser.parseDouble(a['unrealizedPlpc']);
           final bVal = StockPriceParser.parseDouble(b['unrealizedPlpc']);
           return bVal.compareTo(aVal); // Descending
-        case 'symbol':
-          final aVal = a['symbol'] ?? '';
-          final bVal = b['symbol'] ?? '';
-          return aVal.compareTo(bVal); // Ascending
         default:
           return 0;
       }
@@ -86,9 +84,9 @@ class _PortfolioPositionsScreenState extends State<PortfolioPositionsScreen> {
         children: [
           // Sort Filters
           FilterButtonGroup(
-            labels: const ['평가금액순', '수익률순', '이름순'],
-            values: const ['marketValue', 'return', 'symbol'],
-            initialValue: _currentSort,
+            labels: const ['평가금액순', '수익률순'],
+            values: const ['marketValue', 'return'],
+            initialValue: ['marketValue', 'return'].contains(_currentSort) ? _currentSort : 'marketValue',
             onChanged: (value) {
               setState(() {
                 _currentSort = value;
@@ -102,11 +100,11 @@ class _PortfolioPositionsScreenState extends State<PortfolioPositionsScreen> {
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : _filteredPositions.isEmpty
-                    ? const Center(child: Text('보유한 종목이 없습니다.'))
+                    ? EmptyWidget(message: '보유한 종목이 없습니다.')
                     : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         itemCount: _filteredPositions.length,
-                        separatorBuilder: (context, index) => const SizedBox(height: 16),
+                        separatorBuilder: (context, index) => const SizedBox(height: 24),
                         itemBuilder: (context, index) {
                           return _PortfolioPositionItem(position: _filteredPositions[index]);
                         },
@@ -125,9 +123,6 @@ class _PortfolioPositionItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Debug logging
-    print('Position Data: $position');
-    
     final symbol = position['symbol'] ?? '';
     final marketValue = StockPriceParser.parseDouble(position['marketValue']);
     final avgEntryPrice = StockPriceParser.parseDouble(position['avgEntryPrice']);
@@ -161,81 +156,93 @@ class _PortfolioPositionItem extends StatelessWidget {
         ? '+${plpcPercent.toStringAsFixed(2)}%'
         : '${plpcPercent.toStringAsFixed(2)}%';
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          // Logo
-          Container(
-            width: 40,
-            height: 40,
-            decoration: const ShapeDecoration(
-              color: AppColors.secondaryBG,
-              shape: OvalBorder(),
-            ),
-            child: ClipOval(
-              child: SvgPicture.asset(
-                'assets/icons/stock_search_screen/company-logo-basic.svg',
-                width: 40,
-                height: 40,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          
-          // Symbol & Details
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  symbol,
-                  style: AppFonts.b1Semibold.copyWith(
-                    color: AppColors.gray900,
-                    fontSize: 16,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '내 평균 $avgPriceText • $qtyText',
-                  style: AppFonts.c1.copyWith(
-                    color: AppColors.gray600,
-                    fontSize: 13,
-                    height: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Value & Return
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.center,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          // Navigate to position detail screen
+          context.push('/portfolio-positions/detail/${Uri.encodeComponent(symbol)}');
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4), // Added internal padding
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                currencyFormat.format(marketValue),
-                style: AppFonts.b1Regular.copyWith(
-                  color: AppColors.gray900, 
-                  fontSize: 16,
-                  height: 1.2,
+              // Logo
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const ShapeDecoration(
+                  color: AppColors.secondaryBG,
+                  shape: OvalBorder(),
+                ),
+                child: ClipOval(
+                  child: SvgPicture.asset(
+                    'assets/icons/stock_search_screen/company-logo-basic.svg',
+                    width: 44,
+                    height: 44,
+                  ),
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                plpcText,
-                style: AppFonts.c1.copyWith(
-                  color: profitColor,
-                  fontSize: 13,
-                  height: 1.2,
+              const SizedBox(width: 16), // Increased spacing
+              
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top Row: Symbol & Market Value
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          symbol,
+                          style: AppFonts.b1Semibold.copyWith(
+                            color: AppColors.gray900,
+                            fontSize: 16,
+                            height: 1.25,
+                          ),
+                        ),
+                        Text(
+                          currencyFormat.format(marketValue),
+                          style: AppFonts.b1Semibold.copyWith(
+                            color: AppColors.gray900, 
+                            fontSize: 16,
+                            height: 1.25,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    // Bottom Row: Details & Return %
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '내 평균 $avgPriceText • $qtyText',
+                          style: AppFonts.c1.copyWith(
+                            color: AppColors.gray600,
+                            fontSize: 13,
+                            height: 1.23,
+                          ),
+                        ),
+                        Text(
+                          plpcText,
+                          style: AppFonts.c1.copyWith(
+                            color: profitColor,
+                            fontSize: 13,
+                            height: 1.23,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
