@@ -23,21 +23,20 @@ class FilterButton extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: height, // 고정 높이 제거, 필요 시 외부에서 전달
-        constraints: const BoxConstraints(minHeight: 28), // 최소 28px 보장
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        height: height ?? 28, // 기본값 28px
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
         decoration: BoxDecoration( // 활성화, 비활성화별로 버튼 색 차이
-          color: isSelected ? AppColors.primary : Colors.white,
+          color: isSelected ? AppColors.primaryLight : AppColors.gray30,
           border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.gray300,
+            color: isSelected ? AppColors.primaryLight : AppColors.gray150,
             width: 1,
           ),
-          borderRadius: BorderRadius.circular(20), 
+          borderRadius: BorderRadius.circular(99), 
         ),
         child: Center(
           child: Text(
             label,
-            style: AppFonts.b2Regular.copyWith(
+            style: AppFonts.btn3.copyWith(
               color: isSelected ? Colors.white : AppColors.gray600,
             ),
           ),
@@ -102,12 +101,30 @@ class _FilterButtonGroupState extends State<FilterButtonGroup> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: widget.groupPadding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: widget.scrollable
-          ? SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: widget.groupPadding ?? EdgeInsets.zero,
+        child: widget.scrollable
+            ? SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    for (int i = 0; i < widget.labels.length; i++) ...[
+                      FilterButton(
+                        label: widget.labels[i],
+                        isSelected: _selectedValue == widget.values[i],
+                        onTap: () => _handleTap(widget.values[i]),
+                        height: widget.height,
+                        padding: widget.padding,
+                      ),
+                      if (i < widget.labels.length - 1) const SizedBox(width: 9),
+                    ],
+                  ],
+                ),
+              )
+            : Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   for (int i = 0; i < widget.labels.length; i++) ...[
@@ -118,26 +135,11 @@ class _FilterButtonGroupState extends State<FilterButtonGroup> {
                       height: widget.height,
                       padding: widget.padding,
                     ),
-                    if (i < widget.labels.length - 1) const SizedBox(width: 8),
+                    if (i < widget.labels.length - 1) const SizedBox(width: 10),
                   ],
                 ],
               ),
-            )
-          : Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                for (int i = 0; i < widget.labels.length; i++) ...[
-                  FilterButton(
-                    label: widget.labels[i],
-                    isSelected: _selectedValue == widget.values[i],
-                    onTap: () => _handleTap(widget.values[i]),
-                    height: widget.height,
-                    padding: widget.padding,
-                  ),
-                  if (i < widget.labels.length - 1) const SizedBox(width: 8),
-                ],
-              ],
-            ),
+      ),
     );
   }
 }

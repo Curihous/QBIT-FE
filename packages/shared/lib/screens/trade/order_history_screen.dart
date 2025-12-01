@@ -39,6 +39,7 @@ class OrderModel {
   final String? replacedAt;
   final String? replacedBy;
   final String? replaces;
+  final String? logoUrl;
 
   OrderModel({
     required this.orderId,
@@ -60,6 +61,7 @@ class OrderModel {
     this.replacedAt,
     this.replacedBy,
     this.replaces,
+    this.logoUrl,
   });
 
   factory OrderModel.fromJson(Map<String, dynamic> json) {
@@ -83,6 +85,7 @@ class OrderModel {
       replacedAt: json['replacedAt'],
       replacedBy: json['replacedBy'],
       replaces: json['replaces'],
+      logoUrl: json['logoUrl'],
     );
   }
 }
@@ -545,6 +548,24 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       appBar: HeaderBack(
         title: '주문 내역 조회',
         onBackPressed: () => context.pop(),
+        actions: [
+          IconButton(
+            icon: Icon(
+              Icons.search,
+              color: AppColors.gray600,
+            ),
+            onPressed: () {
+              setState(() {
+                _isSearchVisible = !_isSearchVisible;
+                if (!_isSearchVisible) {
+                  _searchController.clear();
+                  _searchSymbol = null;
+                  _fetchOrders();
+                }
+              });
+            },
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -935,6 +956,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       statusText: statusLabel,
       isBuy: isBuy,
       isSelected: isSelected,
+      logoUrl: order.logoUrl,
       onTap: () {
         if (isSelected) {
           _showDeleteDialog(order);
