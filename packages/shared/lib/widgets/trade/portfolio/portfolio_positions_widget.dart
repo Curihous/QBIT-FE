@@ -50,13 +50,13 @@ class PortfolioPositionsWidget extends StatelessWidget {
                 children: [
                   Text(
                     '내 종목 보기',
-                    style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
+                    style: AppFonts.t2Semibold.copyWith(color: AppColors.gray900),
                   ),
                   SizedBox(width: context.w(4)),
                   Icon(
                     Icons.chevron_right,
                     size: 18,
-                    color: AppColors.gray900,
+                    color: AppColors.gray400,
                   ),
                 ],
               ),

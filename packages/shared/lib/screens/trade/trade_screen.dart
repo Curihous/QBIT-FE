@@ -1228,7 +1228,7 @@ class _TradeScreenState extends State<TradeScreen> {
           Inset.text(
             child: Text(
               '해외 주요 지수',
-              style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
+              style: AppFonts.t2Semibold.copyWith(color: AppColors.gray900),
             ),
           ),
           SizedBox(height: context.h(12)),
