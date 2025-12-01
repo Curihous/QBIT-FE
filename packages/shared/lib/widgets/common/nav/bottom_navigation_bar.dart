@@ -95,14 +95,25 @@ class CustomBottomNavigationBar extends StatelessWidget {
       ),
     );
 
-    // 하단 시스템 UI 영역을 피하도록 SafeArea 적용
-    return SafeArea(
-      top: false,
-      left: false,
-      right: false,
-      bottom: true,
-      child: navigationBar,
-    );
+    // iOS: SafeArea 대신 아주 살짝만 패딩 추가
+    if (isIOS) {
+      final bottomPadding = MediaQuery.of(context).padding.bottom;
+      return Padding(
+        padding: EdgeInsets.only(
+          bottom: bottomPadding > 0 ? bottomPadding * 0.3 : 0,
+        ),
+        child: navigationBar,
+      );
+    } else {
+      // SafeArea 적용 (Android만)
+      return SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        bottom: true,
+        child: navigationBar,
+      );
+    }
   }
 
   Widget _buildNavItem({
