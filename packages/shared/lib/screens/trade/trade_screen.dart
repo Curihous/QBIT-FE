@@ -1162,39 +1162,39 @@ class _TradeScreenState extends State<TradeScreen> {
                 child: Text(
                   stock.rank.toString(),
                   textAlign: TextAlign.center,
-                  style: AppFonts.b2Regular.copyWith(color: AppColors.gray600),
+                  style: AppFonts.c1.copyWith(color: AppColors.gray600),
                 ),
               ),
               const SizedBox(width: 10),
               // 종목명
               Expanded(
-                flex: 2,
                 child: Text(
                   stock.name,
-                  style: AppFonts.b1Regular.copyWith(
+                  style: AppFonts.b2Semibold.copyWith(
                     color: AppColors.gray900,
-                    fontWeight: FontWeight.w400,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 16),
               // 가격
               SizedBox(
                 width: 80,
                 child: Text(
                   '\$${stock.price.toStringAsFixed(2)}',
-                  textAlign: TextAlign.center,
-                  style: AppFonts.b1Regular.copyWith(color: AppColors.gray900),
+                  textAlign: TextAlign.right,
+                  style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
                 ),
               ),
+              const SizedBox(width: 16),
               // 변동률
               SizedBox(
                 width: 80,
                 child: Text(
                   '${stock.changePercentage >= 0 ? '+' : ''}${stock.changePercentage.toStringAsFixed(2)}%',
-                  textAlign: TextAlign.center,
-                  style: AppFonts.b1Regular.copyWith(
+                  textAlign: TextAlign.right,
+                  style: AppFonts.b2Regular.copyWith(
                     color: AppColors.chartRed, // 등락 텍스트는 항상 빨간색
                   ),
                 ),

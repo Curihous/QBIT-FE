@@ -305,12 +305,8 @@ class _ColumnDetailScreenState extends State<ColumnDetailScreen> {
                                             padding: EdgeInsets.only(bottom: context.h(8)),
                                             child: Text(
                                               section.header!,
-                                              style: TextStyle(
+                                              style: AppFonts.b1Semibold.copyWith(
                                                 color: AppColors.gray900,
-                                                fontSize: 15,
-                                                fontFamily: 'Pretendard',
-                                                fontWeight: FontWeight.w600,
-                                                height: 1.40,
                                               ),
                                             ),
                                           ),
