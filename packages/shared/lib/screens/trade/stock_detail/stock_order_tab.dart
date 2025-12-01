@@ -12,16 +12,17 @@ import 'package:qbit_services/storage/token_service.dart';
 import 'package:qbit_services/websocket/crypto_orderbook_websocket.dart';
 import 'package:qbit_services/websocket/crypto_market_websocket.dart';
 import 'package:qbit_services/websocket/us_stock_market_websocket.dart';
+import 'package:qbit_services/repository/orderbook_repository.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:qbit_shared/widgets/trade/orderbook/vertical_orderbook_widget.dart';
 import 'package:qbit_shared/widgets/trade/orderbook/us_stock_orderbook_widget.dart';
 import 'package:qbit_services/models/stock_detail_model.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:qbit_shared/screens/trade/stock_detail/stock_order_form.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_shared/utils/stock_price_parser.dart';
 import 'package:logger/logger.dart';
-import 'package:qbit_shared/screens/trade/stock_detail/order_forms/crypto_order_form.dart';
-import 'package:qbit_shared/screens/trade/stock_detail/order_forms/stock_order_form.dart';
+
 import 'package:qbit_services/models/order_model.dart';
 import 'package:qbit_shared/widgets/common/button/filter_button.dart';
 import 'package:go_router/go_router.dart';
@@ -146,12 +147,11 @@ class _StockOrderTabState extends State<StockOrderTab> {
   bool _isLoading = true;
   bool _isLoadingOrderBook = false;
   String? _error;
-  CryptoOrderBookWebSocket? _webSocket;
-  CryptoMarketWebSocket? _marketWebSocket; // 암호화폐 시장가용 WebSocket
-  UsStockMarketWebSocket? _usStockMarketWebSocket; // 미국 주식 시장가용 WebSocket
-  StreamSubscription<OrderBookModel>? _orderBookSubscription; // 호가창 WebSocket 구독
-  StreamSubscription<double>? _marketPriceSubscription; // 암호화폐 시장가 WebSocket 구독
-  StreamSubscription<PolygonEvent>? _usStockPriceSubscription; // 미국 주식 시장가 WebSocket 구독
+  OrderBookRepository? _repository;
+  CryptoOrderBookWebSocket? _webSocket; // Added direct WebSocket
+  StreamSubscription<OrderBookModel>? _orderBookSubscription;
+  StreamSubscription<double>? _marketPriceSubscription;
+  StreamSubscription<PolygonEvent>? _usStockPriceSubscription;
   
   // 주문 관련 상태
   int _quantity = 1;
@@ -244,15 +244,11 @@ class _StockOrderTabState extends State<StockOrderTab> {
   void dispose() {
     // WebSocket 구독 취소
     _orderBookSubscription?.cancel();
+    _repository?.dispose();
+    _webSocket?.disconnect(); // Disconnect direct WebSocket
+    _webSocket?.dispose();
     _marketPriceSubscription?.cancel();
     _usStockPriceSubscription?.cancel();
-    
-    // WebSocket 연결 해제
-    _webSocket?.disconnect();
-    _webSocket?.dispose();
-    _marketWebSocket?.disconnect();
-    _marketWebSocket?.dispose();
-    _usStockMarketWebSocket?.close();
     
     _quantityController.dispose();
     _priceController.dispose();
@@ -329,6 +325,12 @@ class _StockOrderTabState extends State<StockOrderTab> {
       
       // 포지션 정보 로드
       await _loadPositionInfo();
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     } catch (error) {
       if (!mounted) return;
       
@@ -403,15 +405,16 @@ class _StockOrderTabState extends State<StockOrderTab> {
         if (binanceSymbol.isNotEmpty) {
           // 기존 WebSocket 연결 해제 및 구독 취소
           _marketPriceSubscription?.cancel();
-          await _marketWebSocket?.disconnect();
-          _marketWebSocket?.dispose();
+          _repository?.dispose(); // 기존 리포지토리 해제
+          _repository = OrderBookRepository(); // 새로운 리포지토리 생성
           
-          // 새로운 WebSocket 연결
-          _marketWebSocket = CryptoMarketWebSocket();
-          await _marketWebSocket!.connect(binanceSymbol);
+          await _repository!.connect(
+            assetClass: 'crypto',
+            symbol: binanceSymbol,
+          );
           
           // WebSocket에서 실시간 가격 받기 (구독 저장)
-          _marketPriceSubscription = _marketWebSocket!.lastPriceStream.listen((price) {
+          _marketPriceSubscription = _repository!.marketPriceStream.listen((price) {
             if (mounted) {
               setState(() {
                 _currentMarketPrice = price;
@@ -440,38 +443,20 @@ class _StockOrderTabState extends State<StockOrderTab> {
             try {
               // 기존 WebSocket 연결 해제
               _usStockPriceSubscription?.cancel();
-              await _usStockMarketWebSocket?.close();
+              // 미국 주식 실시간 가격 구독 (OrderBookRepository에 기능 추가 필요)
+              // 현재는 UsStockOrderBookWidget이 자체적으로 처리하므로 여기서는 생략하거나
+              // 추후 OrderBookRepository에 통합
               
-              // 새로운 WebSocket 연결
-              _usStockMarketWebSocket = UsStockMarketWebSocket(apiKey);
-              await _usStockMarketWebSocket!.connect(initialSymbols: [widget.symbol]);
-              _usStockMarketWebSocket!.subscribe([widget.symbol], trade: true, quote: true);
-              
-              // WebSocket에서 실시간 가격 받기
-              _usStockPriceSubscription = _usStockMarketWebSocket!.stream.listen((event) {
+              // 임시: REST API로 초기 가격만 로드
+              final quote = await StockApiService.getUsStockQuote(widget.symbol);
+              if (quote != null && quote['last'] != null && quote['last']['price'] != null) {
                 if (mounted) {
-                  double? price;
-                  if (event is PolygonTrade) {
-                    price = event.price;
-                  } else if (event is PolygonQuote) {
-                    // Quote의 경우 bid/ask 중간값 사용
-                    price = (event.bidPrice + event.askPrice) / 2;
-                  }
-                  
-                  if (price != null && price > 0) {
-                    setState(() {
-                      _currentMarketPrice = price!;
-                    });
-                    logger.i('미국 주식 현재 가격 업데이트 (WebSocket): $_currentMarketPrice');
-                  }
+                  setState(() {
+                    _currentMarketPrice = (quote['last']['price'] as num).toDouble();
+                  });
+                  logger.i('미국 주식 현재 가격 업데이트 (REST API): $_currentMarketPrice');
                 }
-              }, onError: (error) {
-                logger.w('WebSocket 스트림 에러: $error');
-                // 재시도 제한 확인 후 REST API로 폴백
-                if (_marketPriceRetryCount < _maxRetries && _currentMarketPrice == 0.0) {
-                  _loadMarketPriceFromRestApi();
-                }
-              });
+              }
             } catch (wsError) {
               logger.w('WebSocket 연결 실패, REST API만 사용: $wsError');
               // WebSocket 실패해도 REST API로 이미 가격을 가져왔으므로 문제없음
@@ -560,6 +545,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
       logger.e('포지션 정보 로드 에러: $error');
     }
   }
+
   
   /// 주문 내역 조회
   Future<void> _loadOrderHistory() async {
@@ -741,84 +727,60 @@ class _StockOrderTabState extends State<StockOrderTab> {
   Future<void> _loadOrderBook() async {
     setState(() {
       _isLoadingOrderBook = true;
-      _isLoading = true;
+      // _isLoading = true; // 메인 로딩은 _loadData에서 관리
     });
 
     try {
-      // 1. 초기 스냅샷 로드 - 자산군별 분기 필요
-      OrderBookModel? orderBook;
+      // 1. 초기 스냅샷 로드
       if (widget.assetClass == 'crypto') {
-        // 암호화폐 호가창 (현재 지원)
-        // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
         final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
         if (binanceSymbol.isEmpty) {
-          if (mounted) {
-            setState(() {
-              _isLoadingOrderBook = false;
-              _isLoading = false;
-            });
-          }
+          if (mounted) setState(() => _isLoadingOrderBook = false);
           return;
         }
         
-        orderBook = await StockApiService.getCryptoOrderBook(binanceSymbol)
-            .timeout(
-              const Duration(seconds: 10),
-              onTimeout: () => null,
-            );
-      } else {
-        // TODO: Polygon API 결제 후 미국 주식 호가창 지원 예정
-        // orderBook = await StockApiService.getStockOrderBook(widget.symbol)
-        //     .timeout(
-        //       const Duration(seconds: 10),
-        //       onTimeout: () => null,
-        //     );
-        orderBook = null; // 현재는 비크립토 호가창 미지원
-      }
-      
-      if (mounted) {
-        setState(() {
-          _orderBook = orderBook;
-          _isLoadingOrderBook = false;
-          _isLoading = false;
-        });
-      }
-
-      // 2. WebSocket 연결 시작 
-      if (widget.assetClass == 'crypto' && mounted) {
-        // binanceSymbol이 있으면 사용, 없으면 symbol에서 변환
-        final binanceSymbol = widget.binanceSymbol ?? widget.symbol.replaceAll('/', '');
-        if (binanceSymbol.isNotEmpty) {
-          // 기존 WebSocket 연결 해제 및 구독 취소
-          _orderBookSubscription?.cancel();
-          await _webSocket?.disconnect();
-          _webSocket?.dispose();
-          
-          // 새로운 WebSocket 연결
-          _webSocket = CryptoOrderBookWebSocket();
-          await _webSocket!.connect(binanceSymbol);
-          
-          // WebSocket 스트림 구독 (구독 저장)
-          _orderBookSubscription = _webSocket!.orderBookStream.listen((updatedOrderBook) {
-            if (mounted) {
-              setState(() {
-                _orderBook = updatedOrderBook;
-              });
-            }
-          });
+        // 스냅샷 로드
+        try {
+          final orderBook = await StockApiService.getCryptoOrderBook(binanceSymbol);
+          if (mounted && orderBook != null) {
+            setState(() {
+              _orderBook = orderBook;
+              _isLoadingOrderBook = false;
+            });
+          }
+        } catch (e) {
+          logger.w('스냅샷 로드 실패 (WebSocket으로 계속 진행): $e');
         }
+        
+        // 2. WebSocket 연결
+        _orderBookSubscription?.cancel();
+        _webSocket?.disconnect();
+        
+        _webSocket = CryptoOrderBookWebSocket();
+        
+        // 스트림 구독 (연결 전에 구독하여 데이터 유실 방지)
+        _orderBookSubscription = _webSocket!.orderBookStream.listen((updatedOrderBook) {
+          // logger.d('StockOrderTab: WebSocket 데이터 수신');
+          if (mounted) {
+            setState(() {
+              _orderBook = updatedOrderBook;
+              _isLoadingOrderBook = false;
+            });
+          }
+        });
+        
+        await _webSocket!.connect(binanceSymbol);
+      } else {
+         // US Stock Logic
+         _orderBook = null;
+         if (mounted) setState(() => _isLoadingOrderBook = false);
       }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _orderBook = null;
-          _isLoadingOrderBook = false;
-          _isLoading = false;
-        });
-      }
-      print('호가창 데이터 로드 중 에러: $e');
+      logger.e('호가창 데이터 로드 실패: $e');
+      if (mounted) setState(() => _isLoadingOrderBook = false);
     }
   }
+
 
   Future<void> _handleOrderSubmit() async {
     // 입력 검증
@@ -1208,7 +1170,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                               isLoading: _isLoadingOrderBook,
                               onRefresh: () async {
                                 // WebSocket 재연결
-                                await _webSocket?.disconnect();
+                                _repository?.disconnect();
                                 await _loadOrderBook();
                               },
                             )
@@ -1340,22 +1302,13 @@ class _StockOrderTabState extends State<StockOrderTab> {
         // 내역 탭이면 주문 내역 표시, 아니면 주문 폼 표시
         if (_selectedOrderTab == '내역')
           _buildOrderHistoryContent()
-        else if (widget.assetClass == 'crypto')
-          CryptoOrderForm(
-            symbol: widget.symbol,
-            selectedOrderTab: _selectedOrderTab,
-            stockDetail: _stockDetail,
-            currentMarketPrice: _currentMarketPrice,
-            onSubmit: _handleOrderSubmitFromForm,
-            onSetMaxQuantity: _setMaxQuantity,
-            isSubmitting: _isSubmittingOrder,
-          )
         else
           StockOrderForm(
             key: _stockOrderFormKey,
             symbol: widget.symbol,
             selectedOrderTab: _selectedOrderTab,
-            exchangeRate: _exchangeRate,
+            assetClass: widget.assetClass,
+            exchangeRate: widget.assetClass == 'crypto' ? null : _exchangeRate,
             tickSizeInKrw: _tickSizeInKrw,
             buyingPower: _buyingPower,
             positionQuantity: _positionQuantity,

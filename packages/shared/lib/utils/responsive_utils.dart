@@ -50,11 +50,10 @@ class ResponsiveUtils {
   }
 }
 
-/// BuildContext extension으로 더 쉽게 사용
 extension ResponsiveExtension on BuildContext {
   double w(double value) => ResponsiveUtils.w(this, value);
   double h(double value) => ResponsiveUtils.h(this, value);
-  double f(double value) => ResponsiveUtils.f(this, value); // Font size
+  double f(double value) => ResponsiveUtils.f(this, value); // 폰트 크기
   double get screenWidth => ResponsiveUtils.screenWidth(this);
   double get screenHeight => ResponsiveUtils.screenHeight(this);
   double get safeHeight => ResponsiveUtils.safeHeight(this);
