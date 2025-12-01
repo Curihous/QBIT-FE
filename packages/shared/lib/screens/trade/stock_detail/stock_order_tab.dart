@@ -29,6 +29,9 @@ import 'package:qbit_shared/widgets/trade/order_confirmation_dialog.dart';
 import 'package:qbit_shared/widgets/trade/order_success_dialog.dart';
 import 'package:go_router/go_router.dart';
 
+/// 주식 상세 화면의 주문 탭 위젯
+/// 매수/매도 주문 폼, 호가창, 주문 내역을 표시하고 주문 제출 기능을 제공합니다.
+
 // OrderModel - API 응답 데이터 모델 (주문 내역용)
 class OrderHistoryModel {
   final int orderId;

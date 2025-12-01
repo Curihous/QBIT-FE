@@ -16,6 +16,8 @@ import 'package:qbit_services/models/candle_model.dart';
 import 'package:qbit_services/websocket/crypto_market_websocket.dart';
 import 'package:qbit_services/websocket/us_stock_market_websocket.dart';
 
+/// 주식 상세 화면의 차트 탭 위젯
+/// 캔들스틱 차트, 거래량 차트, RSI 지표를 표시하고 실시간 가격 업데이트를 제공합니다.
 class StockChartTab extends StatefulWidget {
   final String symbol;
   final String name;

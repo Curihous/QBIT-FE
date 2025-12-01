@@ -12,6 +12,8 @@ import 'package:qbit_shared/utils/stock_price_parser.dart';
 import 'package:qbit_services/websocket/us_stock_market_websocket.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
+/// 주식 상세 화면의 호가 탭 위젯
+/// 실시간 호가창(매수/매도 주문서)을 표시하고 WebSocket을 통해 실시간 업데이트를 제공합니다.
 class StockOrderbookTab extends StatefulWidget {
   final String symbol;
   final String name;
