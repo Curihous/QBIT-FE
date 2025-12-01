@@ -64,18 +64,21 @@ class PortfolioApiService {
   /// 포트폴리오 포지션 조회
   /// [page] - 페이지 번호 (기본값: 0)
   /// [size] - 페이지 크기 (기본값: 10)
+  /// [asset] - 자산 클래스 필터 (기본값: us_equity)
   static Future<PortfolioPositionPageResponse?> getPositions({
     int page = 0,
     int size = 10,
+    String asset = 'us_equity',
   }) async {
     try {
-      logger.i('포트폴리오 포지션 조회 시작 (page: $page, size: $size)');
+      logger.i('포트폴리오 포지션 조회 시작 (page: $page, size: $size, asset: $asset)');
       
       final response = await _dio.get(
         '/portfolios/positions',
         queryParameters: {
           'page': page,
           'size': size,
+          'asset': asset,
         },
       );
       

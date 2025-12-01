@@ -582,6 +582,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
       final response = await OrderApiService.getOrderHistory(
         symbol: querySymbol,
         status: null,
+        asset: 'us_equity',
       );
       
       if (!mounted) return;

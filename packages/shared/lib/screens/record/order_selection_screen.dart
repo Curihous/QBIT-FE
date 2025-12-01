@@ -51,6 +51,7 @@ class _OrderSelectionScreenState extends State<OrderSelectionScreen> {
         symbol: _searchSymbol,
         side: _selectedSide == 'ALL' ? null : _selectedSide,
         hasJournal: false, // 기록이 없는 주문만 불러오기
+        asset: 'us_equity',
       );
 
       if (response != null && mounted) {
@@ -207,7 +208,7 @@ class _OrderSelectionScreenState extends State<OrderSelectionScreen> {
                                       // 로고 이미지
                                       Container(
                                         width: context.w(42),
-                                        height: context.w(42),
+                                        height: context.h(42),
                                         decoration: BoxDecoration(
                                           color: AppColors.secondaryBG,
                                           shape: BoxShape.circle,
@@ -221,13 +222,13 @@ class _OrderSelectionScreenState extends State<OrderSelectionScreen> {
                                               ? Image.network(
                                                   order.logoUrl!,
                                                   width: context.w(42),
-                                                  height: context.w(42),
+                                                  height: context.h(42),
                                                   fit: BoxFit.cover,
                                                   errorBuilder: (context, error, stackTrace) {
                                                     return SvgPicture.asset(
                                                       'assets/icons/stock_search_screen/company-logo-basic.svg',
                                                       width: context.w(42),
-                                                      height: context.w(42),
+                                                      height: context.h(42),
                                                       fit: BoxFit.cover,
                                                     );
                                                   },
@@ -235,7 +236,7 @@ class _OrderSelectionScreenState extends State<OrderSelectionScreen> {
                                               : SvgPicture.asset(
                                                   'assets/icons/stock_search_screen/company-logo-basic.svg',
                                                   width: context.w(42),
-                                                  height: context.w(42),
+                                                  height: context.h(42),
                                                   fit: BoxFit.cover,
                                                 ),
                                         ),

@@ -210,7 +210,7 @@ class _CandlestickPainter extends CustomPainter {
       final closeY = _priceToY(candle.close, chartHeight);
 
       final bool bullish = candle.close >= candle.open;
-      paint.color = bullish ? AppColors.chartBlue : AppColors.chartRed;
+      paint.color = bullish ? AppColors.chartRed : AppColors.chartBlue;
 
       canvas.drawLine(Offset(x, highY), Offset(x, lowY), paint..strokeWidth = 1);
 

@@ -225,21 +225,23 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
         ),
         
         // 필터 버튼들
-        FilterButtonGroup(
-          labels: ['전체', '주식', '암호화폐'],
-          values: ['all', 'us_equity', 'crypto'],
-          initialValue: _selectedFilter,
-          scrollable: false, // 왼쪽 정렬
-          onChanged: (value) {
-            setState(() {
-              _selectedFilter = value;
-            });
-            
-            // 검색어가 있으면 다시 검색
-            if (_searchController.text.isNotEmpty) {
-              _searchStocks(_searchController.text);
-            }
-          },
+        Inset.block(
+          child: FilterButtonGroup(
+            labels: ['전체', '주식', '암호화폐'],
+            values: ['all', 'us_equity', 'crypto'],
+            initialValue: _selectedFilter,
+            scrollable: false, // 왼쪽 정렬
+            onChanged: (value) {
+              setState(() {
+                _selectedFilter = value;
+              });
+              
+              // 검색어가 있으면 다시 검색
+              if (_searchController.text.isNotEmpty) {
+                _searchStocks(_searchController.text);
+              }
+            },
+          ),
         ),
           
           // 검색 결과

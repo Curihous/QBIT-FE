@@ -166,6 +166,7 @@ class OrderApiService {
     String? status,
     String? side,
     bool? hasJournal,
+    String? asset,
     int page = 0,
     int size = 100,
   }) async {
@@ -188,6 +189,9 @@ class OrderApiService {
       }
       if (hasJournal != null) {
         queryParams['hasJournal'] = hasJournal;
+      }
+      if (asset != null) {
+        queryParams['asset'] = asset;
       }
       
       final response = await _dio.get('/trading/orders', queryParameters: queryParams);
@@ -219,14 +223,16 @@ class OrderApiService {
   static Future<TradeCyclePageResponse?> getTradeCycles({
     int page = 0,
     int size = 10,
+    String asset = 'us_equity',
   }) async {
     try {
-      print('💡 거래 사이클 조회 시작 (page: $page, size: $size)');
-      logger.i('거래 사이클 조회 시작 (page: $page, size: $size)');
+      print('💡 거래 사이클 조회 시작 (page: $page, size: $size, asset: $asset)');
+      logger.i('거래 사이클 조회 시작 (page: $page, size: $size, asset: $asset)');
       
       final queryParams = <String, dynamic>{
         'page': page,
         'size': size,
+        'asset': asset,
       };
       
       print('💡 거래 사이클 API 호출: /trading/trade-cycles');

@@ -311,6 +311,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         symbol: _searchSymbol,
         status: null,
         side: side,
+        asset: 'us_equity',
       );
       
       if (mounted) {
@@ -340,7 +341,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     
     try {
       print('💡 거래 사이클 조회 시작');
-      final response = await OrderApiService.getTradeCycles(page: 0, size: 100);
+      final response = await OrderApiService.getTradeCycles(page: 0, size: 100, asset: 'us_equity');
       print('💡 API 응답 받음: ${response != null ? "성공" : "null"}');
       
       if (mounted && response != null) {
@@ -1079,29 +1080,77 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   Widget _buildCycleLogo(BuildContext context, String? logoUrl, String symbol) {
     if (logoUrl == null || logoUrl.isEmpty) {
-      return _buildCompanyLogo(symbol);
+      return Container(
+        width: context.w(42),
+        height: context.h(42),
+        decoration: BoxDecoration(
+          color: AppColors.secondaryBG,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColors.gray100,
+            width: 1,
+          ),
+        ),
+        child: _buildCompanyLogo(symbol),
+      );
     }
 
     return FutureBuilder<Uint8List?>(
       future: _getLogoBytes(logoUrl),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildCompanyLogo(symbol);
+          return Container(
+            width: context.w(42),
+            height: context.h(42),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryBG,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.gray100,
+                width: 1,
+              ),
+            ),
+            child: _buildCompanyLogo(symbol),
+          );
         }
 
         final bytes = snapshot.data;
         if (bytes != null) {
-          return ClipOval(
-            child: Image.memory(
-              bytes,
-              width: context.w(44),
-              height: context.h(44),
-              fit: BoxFit.cover,
+          return Container(
+            width: context.w(42),
+            height: context.h(42),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryBG,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.gray100,
+                width: 1,
+              ),
+            ),
+            child: ClipOval(
+              child: Image.memory(
+                bytes,
+                width: context.w(42),
+                height: context.h(42),
+                fit: BoxFit.cover,
+              ),
             ),
           );
         }
 
-        return _buildCompanyLogo(symbol);
+        return Container(
+          width: context.w(42),
+          height: context.h(42),
+          decoration: BoxDecoration(
+            color: AppColors.secondaryBG,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.gray100,
+              width: 1,
+            ),
+          ),
+          child: _buildCompanyLogo(symbol),
+        );
       },
     );
   }

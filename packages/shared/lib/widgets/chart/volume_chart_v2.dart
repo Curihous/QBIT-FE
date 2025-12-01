@@ -105,7 +105,7 @@ class VolumePainter extends CustomPainter {
 
       // 상승/하락에 따른 색상 결정
       final isPositive = candle.close >= candle.open;
-      paint.color = isPositive ? AppColors.chartBlue : AppColors.chartRed;
+      paint.color = isPositive ? AppColors.chartRed : AppColors.chartBlue;
 
       // 볼륨 바 그리기
       canvas.drawRect(

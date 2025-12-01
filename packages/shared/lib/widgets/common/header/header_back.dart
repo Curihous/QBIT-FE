@@ -58,9 +58,9 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
               SizedBox(width: context.w(15)),
               Expanded(
                 child: Text(
-                  title!,
-                  style: AppFonts.t2Semibold,
-                ),
+                title!,
+                style: AppFonts.t2Semibold, 
+              ),
               ),
             ] else
               const Spacer(),
