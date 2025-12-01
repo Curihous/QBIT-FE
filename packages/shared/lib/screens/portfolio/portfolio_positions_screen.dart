@@ -131,7 +131,7 @@ class _PortfolioPositionItem extends StatelessWidget {
     final unrealizedPlpc = StockPriceParser.parseDouble(position['unrealizedPlpc']);
 
     final isProfit = unrealizedPlpc >= 0;
-    final profitColor = isProfit ? AppColors.profit : AppColors.loss;
+    final profitColor = isProfit ? AppColors.chartRed : AppColors.chartBlue;
     
     final currencyFormat = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
     

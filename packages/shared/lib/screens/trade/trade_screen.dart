@@ -1498,8 +1498,7 @@ class _TradeScreenState extends State<TradeScreen> {
                 PortfolioPositionsWidget(
                   positions: _positions,
                   onViewAll: () {
-                    // TODO: 전체 포트폴리오 상세 화면으로 이동
-                    // context.push('/portfolio-detail');
+                    context.push('/portfolio-positions');
                   },
                   onItemTap: (position) {
                     context.push('/portfolio-positions/detail/${Uri.encodeComponent(position.symbol)}');

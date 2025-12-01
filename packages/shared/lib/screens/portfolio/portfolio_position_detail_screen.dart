@@ -163,7 +163,7 @@ class _PortfolioPositionDetailScreenState extends State<PortfolioPositionDetailS
     final unrealizedPlpc = double.tryParse(position['unrealizedPlpc']?.toString() ?? '0') ?? 0.0;
     
     final isProfit = unrealizedPl >= 0;
-    final profitColor = isProfit ? AppColors.profit : AppColors.loss;
+    final profitColor = isProfit ? AppColors.chartRed : AppColors.chartBlue;
     final plpcPercent = unrealizedPlpc * 100;
     final plpcText = plpcPercent >= 0 
         ? '+${plpcPercent.toStringAsFixed(1)}%'

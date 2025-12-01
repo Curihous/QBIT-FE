@@ -25,6 +25,8 @@ import 'package:logger/logger.dart';
 
 import 'package:qbit_services/models/order_model.dart';
 import 'package:qbit_shared/widgets/common/button/filter_button.dart';
+import 'package:qbit_shared/widgets/trade/order_confirmation_dialog.dart';
+import 'package:qbit_shared/widgets/trade/order_success_dialog.dart';
 import 'package:go_router/go_router.dart';
 
 // OrderModel - API 응답 데이터 모델 (주문 내역용)
@@ -829,42 +831,42 @@ class _StockOrderTabState extends State<StockOrderTab> {
 
     try {
       // 주문 확인 다이얼로그
+      String quantityText;
+      String? limitPriceText;
+      String? totalAmountText;
+      
+      if (widget.assetClass == 'crypto' && _selectedOrderType == '지정가') {
+        final rules = _stockDetail?.toOrderRules() ?? OrderRules.crypto(
+          minOrderSize: 0.000223249,
+          minTradeIncrement: 0.000000001,
+          priceIncrement: 0.01,
+        );
+        final normalizedQty = rules.normalizeQuantity(_quantity.toDouble());
+        final normalizedPrice = rules.normalizePrice(_price);
+        quantityText = normalizedQty.toStringAsFixed(9);
+        limitPriceText = '${normalizedPrice.toStringAsFixed(2)} USD';
+        totalAmountText = '${(normalizedQty * normalizedPrice).toStringAsFixed(2)} USD';
+      } else if (widget.assetClass == 'crypto' && _selectedOrderType == '시장가') {
+        final estimatedQty = (_marketOrderAmount / _currentMarketPrice).toStringAsFixed(9);
+        quantityText = estimatedQty;
+        limitPriceText = null;
+        totalAmountText = '${_marketOrderAmount.toStringAsFixed(2)} USDT';
+      } else {
+        quantityText = _quantity.toStringAsFixed(0);
+        limitPriceText = '${_price.toStringAsFixed(0)}원';
+        totalAmountText = '${(_quantity * _price).toStringAsFixed(0)}원';
+      }
+      
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: Text('주문 확인'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('종목: ${widget.symbol}'),
-              Text('구분: $_selectedOrderTab'),
-              Text('주문타입: $_selectedOrderType'),
-              if (widget.assetClass == 'crypto' && _selectedOrderType == '지정가') ...[
-                Text('수량: ${(_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizeQuantity(_quantity.toDouble()).toStringAsFixed(9)}개'),
-                Text('가격: ${(_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizePrice(_price).toStringAsFixed(2)} USD'),
-                Text('총액: ${((_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizeQuantity(_quantity.toDouble()) * (_stockDetail?.toOrderRules() ?? OrderRules.crypto(minOrderSize: 0.000223249, minTradeIncrement: 0.000000001, priceIncrement: 0.01)).normalizePrice(_price)).toStringAsFixed(2)} USD'),
-              ] else if (widget.assetClass == 'crypto' && _selectedOrderType == '시장가') ...[
-                Text('금액: ${_marketOrderAmount.toStringAsFixed(2)} USDT'),
-                Text('예상 수량: ${(_marketOrderAmount / _currentMarketPrice).toStringAsFixed(9)}개'),
-                Text('가격: 시장가'),
-              ] else ...[
-                Text('수량: $_quantity주'),
-                Text('가격: ${_price.toStringAsFixed(0)}원'),
-                Text('총액: ${(_quantity * _price).toStringAsFixed(0)}원'),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text('취소'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text('확인'),
-            ),
-          ],
+        builder: (context) => OrderConfirmationDialog(
+          symbol: widget.symbol,
+          orderType: _selectedOrderTab,
+          orderMethod: _selectedOrderType,
+          quantity: quantityText,
+          limitPrice: limitPriceText,
+          assetClass: widget.assetClass,
+          totalAmount: totalAmountText,
         ),
       );
 
@@ -1331,37 +1333,32 @@ class _StockOrderTabState extends State<StockOrderTab> {
   ) async {
     try {
       // 주문 확인 다이얼로그
+      String? totalAmount;
+      if (limitPrice != null && quantity.isNotEmpty) {
+        try {
+          final price = double.tryParse(limitPrice.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
+          final qty = double.tryParse(quantity.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
+          if (widget.assetClass == 'crypto') {
+            totalAmount = '${(price * qty).toStringAsFixed(2)} USD';
+          } else {
+            totalAmount = '${(price * qty).toStringAsFixed(0)}원';
+          }
+        } catch (e) {
+          totalAmount = null;
+        }
+      }
+      
       final confirmed = await showDialog<bool>(
         context: context,
-        builder: (context) => AlertDialog(
-          title: Text('주문 확인'),
-          content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-              Text('종목: ${widget.symbol}'),
-              Text('구분: $orderType'),
-              Text('주문타입: $orderMethod'),
-              if (orderMethod == '시장가') ...[
-                Text('수량: $quantity${widget.assetClass == 'crypto' ? '개' : '주'}'),
-                Text('가격: 시장가'),
-              ] else ...[
-                Text('수량: $quantity${widget.assetClass == 'crypto' ? '개' : '주'}'),
-                Text('가격: ${limitPrice ?? 'N/A'}${widget.assetClass == 'crypto' ? ' USD' : ' USD'}'),
-              ],
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text('취소'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: Text('확인'),
-                        ),
-                      ],
-                    ),
+        builder: (context) => OrderConfirmationDialog(
+          symbol: widget.symbol,
+          orderType: orderType,
+          orderMethod: orderMethod,
+          quantity: quantity,
+          limitPrice: limitPrice,
+          assetClass: widget.assetClass,
+          totalAmount: totalAmount,
+        ),
       );
 
       if (confirmed != true) return;
@@ -1767,121 +1764,20 @@ class _StockOrderTabState extends State<StockOrderTab> {
     required String totalAmount,
     required String currency,
   }) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withOpacity(0.5),
       builder: (BuildContext context) {
-        return Material(
-          color: Colors.transparent,
-          child: Container(
-            width: double.infinity,
-            height: double.infinity,
-            color: Colors.black.withOpacity(0.5),
-            child: Stack(
-              children: [
-                // 팝업 컨테이너
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: SafeArea(
-                    child: Container(
-                      width: double.infinity,
-                      constraints: BoxConstraints(
-                        maxHeight: MediaQuery.of(context).size.height * 0.5,
-                        minHeight: 320,
-                      ),
-                  decoration: ShapeDecoration(
-                    color: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(20),
-                        topRight: Radius.circular(20),
-                      ),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(context.w(20)),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // 아이콘
-                        Container(
-                          width: context.w(50),
-                          height: context.h(50),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFF5F5F5),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.check_circle,
-                            color: orderType == '매수' ? AppColors.chartRed : AppColors.chartBlue,
-                            size: context.w(25),
-                          ),
-                        ),
-                        SizedBox(height: context.h(16)),
-                        // 성공 메시지
-                        Text(
-                          '$symbol $orderType 주문 요청 성공',
-                          style: AppFonts.t1Bold.copyWith(
-                            color: orderType == '매수' ? AppColors.chartRed : AppColors.chartBlue,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: context.h(24)),
-                        // 주문 상세 정보
-                        Container(
-                          padding: EdgeInsets.all(context.w(16)),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFF8F9FA),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Column(
-                            children: [
-                              _buildOrderDetailRow(orderMethod == '시장가' ? '주문타입' : '지정가', orderMethod == '시장가' ? orderMethod : '$price$currency'),
-                              SizedBox(height: 12),
-                              _buildOrderDetailRow('수량', '$quantity${currency == '원' ? '주' : '개'}'),
-                              SizedBox(height: 12),
-                              _buildOrderDetailRow('총액', totalAmount == '체결 후 확인 가능' ? totalAmount : '$totalAmount$currency'),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: 24),
-                        // 확인 버튼
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pop();
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              color: orderType == '매수' ? AppColors.chartRed : AppColors.chartBlue,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: Text(
-                                '확인',
-                                style: AppFonts.t1Bold.copyWith(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        return OrderSuccessDialog(
+          symbol: symbol,
+          orderType: orderType,
+          orderMethod: orderMethod,
+          price: price,
+          quantity: quantity,
+          totalAmount: totalAmount,
+          currency: currency,
         );
       },
     );

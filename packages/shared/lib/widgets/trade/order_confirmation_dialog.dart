@@ -26,85 +26,94 @@ class OrderConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isBuy = orderType == '매수';
-    final typeColor = isBuy ? AppColors.loss : AppColors.profit;
+    final typeColor = isBuy ? AppColors.chartRed : AppColors.chartBlue;
+    
+    final priceText = orderMethod == '시장가' 
+        ? '시장가' 
+        : '${limitPrice ?? 'N/A'}${assetClass == 'crypto' ? ' USD' : '원'}';
+    final quantityText = '$quantity${assetClass == 'crypto' ? '개' : '주'}';
+    final totalAmountText = totalAmount ?? '';
 
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: EdgeInsets.symmetric(horizontal: context.w(16)), // 너비 확보를 위해 패딩 축소
+      insetPadding: EdgeInsets.symmetric(horizontal: context.w(16)),
       child: Container(
-        width: double.infinity,
+        width: context.w(393),
+        padding: EdgeInsets.fromLTRB(
+          context.w(36), 
+          context.h(28), 
+          context.w(36), 
+          context.h(28) 
+        ),
         decoration: ShapeDecoration(
           color: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
           ),
         ),
-        padding: EdgeInsets.symmetric(horizontal: context.w(24), vertical: context.h(28)), // 세로 패딩 축소
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Title
+            // 주문 확인 타이틀
             Text(
               '주문 확인',
               textAlign: TextAlign.center,
               style: AppFonts.t1Bold.copyWith(
                 color: AppColors.gray900,
-                fontSize: 18, 
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                height: 1.15,
               ),
             ),
-            SizedBox(height: context.h(8)), 
+            SizedBox(height: context.h(12)),
 
-            // Subtitle (Symbol + Type)
+            // 심볼 + 주문타입
             Text(
               '$symbol $orderType',
               textAlign: TextAlign.center,
               style: AppFonts.t2Semibold.copyWith(
                 color: typeColor,
-                fontSize: 17, 
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                height: 1.17,
               ),
             ),
-            SizedBox(height: context.h(12)), 
 
-            // 위험 문구 
-            if (orderMethod == '시장가') ...[
-              Text(
-                '가격 급등락 시 예상 체결가와 다른 금액에 체결될 수 있어요.',
-                textAlign: TextAlign.center,
-                style: AppFonts.b2Regular.copyWith(
-                  color: AppColors.gray600,
-                  fontSize: 13,
-                ),
-              ),
-              SizedBox(height: context.h(24)),
-            ] else ...[
-              SizedBox(height: context.h(12)),
-            ],
+            SizedBox(height: context.h(24)),
 
-            // Details
-            _buildDetailRow(context, orderMethod == '시장가' ? '주문타입' : '지정가', 
-                orderMethod == '시장가' ? '시장가' : '${limitPrice ?? 'N/A'}${assetClass == 'crypto' ? ' USD' : '원'}'),
-            SizedBox(height: context.h(12)), 
+            // 지정가/시장가 라벨 & 값
+            _buildDetailRow(
+              context, 
+              orderMethod == '시장가' ? '주문타입' : '지정가', 
+              priceText
+            ),
+            SizedBox(height: context.h(12)),
+
+            // 수량 라벨 & 값
+            _buildDetailRow(context, '수량', quantityText),
             
-            _buildDetailRow(context, '수량', '$quantity${assetClass == 'crypto' ? '개' : '주'}'),
-            
+            // 총액 라벨 & 값
             if (totalAmount != null) ...[
-              SizedBox(height: context.h(12)), 
-              _buildDetailRow(context, '총액', totalAmount!),
+              SizedBox(height: context.h(12)),
+              _buildDetailRow(context, '총액', totalAmountText),
             ],
 
-            SizedBox(height: context.h(32)), 
+            SizedBox(height: context.h(28)),
 
-            // Actions
+            // 버튼 영역
             Row(
               children: [
+                // 취소 버튼
                 Expanded(
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).pop(false),
                     child: Container(
-                      height: 52,
-                      decoration: ShapeDecoration(  
-                        color: const Color(0xFFE2E2E2), 
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      height: context.h(52),
+                      decoration: ShapeDecoration(
+                        color: const Color(0xFFE2E2E2), // Gray-150
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -112,20 +121,25 @@ class OrderConfirmationDialog extends StatelessWidget {
                         style: AppFonts.t2Semibold.copyWith(
                           color: Colors.white,
                           fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          height: 1.28,
                         ),
                       ),
                     ),
                   ),
                 ),
-                SizedBox(width: context.w(12)),
+                SizedBox(width: context.w(12)), 
+                // 주문 버튼
                 Expanded(
                   child: GestureDetector(
                     onTap: () => Navigator.of(context).pop(true),
                     child: Container(
-                      height: 52,
+                      height: context.h(52),
                       decoration: ShapeDecoration(
                         color: const Color(0xFF00C9A7), // Primary-Main
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -133,6 +147,8 @@ class OrderConfirmationDialog extends StatelessWidget {
                         style: AppFonts.t2Semibold.copyWith(
                           color: Colors.white,
                           fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          height: 1.28,
                         ),
                       ),
                     ),
@@ -153,17 +169,21 @@ class OrderConfirmationDialog extends StatelessWidget {
         Text(
           label,
           style: AppFonts.b1Regular.copyWith(
-            color: AppColors.gray600, 
-            fontSize: 14,   
+            color: AppColors.gray600,
+            fontSize: 15,
+            fontWeight: FontWeight.w400,
+            height: 1.25,
           ),
         ),
         Text(
           value,
           textAlign: TextAlign.right,
           style: AppFonts.b1Semibold.copyWith(
-            color: AppColors.gray900, 
-              fontSize: 14, 
-            ),
+            color: AppColors.gray900,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+            height: 1.25,
+          ),
         ),
       ],
     );

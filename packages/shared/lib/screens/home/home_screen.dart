@@ -632,8 +632,7 @@ class _HomeScreenState extends State<HomeScreen> {
               PortfolioPositionsWidget(
                 positions: _positions,
                 onViewAll: () {
-                  // TODO: 전체 포트폴리오 상세 화면으로 이동
-                  // context.push('/portfolio-detail');
+                  context.push('/portfolio-positions');
                 },
               ),
             // 하단 여백 추가

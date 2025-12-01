@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
+import 'package:qbit_shared/widgets/common/button/big_black_button.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:io' show Platform;
 
@@ -31,16 +32,11 @@ class OrderSuccessDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // SafeArea: Android only
-    final isIOS = !kIsWeb && Platform.isIOS;
-    final bottomPadding = isIOS 
-        ? context.h(42) 
-        : MediaQuery.of(context).padding.bottom + context.h(42);
-    
     return Container(
-      height: context.h(427) + (isIOS ? 0 : MediaQuery.of(context).padding.bottom),
-      padding: EdgeInsets.only(
-        bottom: bottomPadding,
+      width: double.infinity,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+        minHeight: context.h(427),
       ),
       decoration: const ShapeDecoration(
         color: Colors.white,
@@ -51,11 +47,19 @@ class OrderSuccessDialog extends StatelessWidget {
           ),
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
-                    SizedBox(height: context.h(24)),
+      child: SingleChildScrollView(
+          child: Padding(
+          padding: EdgeInsets.only(
+            left: context.w(20),
+            right: context.w(20),
+            top: context.h(24),
+            bottom: MediaQuery.of(context).padding.bottom + context.h(24),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              SizedBox(height: context.h(24)),
                     // 로고
                     Container(
                       width: 60,
@@ -82,26 +86,14 @@ class OrderSuccessDialog extends StatelessWidget {
                     SizedBox(height: context.h(16)),
                     
                     // 성공 메시지
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          symbol,
-                          style: AppFonts.t1Bold.copyWith(
-                            color: orderType == '매수' ? AppColors.loss : AppColors.profit,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        Text(
-                          ' $orderType 주문 요청 성공',
-                          style: AppFonts.t1Bold.copyWith(
-                            color: AppColors.gray900,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      '$symbol $orderType 주문 요청 성공',
+                      style: AppFonts.t1Bold.copyWith(
+                        color: orderType == '매수' ? AppColors.chartRed : AppColors.chartBlue,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                     SizedBox(height: context.h(8)),
                     Text(
@@ -111,6 +103,7 @@ class OrderSuccessDialog extends StatelessWidget {
                         fontSize: 13,
                         fontWeight: FontWeight.w400,
                       ),
+                      textAlign: TextAlign.center,
                     ),
                     SizedBox(height: context.h(32)),
                     
@@ -136,37 +129,20 @@ class OrderSuccessDialog extends StatelessWidget {
                         ],
                       ),
                     ),
-                    SizedBox(height: context.h(40)),
+                    SizedBox(height: context.h(60)),
                     
                     // 매매 일지 작성하기 버튼
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: context.w(20)),
-                      child: GestureDetector(
-                        onTap: () {
-                          // TODO: 매매 일지 작성 페이지로 이동
-                          Navigator.of(context).pop();
-                        },
-                        child: Container(
-                          width: double.infinity,
-                          height: 52,
-                          decoration: BoxDecoration(
-                            color: AppColors.gray900,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Center(
-                            child: Text(
-                              '매매 일지 작성하기',
-                              style: AppFonts.t1Bold.copyWith(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+                    BigBlackButton(
+                      text: '매매 일지 작성하기',
+                      onPressed: () {
+                        // TODO: 매매 일지 작성 페이지로 이동
+                        Navigator.of(context).pop();
+                      },
                     ),
-        ],
+                    SizedBox(height: context.h(20)),
+            ],
+          ),
+        ),
       ),
     );
   }

@@ -26,7 +26,7 @@ class ErrorWidget extends StatelessWidget {
             Icon(
               icon ?? Icons.error_outline,
               size: 64,
-              color: AppColors.error,
+              color: AppColors.chartRed,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(

@@ -157,13 +157,8 @@ class _ColumnDetailScreenState extends State<ColumnDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-<<<<<<< HEAD
       backgroundColor: AppColors.gray0,
       appBar: const HeaderBack(title: '칼럼'),
-=======
-      backgroundColor: AppColors.white,
-      appBar: HeaderBack(title: '칼럼'),
->>>>>>> 884b9f1 (fix: 반응형 유틸리티 수정)
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(),

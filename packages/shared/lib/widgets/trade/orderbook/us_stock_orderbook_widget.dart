@@ -50,8 +50,11 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
   @override
   void dispose() {
     _subscription?.cancel();
-    _webSocket?.close();
-    _webSocket?.dispose();
+    // Singleton이므로 close/dispose 하지 않음
+    // 화면을 나갈 때 구독 취소
+    if (widget.symbol.isNotEmpty) {
+      _webSocket?.unsubscribe([widget.symbol], aggregateSecond: true);
+    }
     _jitterTimer?.cancel();
     super.dispose();
   }
@@ -124,8 +127,11 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
         return;
       }
 
-      _webSocket = UsStockMarketWebSocket(apiKey);
-      await _webSocket!.connect();
+      // Singleton 인스턴스 사용
+      _webSocket = UsStockMarketWebSocket.instance;
+      
+      // 연결 (이미 연결되어 있으면 무시됨)
+      await _webSocket!.connect(apiKey: apiKey);
       
       // 연결 후 위젯이 dispose되었는지 확인
       if (!mounted) return;
@@ -151,6 +157,9 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
       _subscription = _webSocket!.stream.listen(
         (event) {
           if (!mounted) return;
+          
+          // 내 심볼에 대한 이벤트인지 확인
+          if (event.symbol != widget.symbol) return;
           
           // Aggregate Second 이벤트만 처리 (실시간 가격/거래량)
           if (event is PolygonAggregateSecond) {
@@ -282,9 +291,9 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
           // 호가 리스트
           Expanded(
             child: ListView.separated(
-              padding: EdgeInsets.symmetric(vertical: context.h(10)),
+              padding: EdgeInsets.symmetric(vertical: context.h(8)),
               itemCount: _orderBookLevels.length,
-              separatorBuilder: (context, index) => SizedBox(height: context.h(6)),
+              separatorBuilder: (context, index) => SizedBox(height: context.h(4)),
               itemBuilder: (context, index) {
                 final level = _orderBookLevels[index];
                 final isCurrentPrice = level.isMid;
@@ -319,7 +328,6 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
         widget.onPriceSelected?.call(level.price);
       },
       child: Container(
-        height: context.h(50),
         margin: EdgeInsets.only(left: context.w(8)),
         child: Stack(
           clipBehavior: Clip.none,
@@ -327,8 +335,8 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
             // 배경 거래량 바 (화면 끝까지)
             Positioned(
               right: 0,
-              top: context.h(9),
-              height: context.h(32),
+              top: context.h(6),
+              height: context.h(38),
               child: Container(
                 width: context.w(150) * level.volumeFactor,
                 decoration: BoxDecoration(
@@ -341,55 +349,70 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
             ),
             
             // 호가 콘텐츠 (가격, 변동률, 거래량)
-            Container(
+            Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: context.w(8),
-                vertical: context.h(9),
+                vertical: context.h(6),
               ),
-              decoration: BoxDecoration(
-                color: backgroundColor,
-                border: isCurrentPrice 
-                    ? Border.all(
-                        color: AppColors.primary,
-                        width: 1.3,
-                      )
-                    : null,
-                borderRadius: isCurrentPrice ? BorderRadius.circular(4) : null,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // 좌측: 가격 + 변동률
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        level.price.toStringAsFixed(2),
-                        style: AppFonts.b2Semibold.copyWith(
-                          color: isCurrentPrice ? AppColors.primary : AppColors.gray900,
-                        ),
+              child: Container(
+                constraints: BoxConstraints(
+                  minHeight: context.h(38),
+                ),
+                decoration: BoxDecoration(
+                  color: backgroundColor,
+                  border: isCurrentPrice 
+                      ? Border.all(
+                          color: AppColors.primary,
+                          width: 1.3,
+                        )
+                      : null,
+                  borderRadius: isCurrentPrice ? BorderRadius.circular(4) : null,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // 좌측: 가격 + 변동률
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            level.price.toStringAsFixed(2),
+                            style: AppFonts.b2Semibold.copyWith(
+                              color: isCurrentPrice ? AppColors.primary : AppColors.gray900,
+                              height: 1.1,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                          SizedBox(height: context.h(0.5)),
+                          Text(
+                            '${level.percentFromReference >= 0 ? '+' : ''}${level.percentFromReference.toStringAsFixed(1)}%',
+                            style: AppFonts.c2.copyWith(
+                              color: priceColor,
+                              height: 1.1,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ],
                       ),
-                      SizedBox(height: context.h(1)),
-                      Text(
-                        '${level.percentFromReference >= 0 ? '+' : ''}${level.percentFromReference.toStringAsFixed(1)}%',
-                        style: AppFonts.c2.copyWith(
-                          color: priceColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  // 우측: 거래량
-                  Text(
-                    (level.volumeFactor * _currentVolume).toInt().toString(),
-                    style: AppFonts.b2Regular.copyWith(
-                      color: priceColor,
                     ),
-                  ),
-                ],
+                    
+                    // 우측: 거래량
+                    Text(
+                      (level.volumeFactor * _currentVolume).toInt().toString(),
+                      style: AppFonts.b2Regular.copyWith(
+                        color: priceColor,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
