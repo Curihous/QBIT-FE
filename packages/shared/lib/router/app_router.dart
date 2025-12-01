@@ -19,6 +19,8 @@ import 'package:qbit_shared/screens/report/trade_report_screen.dart';
 import 'package:qbit_shared/screens/report/trade_report_intro_screen.dart';
 import 'package:qbit_shared/screens/cards/learning_card_detail_screen.dart';
 import 'package:qbit_shared/screens/column/column_detail_screen.dart';
+import 'package:qbit_shared/screens/portfolio/portfolio_positions_screen.dart';
+import 'package:qbit_shared/screens/portfolio/portfolio_position_detail_screen.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/api_client.dart';
@@ -58,7 +60,10 @@ class AppRouter {
       GoRoute(
         path: '/order-history',
         name: 'order-history',
-        builder: (context, state) => const OrderHistoryScreen(),
+        builder: (context, state) {
+          final symbol = state.uri.queryParameters['symbol'];
+          return OrderHistoryScreen(initialSymbol: symbol);
+        },
       ),
       GoRoute(
         path: '/order-detail/:orderId',
@@ -160,10 +165,13 @@ class AppRouter {
         path: '/learning-card/:cardType',
         name: 'learning-card',
         builder: (context, state) {
-          final cardType = state.pathParameters['cardType'] ?? '';
-          final extractedTags = state.extra as List<String>?;
+          // 모든 카드에 대해 동일한 이미지 시퀀스 표시
+          // cardType 파라미터는 무시하고 항상 동일한 화면 표시
+          final extractedTags = state.extra is List<String> 
+              ? state.extra as List<String>?
+              : null;
           return LearningCardDetailScreen(
-            cardType: cardType,
+            cardType: 'default', // 모든 카드에 대해 동일한 화면
             extractedTags: extractedTags,
           );
         },
@@ -174,6 +182,19 @@ class AppRouter {
         builder: (context, state) {
           final ticker = Uri.decodeComponent(state.pathParameters['ticker'] ?? '');
           return ColumnDetailScreen(ticker: ticker);
+        },
+      ),
+      GoRoute(
+        path: '/portfolio-positions',
+        name: 'portfolio-positions',
+        builder: (context, state) => const PortfolioPositionsScreen(),
+      ),
+      GoRoute(
+        path: '/portfolio-positions/detail/:symbol',
+        name: 'portfolio-position-detail',
+        builder: (context, state) {
+          final symbol = Uri.decodeComponent(state.pathParameters['symbol'] ?? '');
+          return PortfolioPositionDetailScreen(symbol: symbol);
         },
       ),
     ],

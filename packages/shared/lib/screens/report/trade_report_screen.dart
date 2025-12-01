@@ -76,7 +76,7 @@ class _TradeReportScreenState extends State<TradeReportScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: HeaderBack(
-        title: '매매 리포트',
+        title: '트레이딩 리포트',
       ),
       body: _buildBody(context),
     );

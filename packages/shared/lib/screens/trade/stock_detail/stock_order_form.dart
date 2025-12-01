@@ -14,12 +14,14 @@ class StockOrderForm extends StatefulWidget {
   final double? currentMarketPrice; // 현재 시장 가격 (USD)
   final Function(String orderType, String orderMethod, String quantity, String? limitPrice, String apiSymbol) onSubmit;
   final Function() onSetMaxQuantity;
+  final String assetClass;
   final bool isSubmitting;
 
   const StockOrderForm({
     super.key,
     required this.symbol,
     required this.selectedOrderTab,
+    this.assetClass = 'us_stock',
     this.exchangeRate,
     this.tickSizeInKrw,
     this.buyingPower,
@@ -36,7 +38,7 @@ class StockOrderForm extends StatefulWidget {
 
 class StockOrderFormState extends State<StockOrderForm> {
   String _selectedOrderType = '지정가'; // '지정가', '시장가'
-  int _quantity = 1;
+  double _quantity = 1.0;
   double _price = 0.0;
   
   // 통화 전환 상태 (미국 주식 폼에서는 기본 USD 사용)
@@ -46,7 +48,6 @@ class StockOrderFormState extends State<StockOrderForm> {
   final TextEditingController _quantityController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
   
-  // 포커스 노드
   final FocusNode _quantityFocusNode = FocusNode();
   final FocusNode _priceFocusNode = FocusNode();
 
@@ -165,7 +166,7 @@ class StockOrderFormState extends State<StockOrderForm> {
     }
 
     String? limitPrice;
-    final quantity = _quantity.toString();
+    final quantity = _quantity % 1 == 0 ? _quantity.toInt().toString() : _quantity.toString();
     
     if (_selectedOrderType == '시장가') {
       // 시장가 주문: limitPrice는 null
@@ -213,7 +214,7 @@ class StockOrderFormState extends State<StockOrderForm> {
                 '$_selectedOrderType ▾',
                 textAlign: TextAlign.right,
                 style: AppFonts.c1.copyWith(
-                  color: AppColors.primary,
+                  color: AppColors.gray900,
                   fontSize: 13,
                   fontWeight: FontWeight.w400,
                   height: 1.31,
@@ -307,7 +308,7 @@ class StockOrderFormState extends State<StockOrderForm> {
                                   contentPadding: EdgeInsets.zero,
                                 ),
                                 onChanged: (value) {
-                                  final quantity = int.tryParse(value) ?? 1;
+                                  final quantity = double.tryParse(value) ?? 0.0;
                                   setState(() {
                                     _quantity = quantity;
                                   });

@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import 'package:qbit_services/api/api_client.dart';
@@ -14,30 +15,31 @@ class OrderApiService {
   static Future<Map<String, dynamic>?> createOrder(OrderRequest order) async {
     try {
       logger.i('주문 생성 시작: ${order.symbol} ${order.side} ${order.quantity}주');
-      logger.i('주문 데이터: ${order.toJson()}');
       
-      // 토큰 상태 확인
-      await ApiClient.debugTokenStatus();
+      // JSON 문자열로 직접 전송하여 타입 변환 문제 방지
+      final orderJson = order.toJson();
+      final jsonString = jsonEncode(orderJson);
       
-      final response = await _dio.post('/trading/orders', data: order.toJson());
+      final response = await _dio.post(
+        '/trading/orders',
+        data: jsonString,
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+        ),
+      );
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         logger.i('주문 생성 성공');
-        logger.i('응답 데이터: ${response.data}');
         return response.data;
       } else {
         logger.e('주문 생성 실패: ${response.statusCode}');
-        logger.e('응답 데이터: ${response.data}');
         return null;
       }
     } catch (error) {
       logger.e('주문 생성 에러: $error');
       if (error is DioException) {
-        logger.e('Dio 에러 상세: ${error.response?.data}');
-        logger.e('Dio 에러 상태코드: ${error.response?.statusCode}');
-        
         if (error.response?.statusCode == 400) {
-          logger.e('400 에러: 잘못된 요청 - 주문 파라미터 확인 필요');
+          logger.e('400 에러: ${error.response?.data}');
         } else if (error.response?.statusCode == 401) {
           logger.e('401 에러: 인증되지 않은 요청');
         } else if (error.response?.statusCode == 403) {

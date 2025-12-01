@@ -16,10 +16,8 @@ class _MyScreenState extends State<MyScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: const HeaderBasic(
+      appBar: HeaderBasic(
         title: '마이페이지',
-        onAlarmPressed: null,
-        onSettingPressed: null,
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

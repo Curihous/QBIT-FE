@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:qbit_shared/widgets/common/header/header_back.dart';
+import 'package:go_router/go_router.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
@@ -304,12 +305,8 @@ class _ColumnDetailScreenState extends State<ColumnDetailScreen> {
                                             padding: EdgeInsets.only(bottom: context.h(8)),
                                             child: Text(
                                               section.header!,
-                                              style: TextStyle(
+                                              style: AppFonts.b1Semibold.copyWith(
                                                 color: AppColors.gray900,
-                                                fontSize: 15,
-                                                fontFamily: 'Pretendard',
-                                                fontWeight: FontWeight.w600,
-                                                height: 1.40,
                                               ),
                                             ),
                                           ),

@@ -8,11 +8,13 @@ import 'package:qbit_shared/layout/horizontal_inset.dart';
 class PortfolioPositionsWidget extends StatelessWidget {
   final List<PortfolioPosition> positions;
   final VoidCallback? onViewAll;
+  final Function(PortfolioPosition)? onItemTap;
 
   const PortfolioPositionsWidget({
     super.key,
     required this.positions,
     this.onViewAll,
+    this.onItemTap,
   });
 
   @override
@@ -87,96 +89,99 @@ class PortfolioPositionsWidget extends StatelessWidget {
     
     // 암호화폐인지 확인 ('/'가 포함되어 있으면 암호화폐 거래 페어)
     final isCrypto = position.symbol.contains('/');
-    final quantityText = isCrypto 
-        ? '${quantity.toStringAsFixed(9).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '')}개'
-        : '${quantity.toStringAsFixed(0)}주';
     
+    // 수량 포맷팅: 소수점 4자리까지만 표시하고 불필요한 0 제거
+    String quantityText;
+    if (isCrypto) {
+      quantityText = quantity.toStringAsFixed(4).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+      quantityText += '개';
+    } else {
+      quantityText = '${quantity.toStringAsFixed(0)}주';
+    }
+    
+    // 평균가 포맷팅: 1보다 작으면 소수점 4자리, 아니면 2자리 (불필요한 0 제거)
+    String avgPriceText;
+    if (avgEntryPrice < 1) {
+      avgPriceText = avgEntryPrice.toStringAsFixed(4).replaceAll(RegExp(r'0+$'), '').replaceAll(RegExp(r'\.$'), '');
+    } else {
+      avgPriceText = avgEntryPrice.toStringAsFixed(2);
+    }
+
     // 손익률 포맷팅 (퍼센트로 변환: -0.004972 -> -0.497%)
     final plpcPercent = unrealizedPlpc * 100;
     final plpcText = plpcPercent >= 0 
-        ? '+${plpcPercent.toStringAsFixed(3)}%'
-        : '${plpcPercent.toStringAsFixed(3)}%';
+        ? '+${plpcPercent.toStringAsFixed(2)}%'
+        : '${plpcPercent.toStringAsFixed(2)}%';
     
     // 손익률 색상 (양수: 수익 색상, 음수: 손실 색상)
     final plpcColor = unrealizedPlpc >= 0 ? AppColors.chartBlue : AppColors.chartRed;
 
-    // 해외 종목 순위처럼 양옆에 여백이 있는 구분선을 위해 Inset.block으로 감싸기
-    return Inset.block(
-      child: Container(
-        width: double.infinity,
-        height: 56,
-        padding: EdgeInsets.symmetric(horizontal: context.w(4)), // Inset.block이 16px을 주므로 추가 패딩은 4px만
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              width: 1,
-              color: AppColors.gray100,
+    return GestureDetector(
+      onTap: () => onItemTap?.call(position),
+      behavior: HitTestBehavior.opaque,
+      child: Inset.block(
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: context.w(4), vertical: context.h(12)),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                width: 1,
+                color: AppColors.gray100,
+              ),
             ),
           ),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // 왼쪽: 심볼과 평균가/수량
-            Expanded(
-              child: Column(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // 왼쪽: 심볼과 평균가/수량
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      position.symbol,
+                      style: AppFonts.b1Regular.copyWith(
+                        color: AppColors.gray900,
+                        fontSize: 16,
+                      ),
+                    ),
+                    SizedBox(height: context.h(4)),
+                    Text(
+                      '내 평균 $avgPriceText • $quantityText',
+                      style: AppFonts.c1.copyWith(
+                        color: AppColors.gray600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // 오른쪽: 시장가치와 손익률
+              Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    position.symbol,
-                    style: TextStyle(
-                      color: Colors.black,
+                    '\$ ${marketValue.toStringAsFixed(2)}',
+                    style: AppFonts.b1Regular.copyWith(
+                      color: AppColors.gray900,
                       fontSize: 16,
-                      fontFamily: 'Pretendard',
-                      fontWeight: FontWeight.w400,
-                      height: 1.25,
                     ),
                   ),
                   SizedBox(height: context.h(4)),
                   Text(
-                    '내 평균 ${avgEntryPrice.toStringAsFixed(5)} • $quantityText',
-                    style: TextStyle(
-                      color: AppColors.gray600,
-                      fontSize: 12,
-                      fontFamily: 'Pretendard',
+                    plpcText,
+                    style: AppFonts.c1.copyWith(
+                      color: plpcColor,
                       fontWeight: FontWeight.w400,
-                      height: 1.42,
                     ),
                   ),
                 ],
               ),
-            ),
-            
-            // 오른쪽: 시장가치와 손익률
-            Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  '\$ ${marketValue.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 16,
-                    fontFamily: 'Pretendard',
-                    fontWeight: FontWeight.w400,
-                    height: 1.25,
-                  ),
-                ),
-                SizedBox(height: context.h(4)),
-                Text(
-                  plpcText,
-                  style: TextStyle(
-                    color: plpcColor,
-                    fontSize: 12,
-                    fontFamily: 'Pretendard',
-                    fontWeight: FontWeight.w400,
-                    height: 1.42,
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

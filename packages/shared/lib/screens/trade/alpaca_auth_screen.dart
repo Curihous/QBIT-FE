@@ -20,7 +20,7 @@ class AlpacaAuthScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: HeaderBack(
-        title: '계좌 연결하기',
+        title: 'Alpaca 연동',
       ),
       body: Container(
         width: double.infinity,

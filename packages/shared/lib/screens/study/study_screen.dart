@@ -177,9 +177,7 @@ class _StudyScreenState extends State<StudyScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: HeaderBasic(
-        title: '이론 학습',
-        onAlarmPressed: () {},
-        onSettingPressed: () {},
+        title: '학습',
       ),
       body: SingleChildScrollView(
         child: Column(

@@ -434,8 +434,8 @@ class _TradeScreenState extends State<TradeScreen> {
         // 기본 계좌 정보
         Inset.text(
           child: Container(
-            margin: const EdgeInsets.symmetric(vertical: 16),
-            padding: const EdgeInsets.symmetric(vertical: 20),
+            margin: EdgeInsets.symmetric(vertical: context.h(16)),
+            padding: EdgeInsets.symmetric(vertical: context.h(20)),
             decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(12),
@@ -514,10 +514,10 @@ class _TradeScreenState extends State<TradeScreen> {
                       children: [
                         Icon(
                           Icons.account_balance,
-                          size: 48,
+                          size: context.w(48),
                           color: AppColors.primary,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: context.h(16)),
                         Text(
                           'Alpaca 계좌를 연동해주세요',
                           style: AppFonts.t2Bold.copyWith(
@@ -525,20 +525,20 @@ class _TradeScreenState extends State<TradeScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        SizedBox(height: context.h(8)),
                         Text(
                           '실시간 거래 정보를 확인하세요',
                           style: AppFonts.b1Regular.copyWith(
                             color: AppColors.gray600,
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: context.h(24)),
                         ElevatedButton(
                           onPressed: _onConnectAccount,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                            padding: EdgeInsets.symmetric(horizontal: context.w(32), vertical: context.h(12)),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
@@ -566,7 +566,7 @@ class _TradeScreenState extends State<TradeScreen> {
   // 검색바 섹션
   Widget _buildSearchSection() {
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: EdgeInsets.symmetric(vertical: context.h(8)),
       child: Inset.block(
         child: Material(
           color: Colors.transparent,
@@ -582,7 +582,7 @@ class _TradeScreenState extends State<TradeScreen> {
             borderRadius: BorderRadius.circular(999),
             child: Container(
               width: double.infinity, 
-              height: 48,
+              height: context.h(48),
               padding: const EdgeInsets.all(2),
               decoration: ShapeDecoration(
                 color: Colors.white, 
@@ -600,13 +600,13 @@ class _TradeScreenState extends State<TradeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Container(
-                    width: 34,
-                    height: 34,
-                    margin: const EdgeInsets.only(left: 12, right: 4),
+                    width: context.w(34),
+                    height: context.w(34),
+                    margin: EdgeInsets.only(left: context.w(12), right: context.w(4)),
                     child: Icon(
                       Icons.search,
                       color: AppColors.gray600,
-                      size: 20,
+                      size: context.w(20),
                     ),
                   ),
                   Expanded(
@@ -658,14 +658,14 @@ class _TradeScreenState extends State<TradeScreen> {
                 children: [
                   Container(
                     width: double.infinity,
-                    height: 60,
+                    height: context.h(60),
                     child: Stack(
                       children: [
                         Positioned(
                           left: 0,
                           top: 0,
                           child: Container(
-                            width: 172,
+                            width: context.w(172),
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               mainAxisAlignment: MainAxisAlignment.start,
@@ -673,7 +673,7 @@ class _TradeScreenState extends State<TradeScreen> {
                               spacing: 2,
                               children: [
                                 SizedBox(
-                                  width: 172,
+                                  width: context.w(172),
                                   child: Text.rich(
                                     TextSpan(
                                       children: [
@@ -691,7 +691,7 @@ class _TradeScreenState extends State<TradeScreen> {
                                 ),
                                 SizedBox(height: context.h(4)),
                                 SizedBox(
-                                  width: 172,
+                                  width: context.w(172),
                                   child: Text(
                                     _selectedEquity != null
                                         ? '\$ ${_selectedEquity!.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}'
@@ -730,7 +730,7 @@ class _TradeScreenState extends State<TradeScreen> {
                         // 기간 선택 버튼 (오른쪽 하단)
                         Positioned(
                           right: 0,
-                          top: 28,
+                          top: context.h(28),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -752,7 +752,7 @@ class _TradeScreenState extends State<TradeScreen> {
             Inset.block(
               child: _isPortfolioLoading
                   ? Container(
-                      height: 125,
+                      height: context.h(125),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(8),
@@ -778,7 +778,7 @@ class _TradeScreenState extends State<TradeScreen> {
                           },
                         )
                       : Container(
-                          height: 125,
+                          height: context.h(125),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(8),
@@ -1162,39 +1162,39 @@ class _TradeScreenState extends State<TradeScreen> {
                 child: Text(
                   stock.rank.toString(),
                   textAlign: TextAlign.center,
-                  style: AppFonts.b2Regular.copyWith(color: AppColors.gray600),
+                  style: AppFonts.c1.copyWith(color: AppColors.gray600),
                 ),
               ),
               const SizedBox(width: 10),
               // 종목명
               Expanded(
-                flex: 2,
                 child: Text(
                   stock.name,
-                  style: AppFonts.b1Regular.copyWith(
+                  style: AppFonts.b2Semibold.copyWith(
                     color: AppColors.gray900,
-                    fontWeight: FontWeight.w400,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 16),
               // 가격
               SizedBox(
                 width: 80,
                 child: Text(
                   '\$${stock.price.toStringAsFixed(2)}',
-                  textAlign: TextAlign.center,
-                  style: AppFonts.b1Regular.copyWith(color: AppColors.gray900),
+                  textAlign: TextAlign.right,
+                  style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
                 ),
               ),
+              const SizedBox(width: 16),
               // 변동률
               SizedBox(
                 width: 80,
                 child: Text(
                   '${stock.changePercentage >= 0 ? '+' : ''}${stock.changePercentage.toStringAsFixed(2)}%',
-                  textAlign: TextAlign.center,
-                  style: AppFonts.b1Regular.copyWith(
+                  textAlign: TextAlign.right,
+                  style: AppFonts.b2Regular.copyWith(
                     color: AppColors.chartRed, // 등락 텍스트는 항상 빨간색
                   ),
                 ),
@@ -1469,13 +1469,7 @@ class _TradeScreenState extends State<TradeScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: HeaderBasic(
-        title: '모의투자',
-        onAlarmPressed: () {
-          // 알림 기능
-        },
-        onSettingPressed: () {
-          // 설정 기능
-        },
+        title: '거래',
       ),
       body: SingleChildScrollView(
         padding: EdgeInsets.only(
@@ -1504,8 +1498,10 @@ class _TradeScreenState extends State<TradeScreen> {
                 PortfolioPositionsWidget(
                   positions: _positions,
                   onViewAll: () {
-                    // TODO: 전체 포트폴리오 상세 화면으로 이동
-                    // context.push('/portfolio-detail');
+                    context.push('/portfolio-positions');
+                  },
+                  onItemTap: (position) {
+                    context.push('/portfolio-positions/detail/${Uri.encodeComponent(position.symbol)}');
                   },
                 ),
                 SizedBox(height: context.h(28)),
