@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'dart:io' show Platform;
 
 class OrderSuccessDialog extends StatelessWidget {
   final String symbol;
@@ -29,10 +31,16 @@ class OrderSuccessDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // SafeArea: Android only
+    final isIOS = !kIsWeb && Platform.isIOS;
+    final bottomPadding = isIOS 
+        ? context.h(42) 
+        : MediaQuery.of(context).padding.bottom + context.h(42);
+    
     return Container(
-      height: context.h(427),
+      height: context.h(427) + (isIOS ? 0 : MediaQuery.of(context).padding.bottom),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).padding.bottom + context.h(42),
+        bottom: bottomPadding,
       ),
       decoration: const ShapeDecoration(
         color: Colors.white,

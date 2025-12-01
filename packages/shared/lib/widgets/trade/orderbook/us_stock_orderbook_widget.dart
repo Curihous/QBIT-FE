@@ -63,11 +63,23 @@ class _UsStockOrderBookWidgetState extends State<UsStockOrderBookWidget> {
       final quote = await StockApiService.getUsStockQuote(widget.symbol);
       
       if (mounted && quote != null) {
-        final currentPrice = StockPriceParser.parseCurrentPrice(quote);
+        double? currentPrice = StockPriceParser.parseCurrentPrice(quote);
+        
+        // currentPrice가 없거나 0이면 previousClose로 폴백
+        if (currentPrice == null) {
+          final previousClose = quote['previousClose'];
+          if (previousClose != null) {
+            final parsedClose = StockPriceParser.parseDouble(previousClose);
+            if (parsedClose > 0) {
+              currentPrice = parsedClose;
+              debugPrint('REST API: currentPrice 없음, previousClose($currentPrice)로 대체');
+            }
+          }
+        }
         
         if (currentPrice != null) {
           setState(() {
-            _currentPrice = currentPrice;
+            _currentPrice = currentPrice!;
             _currentVolume = _defaultVolume;
             _isLoading = false;
             _updateOrderBook();

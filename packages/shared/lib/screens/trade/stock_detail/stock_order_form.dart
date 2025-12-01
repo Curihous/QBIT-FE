@@ -166,7 +166,7 @@ class StockOrderFormState extends State<StockOrderForm> {
     }
 
     String? limitPrice;
-    final quantity = _quantity.toString();
+    final quantity = _quantity % 1 == 0 ? _quantity.toInt().toString() : _quantity.toString();
     
     if (_selectedOrderType == '시장가') {
       // 시장가 주문: limitPrice는 null

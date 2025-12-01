@@ -118,16 +118,25 @@ OrderRequest _$OrderRequestFromJson(Map<String, dynamic> json) => OrderRequest(
   stopPrice: json['stopPrice'] as String?,
 );
 
-Map<String, dynamic> _$OrderRequestToJson(OrderRequest instance) =>
-    <String, dynamic>{
-      'symbol': instance.symbol,
-      'quantity': instance.quantity,
-      'side': _$OrderSideEnumMap[instance.side]!,
-      'type': _$OrderTypeEnumMap[instance.type]!,
-      'timeInForce': _$TimeInForceEnumMap[instance.timeInForce]!,
-      'limitPrice': instance.limitPrice,
-      'stopPrice': instance.stopPrice,
-    };
+Map<String, dynamic> _$OrderRequestToJson(OrderRequest instance) {
+  final val = <String, dynamic>{
+    'symbol': instance.symbol,
+    'quantity': instance.quantity,
+    'side': _$OrderSideEnumMap[instance.side]!,
+    'type': _$OrderTypeEnumMap[instance.type]!,
+    'timeInForce': _$TimeInForceEnumMap[instance.timeInForce]!,
+  };
+
+  void writeNotNull(String key, dynamic value) {
+    if (value != null) {
+      val[key] = value;
+    }
+  }
+
+  writeNotNull('limitPrice', instance.limitPrice);
+  writeNotNull('stopPrice', instance.stopPrice);
+  return val;
+}
 
 OrderResponse _$OrderResponseFromJson(Map<String, dynamic> json) =>
     OrderResponse(

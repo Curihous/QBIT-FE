@@ -65,13 +65,18 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
               Expanded(
                 child: titleWidget ??
                     (title != null
-                        ? Text(
-                            title!,
-                            style: AppFonts.t2Semibold.copyWith(
-                              color: contentColor,
-                              fontSize: 18,
+                        ? Tooltip(
+                            message: title!,
+                            child: Text(
+                              title!,
+                              style: AppFonts.t2Semibold.copyWith(
+                                color: contentColor,
+                                fontSize: 18,
+                              ),
+                              textAlign: centerTitle ? TextAlign.center : TextAlign.left,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            textAlign: centerTitle ? TextAlign.center : TextAlign.left,
                           )
                         : const SizedBox()),
               ),
