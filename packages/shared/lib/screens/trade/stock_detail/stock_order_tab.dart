@@ -1017,7 +1017,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
         } else {
           displayPrice = _price.toString();
           displayQuantity = _quantity.toString();
-          displayTotalAmount = (_quantity * _price).toString();
+          displayTotalAmount = (_quantity * _price).toStringAsFixed(2);
         }
         
         _showOrderSuccessPopup(
@@ -1434,7 +1434,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
             // 주식의 경우 환율 적용하여 원화로 표시
             if (widget.assetClass != 'crypto' && _exchangeRate != null) {
               final totalKrw = totalUsd * _exchangeRate!;
-              displayTotalAmount = totalKrw.toStringAsFixed(0);
+              displayTotalAmount = totalKrw.toStringAsFixed(2);
             } else {
               displayTotalAmount = totalUsd.toStringAsFixed(2);
             }
@@ -1443,7 +1443,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
             final total = double.tryParse(totalAmount.toString()) ?? 0.0;
             if (widget.assetClass != 'crypto' && _exchangeRate != null) {
               final totalKrw = total * _exchangeRate!;
-              displayTotalAmount = totalKrw.toStringAsFixed(0);
+              displayTotalAmount = totalKrw.toStringAsFixed(2);
             } else {
               displayTotalAmount = total.toStringAsFixed(2);
             }
@@ -1460,7 +1460,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
           // 주식의 경우 환율 적용하여 원화로 표시
           if (widget.assetClass != 'crypto' && _exchangeRate != null) {
             final totalKrw = total * _exchangeRate!;
-            displayTotalAmount = totalKrw.toStringAsFixed(0);
+            displayTotalAmount = totalKrw.toStringAsFixed(2);
           } else {
             displayTotalAmount = total.toStringAsFixed(2);
           }

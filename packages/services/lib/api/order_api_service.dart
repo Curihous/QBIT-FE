@@ -165,6 +165,7 @@ class OrderApiService {
     String? symbol,
     String? status,
     String? side,
+    bool? hasJournal,
     int page = 0,
     int size = 100,
   }) async {
@@ -184,6 +185,9 @@ class OrderApiService {
       }
       if (status != null) {
         queryParams['status'] = status;
+      }
+      if (hasJournal != null) {
+        queryParams['hasJournal'] = hasJournal;
       }
       
       final response = await _dio.get('/trading/orders', queryParameters: queryParams);

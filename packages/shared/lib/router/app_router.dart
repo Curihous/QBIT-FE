@@ -19,11 +19,14 @@ import 'package:qbit_shared/screens/report/trade_report_screen.dart';
 import 'package:qbit_shared/screens/report/trade_report_intro_screen.dart';
 import 'package:qbit_shared/screens/cards/learning_card_detail_screen.dart';
 import 'package:qbit_shared/screens/column/column_detail_screen.dart';
+import 'package:qbit_shared/screens/record/order_selection_screen.dart';
+import 'package:qbit_shared/screens/record/record_writing_screen.dart';
 import 'package:qbit_shared/screens/portfolio/portfolio_positions_screen.dart';
 import 'package:qbit_shared/screens/portfolio/portfolio_position_detail_screen.dart';
 import 'package:qbit_shared/theme/app_colors.dart';
 import 'package:qbit_services/auth/auth_service.dart';
 import 'package:qbit_services/api/api_client.dart';
+import 'package:qbit_services/models/record_model.dart';
 
 class AppRouter {
   static const String _isFirstLaunchKey = 'is_first_launch';
@@ -182,6 +185,29 @@ class AppRouter {
         builder: (context, state) {
           final ticker = Uri.decodeComponent(state.pathParameters['ticker'] ?? '');
           return ColumnDetailScreen(ticker: ticker);
+        },
+      ),
+      GoRoute(
+        path: '/record/write',
+        name: 'record-write',
+        builder: (context, state) {
+          final orderId = state.extra as int?;
+          return TradeRecordWriteScreen(orderId: orderId);
+        },
+      ),
+      GoRoute(
+        path: '/record/edit',
+        name: 'record-edit',
+        builder: (context, state) {
+          final record = state.extra as RecordModel?;
+          return TradeRecordWriteScreen(record: record);
+        },
+      ),
+      GoRoute(
+        path: '/record/order-selection',
+        name: 'order-selection',
+        builder: (context, state) {
+          return const OrderSelectionScreen();
         },
       ),
       GoRoute(

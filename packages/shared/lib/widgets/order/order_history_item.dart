@@ -15,6 +15,7 @@ class OrderHistoryItem extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onLongPress;
   final VoidCallback onDeleteTap;
+  final String? logoUrl;
 
   const OrderHistoryItem({
     super.key,
@@ -27,6 +28,7 @@ class OrderHistoryItem extends StatelessWidget {
     required this.onTap,
     required this.onLongPress,
     required this.onDeleteTap,
+    this.logoUrl,
   });
 
   @override
@@ -62,16 +64,34 @@ class OrderHistoryItem extends StatelessWidget {
               Container(
                 width: context.w(42),
                 height: context.h(42),
-                decoration: const ShapeDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.secondaryBG,
-                  shape: OvalBorder(),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.gray100,
+                    width: 1,
+                  ),
                 ),
                 child: ClipOval(
-                  child: SvgPicture.asset(
-                    'assets/icons/stock_search_screen/company-logo-basic.svg',
-                    width: context.w(42),
-                    height: context.h(42),
-                  ),
+                  child: logoUrl != null && logoUrl!.isNotEmpty
+                      ? Image.network(
+                          logoUrl!,
+                          width: context.w(42),
+                          height: context.h(42),
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return SvgPicture.asset(
+                              'assets/icons/stock_search_screen/company-logo-basic.svg',
+                              width: context.w(42),
+                              height: context.h(42),
+                            );
+                          },
+                        )
+                      : SvgPicture.asset(
+                          'assets/icons/stock_search_screen/company-logo-basic.svg',
+                          width: context.w(42),
+                          height: context.h(42),
+                        ),
                 ),
               ),
 

@@ -96,7 +96,7 @@ class AppFonts {
   static const TextStyle btn3 = TextStyle(
     fontSize: 13,
     height: 17/13, // line-height: 17px
-    fontWeight: FontWeight.w600, // SemiBold
+    fontWeight: FontWeight.w400, // Regular
     fontFamily: fontFamily,
   );
   

@@ -9,12 +9,15 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
   final String? title;
   final VoidCallback? onBackPressed;
   final Color? backgroundColor;
+  /// 헤더 오른쪽에 표시할 추가 위젯들 (취소, 완료)
+  final List<Widget>? actions;
 
   const HeaderBack({
     super.key,
     this.title,
     this.onBackPressed,
     this.backgroundColor,
+    this.actions,
   });
 
   @override
@@ -57,11 +60,15 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
                 child: Text(
                   title!,
                   style: AppFonts.t2Semibold,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-            ],
+            ] else
+              const Spacer(),
+            if (actions != null) 
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: actions!,
+              ),
           ],
         ),
       ),

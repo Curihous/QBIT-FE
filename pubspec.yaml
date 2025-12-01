@@ -39,6 +39,8 @@ flutter:
     - assets/icons/stock_search_screen/
     - assets/icons/trade/order_history_screen/
     - assets/icons/trade/trade_report_screen/
+    - assets/icons/record/
+    - assets/icons/record/trade_emotion/
     - assets/cards/
     - assets/.env
   

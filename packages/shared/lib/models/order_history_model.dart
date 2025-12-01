@@ -18,6 +18,7 @@ class OrderHistoryModel {
   final String? replacedAt;
   final String? replacedBy;
   final String? replaces;
+  final String? logoUrl;
 
   OrderHistoryModel({
     required this.orderId,
@@ -39,6 +40,7 @@ class OrderHistoryModel {
     this.replacedAt,
     this.replacedBy,
     this.replaces,
+    this.logoUrl,
   });
 
   factory OrderHistoryModel.fromJson(Map<String, dynamic> json) {
@@ -62,6 +64,7 @@ class OrderHistoryModel {
       replacedAt: json['replacedAt'],
       replacedBy: json['replacedBy'],
       replaces: json['replaces'],
+      logoUrl: json['logoUrl'],
     );
   }
 

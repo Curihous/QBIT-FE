@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class AppColors {
   // Primary Colors
   static const Color primary = Color(0xFF00C9A7); // 메인 민트색
-  static const Color primaryLight = Color(0xFF4DD4B8); // 소프트 민트색
+  static const Color primaryLight = Color(0xFF7BDFCA); // 소프트 민트색
   static const Color primaryDark = Color(0xFF05B99B); // 폰트 민트색
   static const Color primaryBG = Color(0xFFE6F4F1);
   
@@ -62,29 +62,12 @@ class AppBorderRadius {
 
 /// 앱 그림자 정의
 class AppShadows {
-  static const List<BoxShadow> small = [
+  // Main Shadow
+  static const List<BoxShadow> main = [
     BoxShadow(
-      color: Color(0x1A000000),
-      offset: Offset(0, 2),
-      blurRadius: 4,
-      spreadRadius: 0,
-    ),
-  ];
-  
-  static const List<BoxShadow> medium = [
-    BoxShadow(
-      color: Color(0x1A000000),
+      color: Color(0x0A000000),
       offset: Offset(0, 4),
-      blurRadius: 8,
-      spreadRadius: 0,
-    ),
-  ];
-  
-  static const List<BoxShadow> large = [
-    BoxShadow(
-      color: Color(0x1A000000),
-      offset: Offset(0, 8),
-      blurRadius: 16,
+      blurRadius: 12,
       spreadRadius: 0,
     ),
   ];
