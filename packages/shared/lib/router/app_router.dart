@@ -165,10 +165,13 @@ class AppRouter {
         path: '/learning-card/:cardType',
         name: 'learning-card',
         builder: (context, state) {
-          final cardType = state.pathParameters['cardType'] ?? '';
-          final extractedTags = state.extra as List<String>?;
+          // 모든 카드에 대해 동일한 이미지 시퀀스 표시
+          // cardType 파라미터는 무시하고 항상 동일한 화면 표시
+          final extractedTags = state.extra is List<String> 
+              ? state.extra as List<String>?
+              : null;
           return LearningCardDetailScreen(
-            cardType: cardType,
+            cardType: 'default', // 모든 카드에 대해 동일한 화면
             extractedTags: extractedTags,
           );
         },
