@@ -246,7 +246,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String? _searchSymbol;
   Timer? _searchDebounce;
-  bool _isSearchVisible = false;
   
   // 삭제 관련 상태
   int? _selectedOrderId;
@@ -260,7 +259,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     if (widget.initialSymbol != null) {
       _searchSymbol = widget.initialSymbol;
       _searchController.text = widget.initialSymbol!;
-      _isSearchVisible = true;
       print('Set _searchSymbol to: $_searchSymbol');
     }
     _searchController.addListener(_onSearchChanged);
@@ -311,6 +309,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         symbol: _searchSymbol,
         status: null,
         side: side,
+        asset: 'us_equity',
       );
       
       if (mounted) {
@@ -340,7 +339,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     
     try {
       print('💡 거래 사이클 조회 시작');
-      final response = await OrderApiService.getTradeCycles(page: 0, size: 100);
+      final response = await OrderApiService.getTradeCycles(page: 0, size: 100, asset: 'us_equity');
       print('💡 API 응답 받음: ${response != null ? "성공" : "null"}');
       
       if (mounted && response != null) {
@@ -561,24 +560,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       appBar: HeaderBack(
         title: '주문 내역 조회',
         onBackPressed: () => context.pop(),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.search,
-              color: AppColors.gray600,
-            ),
-            onPressed: () {
-              setState(() {
-                _isSearchVisible = !_isSearchVisible;
-                if (!_isSearchVisible) {
-                  _searchController.clear();
-                  _searchSymbol = null;
-                  _fetchOrders();
-                }
-              });
-            },
-          ),
-        ],
+        showSearchIcon: true,
       ),
       body: Column(
         children: [
@@ -615,9 +597,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           
           // 필터 버튼 및 검색바
           _buildFilterButtons(),
-          
-          // 검색바 (검색 아이콘 클릭 시 표시)
-          if (_isSearchVisible) _buildInlineSearchBar(),
           
           // 내용
           Expanded(
@@ -689,92 +668,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: context.w(16)),
-      margin: EdgeInsets.only(top: context.h(4), bottom: context.h(8)),
-      child: Container(
-        width: double.infinity,
-        height: 48,
-        padding: const EdgeInsets.all(2),
-        decoration: ShapeDecoration(
-          color: Colors.white,
-          shape: RoundedRectangleBorder(
-            side: BorderSide(
-              width: 1,
-              color: AppColors.gray300,
-            ),
-            borderRadius: BorderRadius.circular(999),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              margin: const EdgeInsets.only(left: 12, right: 4),
-              child: Icon(
-                Icons.search,
-                color: AppColors.gray600,
-                size: 20,
-              ),
-            ),
-            Expanded(
-              child: TextField(
-                controller: _searchController,
-                style: AppFonts.b1Regular.copyWith(
-                  color: AppColors.gray900,
-                  height: 1.40,
-                ),
-                decoration: InputDecoration(
-                  hintText: '종목 심볼 (예: AAPL)',
-                  hintStyle: AppFonts.b1Regular.copyWith(
-                    color: AppColors.gray600,
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  errorBorder: InputBorder.none,
-                  disabledBorder: InputBorder.none,
-                  focusedErrorBorder: InputBorder.none,
-                  filled: true,
-                  fillColor: Colors.transparent,
-                  isDense: true,
-                  isCollapsed: true,
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ),
-            ValueListenableBuilder<TextEditingValue>(
-              valueListenable: _searchController,
-              builder: (context, value, child) {
-                if (value.text.isEmpty) return const SizedBox.shrink();
-                return GestureDetector(
-                  onTap: () {
-                    // _onSearchChanged 리스너에서 _searchSymbol 초기화 및 _fetchOrders 호출을 처리
-                    _searchController.clear();
-                  },
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    margin: const EdgeInsets.only(left: 4, right: 12),
-                    child: Icon(
-                      Icons.clear,
-                      color: AppColors.gray600,
-                      size: 20,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildFilterButtons() {
     if (_selectedTab != '개별') return const SizedBox.shrink();
@@ -811,25 +704,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
               _fetchOrders();
             },
           ),
-          const Spacer(),
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _isSearchVisible = !_isSearchVisible;
-                if (!_isSearchVisible) {
-                  // 검색바 닫을 때 검색 초기화
-                  _searchController.clear();
-                  _searchSymbol = null;
-                  _fetchOrders();
-                }
-              });
-            },
-            child: Icon(
-              _isSearchVisible ? Icons.close : Icons.search,
-              size: 24,
-              color: AppColors.gray900,
-            ),
-          ),
         ],
       ),
     );
@@ -853,12 +727,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.search,
-              color: AppColors.gray600,
-              size: 20,
-            ),
-            SizedBox(width: context.w(12)),
             Expanded(
               child: TextField(
                 controller: _searchController,
@@ -867,10 +735,6 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                   color: AppColors.gray900,
                 ),
                 decoration: InputDecoration(
-                  hintText: '종목 심볼 (예: AAPL)',
-                  hintStyle: AppFonts.b1Regular.copyWith(
-                    color: AppColors.gray400,
-                  ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
@@ -1079,29 +943,77 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   Widget _buildCycleLogo(BuildContext context, String? logoUrl, String symbol) {
     if (logoUrl == null || logoUrl.isEmpty) {
-      return _buildCompanyLogo(symbol);
+      return Container(
+        width: context.w(42),
+        height: context.h(42),
+        decoration: BoxDecoration(
+          color: AppColors.secondaryBG,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: AppColors.gray100,
+            width: 1,
+          ),
+        ),
+        child: _buildCompanyLogo(symbol),
+      );
     }
 
     return FutureBuilder<Uint8List?>(
       future: _getLogoBytes(logoUrl),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildCompanyLogo(symbol);
+          return Container(
+            width: context.w(42),
+            height: context.h(42),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryBG,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.gray100,
+                width: 1,
+              ),
+            ),
+            child: _buildCompanyLogo(symbol),
+          );
         }
 
         final bytes = snapshot.data;
         if (bytes != null) {
-          return ClipOval(
-            child: Image.memory(
-              bytes,
-              width: context.w(44),
-              height: context.h(44),
-              fit: BoxFit.cover,
+          return Container(
+            width: context.w(42),
+            height: context.h(42),
+            decoration: BoxDecoration(
+              color: AppColors.secondaryBG,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: AppColors.gray100,
+                width: 1,
+              ),
+            ),
+            child: ClipOval(
+              child: Image.memory(
+                bytes,
+                width: context.w(42),
+                height: context.h(42),
+                fit: BoxFit.cover,
+              ),
             ),
           );
         }
 
-        return _buildCompanyLogo(symbol);
+        return Container(
+          width: context.w(42),
+          height: context.h(42),
+          decoration: BoxDecoration(
+            color: AppColors.secondaryBG,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: AppColors.gray100,
+              width: 1,
+            ),
+          ),
+          child: _buildCompanyLogo(symbol),
+        );
       },
     );
   }

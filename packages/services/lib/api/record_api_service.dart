@@ -84,6 +84,8 @@ class RecordApiService {
       logger.e('거래 기록 작성 에러: $error');
       if (error is DioException) {
         logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+        logger.e('요청 데이터: ${error.requestOptions.data}');
       }
       return null;
     }
@@ -121,6 +123,70 @@ class RecordApiService {
       logger.e('거래 기록 수정 에러: $error');
       if (error is DioException) {
         logger.e('Dio 에러 상세: ${error.response?.data}');
+      }
+      return null;
+    }
+  }
+
+  /// 거래 기록 삭제
+  /// DELETE /journals/{journalId}
+  static Future<bool> deleteRecord({
+    required int recordId,
+  }) async {
+    try {
+      logger.i('거래 기록 삭제 시작: recordId=$recordId');
+
+      final response = await _dio.delete(
+        '/journals/$recordId',
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        logger.i('거래 기록 삭제 성공');
+        return true;
+      } else {
+        logger.e('거래 기록 삭제 실패: ${response.statusCode}');
+        return false;
+      }
+    } catch (error) {
+      logger.e('거래 기록 삭제 에러: $error');
+      if (error is DioException) {
+        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+      }
+      return false;
+    }
+  }
+
+  /// 월별 거래 통계 조회
+  static Future<MonthlyTradeStatisticsResponse?> getMonthlyStatistics({
+    required int year,
+    required int month,
+  }) async {
+    try {
+      logger.i('월별 거래 통계 조회 시작: $year-$month');
+
+      final response = await _dio.get(
+        '/trading/statistics/monthly',
+        queryParameters: {
+          'year': year,
+          'month': month,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        logger.i('월별 거래 통계 조회 성공');
+        return MonthlyTradeStatisticsResponse.fromJson(
+          response.data as Map<String, dynamic>,
+        );
+      } else {
+        logger.e('월별 거래 통계 조회 실패: ${response.statusCode}');
+        return null;
+      }
+    } catch (error) {
+      logger.e('월별 거래 통계 조회 에러: $error');
+      if (error is DioException) {
+        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('요청 URL: ${error.requestOptions.uri}');
       }
       return null;
     }

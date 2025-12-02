@@ -67,7 +67,7 @@ class _StudyScreenState extends State<StudyScreen> {
       List<int> recommendedCardIds = [];
       
       try {
-        final cyclesResponse = await OrderApiService.getTradeCycles(page: 0, size: 1);
+        final cyclesResponse = await OrderApiService.getTradeCycles(page: 0, size: 1, asset: 'us_equity');
         debugPrint('📚 [학습] 거래 사이클 조회 결과: ${cyclesResponse != null ? "성공" : "실패"}');
         
         if (cyclesResponse != null && cyclesResponse.content.isNotEmpty) {
@@ -270,7 +270,7 @@ class _StudyScreenState extends State<StudyScreen> {
                   Text(
                     '레벨별 학습',
                     style: TextStyle(
-                      color: Colors.black,
+                      color: AppColors.gray900,
                       fontSize: 18,
                       fontFamily: 'Pretendard',
                       fontWeight: FontWeight.w700,
@@ -283,7 +283,7 @@ class _StudyScreenState extends State<StudyScreen> {
                   Text(
                     'Level 1',
                     style: TextStyle(
-                      color: Colors.black,
+                      color: AppColors.gray900,
                       fontSize: 16,
                       fontFamily: 'Pretendard',
                       fontWeight: FontWeight.w600,
@@ -298,7 +298,7 @@ class _StudyScreenState extends State<StudyScreen> {
                   Text(
                     'Level 2',
                     style: TextStyle(
-                      color: Colors.black,
+                      color: AppColors.gray900,
                       fontSize: 16,
                       fontFamily: 'Pretendard',
                       fontWeight: FontWeight.w600,
@@ -313,7 +313,7 @@ class _StudyScreenState extends State<StudyScreen> {
                   Text(
                     'Level 3',
                     style: TextStyle(
-                      color: Colors.black,
+                      color: AppColors.gray900,
                       fontSize: 16,
                       fontFamily: 'Pretendard',
                       fontWeight: FontWeight.w600,

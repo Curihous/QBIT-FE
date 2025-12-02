@@ -50,13 +50,13 @@ class PortfolioPositionsWidget extends StatelessWidget {
                 children: [
                   Text(
                     '내 종목 보기',
-                    style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
+                    style: AppFonts.t2Semibold.copyWith(color: AppColors.gray900),
                   ),
                   SizedBox(width: context.w(4)),
                   Icon(
                     Icons.chevron_right,
                     size: 18,
-                    color: AppColors.gray900,
+                    color: AppColors.gray400,
                   ),
                 ],
               ),
@@ -70,7 +70,7 @@ class PortfolioPositionsWidget extends StatelessWidget {
           final position = entry.value;
           return Column(
             children: [
-              _buildPositionItem(context, position),
+              _buildPositionItem(context, position, isFirst: index == 0),
               // 마지막 아이템이 아니면 여백 추가
               if (index < topPositions.length - 1)
                 SizedBox(height: context.h(8)),
@@ -81,7 +81,7 @@ class PortfolioPositionsWidget extends StatelessWidget {
     );
   }
 
-  Widget _buildPositionItem(BuildContext context, PortfolioPosition position) {
+  Widget _buildPositionItem(BuildContext context, PortfolioPosition position, {bool isFirst = false}) {
     final marketValue = double.tryParse(position.marketValue) ?? 0.0;
     final unrealizedPlpc = double.tryParse(position.unrealizedPlpc) ?? 0.0;
     final avgEntryPrice = double.tryParse(position.avgEntryPrice) ?? 0.0;
@@ -114,7 +114,7 @@ class PortfolioPositionsWidget extends StatelessWidget {
         : '${plpcPercent.toStringAsFixed(2)}%';
     
     // 손익률 색상 (양수: 수익 색상, 음수: 손실 색상)
-    final plpcColor = unrealizedPlpc >= 0 ? AppColors.chartBlue : AppColors.chartRed;
+    final plpcColor = unrealizedPlpc >= 0 ? AppColors.chartRed : AppColors.chartBlue;
 
     return GestureDetector(
       onTap: () => onItemTap?.call(position),
@@ -125,7 +125,11 @@ class PortfolioPositionsWidget extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: context.w(4), vertical: context.h(12)),
           decoration: BoxDecoration(
             border: Border(
-              bottom: BorderSide(
+              top: isFirst ? const BorderSide(
+                width: 1,
+                color: AppColors.gray100,
+              ) : BorderSide.none,
+              bottom: const BorderSide(
                 width: 1,
                 color: AppColors.gray100,
               ),

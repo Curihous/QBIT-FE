@@ -1013,7 +1013,7 @@ class _StockChartTabState extends State<StockChartTab> {
       if (_candleData!.candles.length >= 2) {
         final previousPrice = _candleData!.candles[_candleData!.candles.length - 2].close;
         final change = _currentRealTimePrice! - previousPrice;
-        return change >= 0 ? AppColors.chartBlue : AppColors.chartRed;
+        return change >= 0 ? AppColors.chartRed : AppColors.chartBlue;
       }
     }
     
@@ -1026,7 +1026,7 @@ class _StockChartTabState extends State<StockChartTab> {
     final previousCandle = _candleData!.candles[_candleData!.candles.length - 2];
     
     final change = currentCandle.close - previousCandle.close;
-    return change >= 0 ? AppColors.chartBlue : AppColors.chartRed;
+    return change >= 0 ? AppColors.chartRed : AppColors.chartBlue;
   }
 
   bool _isPriceUp() {

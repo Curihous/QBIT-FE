@@ -100,6 +100,13 @@ class AppFonts {
     fontFamily: fontFamily,
   );
   
+  static const TextStyle btn4 = TextStyle(
+    fontSize: 15,
+    height: 18/15, // line-height: 18px
+    fontWeight: FontWeight.w400, // Regular
+    fontFamily: fontFamily,
+  );
+  
   // Utility Methods
   static TextStyle withColor(TextStyle style, Color color) {
     return style.copyWith(color: color);

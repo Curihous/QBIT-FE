@@ -24,8 +24,6 @@ class _OrderSelectionScreenState extends State<OrderSelectionScreen> {
   bool _isLoading = false;
   int? _selectedOrderId;
   String _selectedSide = 'ALL'; // 'ALL', 'buy', 'sell'
-  final TextEditingController _searchController = TextEditingController();
-  String? _searchSymbol;
 
   @override
   void initState() {
@@ -35,7 +33,6 @@ class _OrderSelectionScreenState extends State<OrderSelectionScreen> {
 
   @override
   void dispose() {
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -48,9 +45,10 @@ class _OrderSelectionScreenState extends State<OrderSelectionScreen> {
       final response = await OrderApiService.getOrderHistory(
         page: 0,
         size: 100,
-        symbol: _searchSymbol,
+        symbol: null,
         side: _selectedSide == 'ALL' ? null : _selectedSide,
         hasJournal: false, // 기록이 없는 주문만 불러오기
+        asset: 'us_equity',
       );
 
       if (response != null && mounted) {
@@ -121,17 +119,7 @@ class _OrderSelectionScreenState extends State<OrderSelectionScreen> {
       backgroundColor: Colors.white,
       appBar: HeaderBack(
         title: '주문 선택',
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.search,
-              color: AppColors.gray600,
-            ),
-            onPressed: () {
-              // 검색 기능 구현 (필요시)
-            },
-          ),
-        ],
+        showSearchIcon: true,
       ),
       body: Column(
         children: [
@@ -207,7 +195,7 @@ class _OrderSelectionScreenState extends State<OrderSelectionScreen> {
                                       // 로고 이미지
                                       Container(
                                         width: context.w(42),
-                                        height: context.w(42),
+                                        height: context.h(42),
                                         decoration: BoxDecoration(
                                           color: AppColors.secondaryBG,
                                           shape: BoxShape.circle,
@@ -221,13 +209,13 @@ class _OrderSelectionScreenState extends State<OrderSelectionScreen> {
                                               ? Image.network(
                                                   order.logoUrl!,
                                                   width: context.w(42),
-                                                  height: context.w(42),
+                                                  height: context.h(42),
                                                   fit: BoxFit.cover,
                                                   errorBuilder: (context, error, stackTrace) {
                                                     return SvgPicture.asset(
                                                       'assets/icons/stock_search_screen/company-logo-basic.svg',
                                                       width: context.w(42),
-                                                      height: context.w(42),
+                                                      height: context.h(42),
                                                       fit: BoxFit.cover,
                                                     );
                                                   },
@@ -235,7 +223,7 @@ class _OrderSelectionScreenState extends State<OrderSelectionScreen> {
                                               : SvgPicture.asset(
                                                   'assets/icons/stock_search_screen/company-logo-basic.svg',
                                                   width: context.w(42),
-                                                  height: context.w(42),
+                                                  height: context.h(42),
                                                   fit: BoxFit.cover,
                                                 ),
                                         ),

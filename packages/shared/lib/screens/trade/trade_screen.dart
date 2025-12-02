@@ -279,6 +279,7 @@ class _TradeScreenState extends State<TradeScreen> {
       final response = await PortfolioApiService.getPositions(
         page: 0,
         size: 10,
+        asset: 'us_equity',
       );
 
       if (!mounted) return;
@@ -1031,7 +1032,7 @@ class _TradeScreenState extends State<TradeScreen> {
             child: Inset.text(
               child: Text(
                 '해외 종목 순위',
-                style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
+                style: AppFonts.t2Semibold.copyWith(color: AppColors.gray900),
               ),
             ),
           ),
@@ -1047,8 +1048,8 @@ class _TradeScreenState extends State<TradeScreen> {
               });
               _loadStockRanking();
             },
-            // 필터와 종목 순위 리스트 사이 간격을 조금 더 촘촘하게
-            groupPadding: EdgeInsets.only(top: context.h(0), bottom: context.h(6)),
+            // 필터와 종목 순위 리스트 사이 간격
+            groupPadding: EdgeInsets.only(top: context.h(0), bottom: context.h(8)),
             ),
           ),
           // 종목 순위 리스트 (5개씩 4페이지)
@@ -1077,9 +1078,13 @@ class _TradeScreenState extends State<TradeScreen> {
                   final pageStocks = _stockRanking.sublist(startIndex, endIndex);
                   
                   return Column(
-                    children: pageStocks.map((stock) => Inset.block(
-                      child: _buildStockRankingItem(stock),
-                    )).toList(),
+                    children: pageStocks.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final stock = entry.value;
+                      return Inset.block(
+                        child: _buildStockRankingItem(stock, isFirst: index == 0),
+                      );
+                    }).toList(),
                   );
                 },
               ),
@@ -1131,7 +1136,7 @@ class _TradeScreenState extends State<TradeScreen> {
 
 
   // 종목 순위 아이템 위젯
-  Widget _buildStockRankingItem(StockRankingModel stock) {
+  Widget _buildStockRankingItem(StockRankingModel stock, {bool isFirst = false}) {
     final index = _stockRanking.indexOf(stock);
     final isSelected = _selectedStockIndex == index;
     
@@ -1147,30 +1152,35 @@ class _TradeScreenState extends State<TradeScreen> {
           height: 56,
           decoration: BoxDecoration(
             color: isSelected ? AppColors.primaryBG : AppColors.gray0,
-            border: const Border(
-              bottom: BorderSide(
+            border: Border(
+              top: isFirst ? const BorderSide(
                 width: 1,
-                color: AppColors.gray100, // 아래쪽 divider만
+                color: AppColors.gray100,
+              ) : BorderSide.none,
+              bottom: const BorderSide(
+                width: 1,
+                color: AppColors.gray100,
               ),
             ),
           ),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // 순위
               SizedBox(
-                width: 24,
+                width: 28,
                 child: Text(
                   stock.rank.toString(),
                   textAlign: TextAlign.center,
                   style: AppFonts.c1.copyWith(color: AppColors.gray600),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: 12),
               // 종목명
               Expanded(
                 child: Text(
                   stock.name,
-                  style: AppFonts.b2Semibold.copyWith(
+                  style: AppFonts.b1Regular.copyWith(
                     color: AppColors.gray900,
                   ),
                   maxLines: 1,
@@ -1178,24 +1188,24 @@ class _TradeScreenState extends State<TradeScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              // 가격
+              // 가격 (고정 너비로 우측 정렬)
               SizedBox(
-                width: 80,
+                width: 90,
                 child: Text(
                   '\$${stock.price.toStringAsFixed(2)}',
                   textAlign: TextAlign.right,
                   style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
                 ),
               ),
-              const SizedBox(width: 16),
-              // 변동률
+              const SizedBox(width: 12),
+              // 변동률 (고정 너비로 우측 정렬)
               SizedBox(
-                width: 80,
+                width: 75,
                 child: Text(
                   '${stock.changePercentage >= 0 ? '+' : ''}${stock.changePercentage.toStringAsFixed(2)}%',
                   textAlign: TextAlign.right,
                   style: AppFonts.b2Regular.copyWith(
-                    color: AppColors.chartRed, // 등락 텍스트는 항상 빨간색
+                    color: stock.changePercentage >= 0 ? AppColors.chartRed : AppColors.chartBlue,
                   ),
                 ),
               ),
@@ -1228,13 +1238,13 @@ class _TradeScreenState extends State<TradeScreen> {
           Inset.text(
             child: Text(
               '해외 주요 지수',
-              style: AppFonts.t2Bold.copyWith(color: AppColors.gray900),
+              style: AppFonts.t2Semibold.copyWith(color: AppColors.gray900),
             ),
           ),
           SizedBox(height: context.h(12)),
           if (items.isNotEmpty) ...[
             SizedBox(
-              height: 109,
+              height: 115,
               child: PageView.builder(
                 controller: _indicesPageController,
                 onPageChanged: (i) => setState(() => _overseasPage = i),
@@ -1333,8 +1343,8 @@ class _TradeScreenState extends State<TradeScreen> {
     final changeNum = change is num ? change : 0.0;
     final percentNum = changePercent is num ? changePercent : 0.0;
     
-    final sign = changeNum >= 0 ? '+' : '';
-    return '$sign${changeNum.toStringAsFixed(2)} (${percentNum.toStringAsFixed(2)}%)';
+    // 숫자 값과 괄호 안 퍼센트 표시, + - 기호는 붙이지 않음 (세모 특수문자가 방향 표시)
+    return '${changeNum.abs().toStringAsFixed(2)} (${percentNum.abs().toStringAsFixed(2)}%)';
   }
 
   // 지수 이름을 표시용으로 변환
@@ -1391,8 +1401,8 @@ class _TradeScreenState extends State<TradeScreen> {
   // 지수 아이템 위젯
   Widget _buildIndexItem(String name, String value, String change, bool isPositive) {
     return Container(
-      height: 109,
-      padding: const EdgeInsets.all(14), 
+      height: 115,
+      padding: const EdgeInsets.symmetric(horizontal: 19, vertical: 14), 
       decoration: BoxDecoration(
         color: AppColors.secondaryBG,
         borderRadius: BorderRadius.circular(8),
@@ -1428,32 +1438,34 @@ class _TradeScreenState extends State<TradeScreen> {
               Expanded(
                 child: Text(
                   _getDisplayName(name),
-                                  style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
+                  style: AppFonts.b2Regular.copyWith(color: AppColors.gray900),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8), // gap: 0.625rem
+          const SizedBox(height: 6),
           Text(
             value,
-            style: AppFonts.t2Bold.copyWith(
+            style: AppFonts.t2Semibold.copyWith(
               color: AppColors.gray900,
-              fontWeight: FontWeight.w700,
               height: 1.20,
             ),
           ),
-          const SizedBox(height: 8), 
+          const SizedBox(height: 6), 
           Row(
             children: [
-              Icon(
-                isPositive ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                size: 16,
-                color: isPositive ? AppColors.chartBlue : AppColors.chartRed,
+              Text(
+                isPositive ? '▲' : '▼',
+                style: AppFonts.b2Regular.copyWith(
+                  color: isPositive ? AppColors.chartRed : AppColors.chartBlue,
+                  fontSize: 10,
+                ),
               ),
+              const SizedBox(width: 4),
               Text(
                 change,
                 style: AppFonts.b2Regular.copyWith(
-                  color: isPositive ? AppColors.chartBlue : AppColors.chartRed, // Chart-Red : Blue
+                  color: isPositive ? AppColors.chartRed : AppColors.chartBlue,
                   height: 1.71,
                 ),
               ),

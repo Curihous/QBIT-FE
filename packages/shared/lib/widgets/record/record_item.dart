@@ -10,7 +10,7 @@ import 'package:intl/intl.dart';
 class RecordItem extends StatelessWidget {
   final RecordModel record;
   final VoidCallback onTap;
-  final VoidCallback onEditTap;
+  final Function(BuildContext) onEditTap;
 
   const RecordItem({
     super.key,
@@ -59,92 +59,99 @@ class RecordItem extends StatelessWidget {
       onTap: onTap,
       child: Container(
         margin: EdgeInsets.only(bottom: context.h(12)),
-        padding: EdgeInsets.all(context.w(16)),
+        padding: EdgeInsets.symmetric(
+          horizontal: context.w(20),
+          vertical: context.h(20),
+        ),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: AppBorderRadius.medium,
           boxShadow: AppShadows.main,
         ),
-        child: Row(
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 날짜 표시 점
-            Container(
-              width: context.w(8),
-              height: context.h(8),
-              margin: EdgeInsets.only(
-                top: context.h(6),
-                right: context.w(8),
-              ),
-              decoration: BoxDecoration(
-                color: isModified 
-                    ? AppColors.chartRed 
-                    : AppColors.chartBlue,
-                shape: BoxShape.circle,
-              ),
-            ),
-            // 감정 아이콘
-            SvgPicture.asset(
-              record.tradeEmotion.assetPath,
-              width: context.w(50),
-              height: context.h(38),
-            ),
-            SizedBox(width: context.w(12)),
-            // 내용 영역
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 날짜
-                  Text(
-                    dateText,
-                    style: AppFonts.c1.copyWith(
-                      color: AppColors.gray600,
-                    ),
-                  ),
-                  SizedBox(height: context.h(8)),
-                  // 종목명
-                  Text(
-                    '${record.symbol}',
-                    style: AppFonts.b1Semibold.copyWith(
-                      color: AppColors.gray900,
-                    ),
-                  ),
-                  SizedBox(height: context.h(4)),
-                  // 상태
-                  Text(
-                    _getStatusText(),
-                    style: AppFonts.c1.copyWith(
-                      color: AppColors.gray600,
-                    ),
-                  ),
-                  // 내용이 있으면 표시
-                  if (record.content.isNotEmpty) ...[
-                    SizedBox(height: context.h(8)),
-                    Text(
-                      record.content,
-                      style: AppFonts.b2Regular.copyWith(
-                        color: AppColors.gray900,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            // 수정 아이콘
-            GestureDetector(
-              onTap: onEditTap,
-              child: Padding(
-                padding: EdgeInsets.all(context.w(8)),
-                child: SvgPicture.asset(
-                  'assets/icons/record/record-gray200.svg',
-                  width: context.w(20),
-                  height: context.h(20),
+            // 날짜 (상단)
+            Row(
+              children: [
+                // oval 아이콘
+                SvgPicture.asset(
+                  record.side == 'BUY'
+                      ? 'assets/icons/record/oval-red.svg'
+                      : 'assets/icons/record/oval-blue.svg',
+                  width: context.w(11),
+                  height: context.w(11),
                 ),
-              ),
+                SizedBox(width: context.w(8)),
+                Text(
+                  dateText,
+                  style: AppFonts.c1.copyWith(
+                    color: AppColors.gray600,
+                  ),
+                ),
+                const Spacer(),
+                // 수정 아이콘
+                GestureDetector(
+                  onTap: () => onEditTap(context),
+                  child: SvgPicture.asset(
+                    'assets/icons/record/record-gray200.svg',
+                    width: context.w(24),
+                    height: context.h(24),
+                  ),
+                ),
+              ],
             ),
+            SizedBox(height: context.h(12)),
+            // 종목 정보 영역
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 감정 아이콘
+                SvgPicture.asset(
+                  record.tradeEmotion.assetPath,
+                  width: context.w(50),
+                  height: context.h(50),
+                ),
+                SizedBox(width: context.w(16)),
+                // 종목 정보
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 종목명
+                      Text(
+                        '${record.symbol}',
+                        style: AppFonts.b2Semibold.copyWith(
+                          color: AppColors.gray900,
+                        ),
+                      ),
+                      SizedBox(height: context.h(4)),
+                      // 상태
+                      Text(
+                        _getStatusText(),
+                        style: AppFonts.c1.copyWith(
+                          color: record.side == 'BUY'
+                              ? AppColors.chartRed
+                              : AppColors.chartBlue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            // 내용이 있으면 표시
+            if (record.content.isNotEmpty) ...[
+              SizedBox(height: context.h(12)),
+              Text(
+                record.content,
+                style: AppFonts.b2Regular.copyWith(
+                  color: AppColors.gray900,
+                ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
           ],
         ),
       ),

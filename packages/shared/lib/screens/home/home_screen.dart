@@ -202,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
       List<int> recommendedCardIds = [];
       
       try {
-        final cyclesResponse = await OrderApiService.getTradeCycles(page: 0, size: 1);
+        final cyclesResponse = await OrderApiService.getTradeCycles(page: 0, size: 1, asset: 'us_equity');
         debugPrint('📚 거래 사이클 조회 결과: ${cyclesResponse != null ? "성공" : "실패"}');
         
         if (cyclesResponse != null && cyclesResponse.content.isNotEmpty) {
@@ -355,6 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final response = await PortfolioApiService.getPositions(
         page: 0,
         size: 10,
+        asset: 'us_equity',
       );
 
       if (!mounted) return;
