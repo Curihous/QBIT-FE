@@ -125,7 +125,8 @@ class _RecordScreenState extends State<RecordScreen> {
         extra: orderId,
       );
 
-      if (result != null && result['success'] == true) {
+      // 기록 작성 화면에서 돌아왔을 때 항상 새로고침
+      if (mounted) {
         _loadRecords();
       }
     }
