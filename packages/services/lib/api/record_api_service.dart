@@ -131,6 +131,35 @@ class RecordApiService {
     }
   }
 
+  /// 거래 기록 삭제
+  /// DELETE /journals/{journalId}
+  static Future<bool> deleteRecord({
+    required int recordId,
+  }) async {
+    try {
+      logger.i('거래 기록 삭제 시작: recordId=$recordId');
+
+      final response = await _dio.delete(
+        '/journals/$recordId',
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        logger.i('거래 기록 삭제 성공');
+        return true;
+      } else {
+        logger.e('거래 기록 삭제 실패: ${response.statusCode}');
+        return false;
+      }
+    } catch (error) {
+      logger.e('거래 기록 삭제 에러: $error');
+      if (error is DioException) {
+        logger.e('Dio 에러 상세: ${error.response?.data}');
+        logger.e('요청 URL: ${error.requestOptions.uri}');
+      }
+      return false;
+    }
+  }
+
   /// 월별 거래 통계 조회
   static Future<MonthlyTradeStatisticsResponse?> getMonthlyStatistics({
     required int year,

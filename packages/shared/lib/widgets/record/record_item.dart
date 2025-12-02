@@ -10,7 +10,7 @@ import 'package:intl/intl.dart';
 class RecordItem extends StatelessWidget {
   final RecordModel record;
   final VoidCallback onTap;
-  final VoidCallback onEditTap;
+  final Function(BuildContext) onEditTap;
 
   const RecordItem({
     super.key,
@@ -92,7 +92,7 @@ class RecordItem extends StatelessWidget {
                 const Spacer(),
                 // 수정 아이콘
                 GestureDetector(
-                  onTap: onEditTap,
+                  onTap: () => onEditTap(context),
                   child: SvgPicture.asset(
                     'assets/icons/record/record-gray200.svg',
                     width: context.w(24),
