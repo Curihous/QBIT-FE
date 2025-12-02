@@ -349,7 +349,7 @@ class _TradeRecordWriteScreenState extends State<TradeRecordWriteScreen> {
                                     ),
                                     SizedBox(height: context.h(4)),
                                     Text(
-                                      '${widget.record!.side == 'BUY' ? '매도' : '매수'}·대기 | 총액 \$${(double.tryParse(widget.record!.totalAmount?.toString() ?? '0') ?? 0.0).toStringAsFixed(2)}',
+                                      '${widget.record!.side == 'BUY' ? '매수' : '매도'}·대기 | 총액 \$${(double.tryParse(widget.record!.totalAmount?.toString() ?? '0') ?? 0.0).toStringAsFixed(2)}',
                                       style: AppFonts.c1.copyWith(
                                         color: sideColor,
                                       ),
