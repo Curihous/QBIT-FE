@@ -225,7 +225,7 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
         ),
         
         // 필터 버튼들
-        Inset.block(
+        HorizontalInset.block(
           child: FilterButtonGroup(
             labels: ['전체', '주식', '암호화폐'],
             values: ['all', 'us_equity', 'crypto'],

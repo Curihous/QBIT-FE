@@ -69,9 +69,6 @@ class RecordApiService {
       final response = await _dio.post(
         '/journals/orders/$orderId',
         data: request.toJson(),
-        options: Options(
-          headers: {'Content-Type': 'application/json'},
-        ),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
