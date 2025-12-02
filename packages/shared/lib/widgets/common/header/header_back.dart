@@ -11,6 +11,10 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
   final Color? backgroundColor;
   /// 헤더 오른쪽에 표시할 추가 위젯들 (취소, 완료)
   final List<Widget>? actions;
+  /// 검색 아이콘 표시 여부
+  final bool showSearchIcon;
+  /// 검색 아이콘 클릭 콜백
+  final VoidCallback? onSearchPressed;
 
   const HeaderBack({
     super.key,
@@ -18,6 +22,8 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
     this.onBackPressed,
     this.backgroundColor,
     this.actions,
+    this.showSearchIcon = false,
+    this.onSearchPressed,
   });
 
   @override
@@ -33,9 +39,9 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
       automaticallyImplyLeading: false,
       titleSpacing: 0,
       title: Container(
-        width: context.screenWidth,
+        width: double.infinity,
         height: kToolbarHeight,
-        padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+        padding: EdgeInsets.only(left: context.w(20)),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -64,11 +70,29 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
               ),
             ] else
               const Spacer(),
-            if (actions != null) 
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: actions!,
+            if (showSearchIcon) ...[
+              SizedBox(width: context.w(8)),
+              IconButton(
+                icon: Icon(
+                  Icons.search,
+                  color: AppColors.gray900,
+                ),
+                onPressed: onSearchPressed,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
               ),
+              SizedBox(width: context.w(16)),
+            ],
+            if (actions != null) ...[
+              const Spacer(),
+              Padding(
+                padding: EdgeInsets.only(right: context.w(20)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: actions!,
+                ),
+              ),
+            ],
           ],
         ),
       ),

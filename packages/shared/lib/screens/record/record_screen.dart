@@ -42,24 +42,42 @@ class _RecordScreenState extends State<RecordScreen> {
     });
 
     try {
-      final response = await RecordApiService.getMonthlyRecords(
+      final recordsFuture = RecordApiService.getMonthlyRecords(
         year: _selectedDate.year,
         month: _selectedDate.month,
         side: _selectedFilter == 'ALL' ? null : _selectedFilter,
       );
+      
+      final statisticsFuture = RecordApiService.getMonthlyStatistics(
+        year: _selectedDate.year,
+        month: _selectedDate.month,
+      );
 
-      if (response != null && mounted) {
+      final results = await Future.wait([recordsFuture, statisticsFuture]);
+      final response = results[0] as RecordPageResponse?;
+      final statistics = results[1] as MonthlyTradeStatisticsResponse?;
+
+      if (mounted) {
         setState(() {
-          _records = response.content;
-          _totalTrades = response.totalElements;
-          // TODO: 실제 수익률과 누적 손익은 API에서 받아와야 함
-          _profitRate = 7.3; // 임시 값
-          _cumulativeProfit = 3500.0; // 임시 값
-          _isLoading = false;
-        });
-      } else if (mounted) {
-        setState(() {
-          _records = [];
+          if (response != null) {
+            _records = response.content;
+            _totalTrades = response.totalElements;
+          } else {
+            _records = [];
+            _totalTrades = 0;
+          }
+          
+          // 통계 데이터 적용
+          if (statistics != null) {
+            _totalTrades = statistics.totalTradeCount;
+            _profitRate = statistics.profitRate;
+            _cumulativeProfit = statistics.cumulativeProfitLoss;
+          } else {
+            // 통계가 없으면 기본값
+            _profitRate = 0.0;
+            _cumulativeProfit = 0.0;
+          }
+          
           _isLoading = false;
         });
       }
@@ -148,7 +166,7 @@ class _RecordScreenState extends State<RecordScreen> {
               // 필터 버튼
               Inset.block(
                 child: FilterButtonGroup(
-                  labels: ['전체 보기', '매수 기록', '매도 기록'],
+                  labels: ['전체', '매수', '매도'],
                   values: ['ALL', 'BUY', 'SELL'],
                   initialValue: _selectedFilter,
                   onChanged: _onFilterChanged,

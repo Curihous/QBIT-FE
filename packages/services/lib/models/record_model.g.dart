@@ -8,29 +8,29 @@ part of 'record_model.dart';
 
 RecordModel _$RecordModelFromJson(Map<String, dynamic> json) => RecordModel(
   recordId: (json['journalId'] as num).toInt(),
-  orderId: (json['orderId'] as num).toInt(),
+  orderId: (json['orderRequestId'] as num).toInt(),
   symbol: json['symbol'] as String,
-  side: json['side'] as String,
+  side: json['orderSide'] as String,
   content: json['content'] as String,
   tradeEmotion: $enumDecode(_$TradeEmotionEnumMap, json['tradeEmotion']),
   createdAt: json['createdAt'] as String,
   updatedAt: json['updatedAt'] as String?,
-  totalAmount: json['totalAmount'] as String?,
-  status: json['status'] as String?,
+  totalAmount: RecordModel._doubleToStringNullable(json['executedAmount']),
+  status: json['orderStatus'] as String?,
 );
 
 Map<String, dynamic> _$RecordModelToJson(RecordModel instance) =>
     <String, dynamic>{
       'journalId': instance.recordId,
-      'orderId': instance.orderId,
+      'orderRequestId': instance.orderId,
       'symbol': instance.symbol,
-      'side': instance.side,
+      'orderSide': instance.side,
       'content': instance.content,
       'tradeEmotion': _$TradeEmotionEnumMap[instance.tradeEmotion]!,
       'createdAt': instance.createdAt,
       'updatedAt': instance.updatedAt,
-      'totalAmount': instance.totalAmount,
-      'status': instance.status,
+      'executedAmount': instance.totalAmount,
+      'orderStatus': instance.status,
     };
 
 const _$TradeEmotionEnumMap = {
@@ -91,4 +91,24 @@ Map<String, dynamic> _$UpdateRecordRequestToJson(
 ) => <String, dynamic>{
   'content': instance.content,
   'tradeEmotion': _$TradeEmotionEnumMap[instance.tradeEmotion]!,
+};
+
+MonthlyTradeStatisticsResponse _$MonthlyTradeStatisticsResponseFromJson(
+  Map<String, dynamic> json,
+) => MonthlyTradeStatisticsResponse(
+  year: (json['year'] as num).toInt(),
+  month: (json['month'] as num).toInt(),
+  totalTradeCount: (json['totalTradeCount'] as num).toInt(),
+  profitRate: (json['profitRate'] as num).toDouble(),
+  cumulativeProfitLoss: (json['cumulativeProfitLoss'] as num).toDouble(),
+);
+
+Map<String, dynamic> _$MonthlyTradeStatisticsResponseToJson(
+  MonthlyTradeStatisticsResponse instance,
+) => <String, dynamic>{
+  'year': instance.year,
+  'month': instance.month,
+  'totalTradeCount': instance.totalTradeCount,
+  'profitRate': instance.profitRate,
+  'cumulativeProfitLoss': instance.cumulativeProfitLoss,
 };

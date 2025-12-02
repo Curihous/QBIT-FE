@@ -24,42 +24,65 @@ class EmotionSelectionDialog extends StatelessWidget {
     ];
 
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: AppBorderRadius.large,
-      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       child: Container(
-        padding: EdgeInsets.all(context.w(20)),
+        width: context.w(340),
+        padding: EdgeInsets.only(
+          left: context.w(20),
+          right: context.w(20),
+          top: context.h(20),
+          bottom: context.h(16),
+        ),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.12),
+              offset: const Offset(0, 2),
+              blurRadius: 8,
+              spreadRadius: 0,
+            ),
+          ],
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // 헤더
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Text(
                   '매매 감정 선택',
-                  style: AppFonts.t2Bold,
+                  style: AppFonts.b2Semibold,
                 ),
+                const Spacer(),
                 TextButton(
                   onPressed: () => Navigator.of(context).pop(),
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
                   child: Text(
                     '취소',
-                    style: AppFonts.btn2.copyWith(
+                    style: AppFonts.btn3.copyWith(
                       color: AppColors.gray600,
                     ),
                   ),
                 ),
               ],
             ),
-            SizedBox(height: context.h(20)),
+            SizedBox(height: context.h(8)),
             // 감정 그리드
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
+                crossAxisSpacing: context.w(20),
+                mainAxisSpacing: context.h(8),
                 childAspectRatio: 1,
               ),
               itemCount: emotions.length,
@@ -67,17 +90,11 @@ class EmotionSelectionDialog extends StatelessWidget {
                 final emotion = emotions[index];
                 return GestureDetector(
                   onTap: () => Navigator.of(context).pop(emotion),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.gray50,
-                      borderRadius: AppBorderRadius.medium,
-                    ),
-                    child: Center(
-                      child: SvgPicture.asset(
-                        emotion.assetPath,
-                        width: context.w(50),
-                        height: context.h(38),
-                      ),
+                  child: Center(
+                    child: SvgPicture.asset(
+                      emotion.assetPath,
+                      width: context.w(60),
+                      height: context.h(48),
                     ),
                   ),
                 );

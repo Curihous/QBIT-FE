@@ -88,10 +88,10 @@ class OrderHistoryItem extends StatelessWidget {
                           },
                         )
                       : SvgPicture.asset(
-                          'assets/icons/stock_search_screen/company-logo-basic.svg',
-                          width: context.w(42),
-                          height: context.h(42),
-                        ),
+                    'assets/icons/stock_search_screen/company-logo-basic.svg',
+                    width: context.w(42),
+                    height: context.h(42),
+                  ),
                 ),
               ),
 

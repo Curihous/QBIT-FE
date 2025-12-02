@@ -232,11 +232,12 @@ class _TradeRecordWriteScreenState extends State<TradeRecordWriteScreen> {
             ),
             child: Text(
               '취소',
-              style: AppFonts.btn3.copyWith(
+              style: AppFonts.btn4.copyWith(
                 color: AppColors.gray400,
               ),
             ),
           ),
+          SizedBox(width: context.w(8)),
           TextButton(
             onPressed: _isLoading ? null : _saveRecord,
             style: TextButton.styleFrom(
@@ -246,7 +247,7 @@ class _TradeRecordWriteScreenState extends State<TradeRecordWriteScreen> {
             ),
             child: Text(
               '완료',
-              style: AppFonts.btn3.copyWith(
+              style: AppFonts.btn4.copyWith(
                 color: _isLoading
                     ? AppColors.gray400
                     : AppColors.primaryDark,
@@ -255,155 +256,218 @@ class _TradeRecordWriteScreenState extends State<TradeRecordWriteScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // 날짜 표시 (이미지 참고: 왼쪽에 oval 아이콘)
-          if (_selectedOrder != null || _isEditMode) ...[
-            Padding(
-              padding: EdgeInsets.only(
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // 주문 정보 카드
+            Container(
+              margin: EdgeInsets.only(
                 left: context.w(16),
+                right: context.w(16),
                 top: context.h(16),
-                bottom: context.h(8),
               ),
-              child: Row(
-                children: [
-                  // 매수/매도에 따라 다른 색상의 oval 아이콘 표시
+              width: context.w(361),
+              padding: EdgeInsets.all(context.w(16)),
+              decoration: BoxDecoration(
+                color: AppColors.secondaryBG,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 날짜와 oval (secondaryBG 내부)
+                if (_selectedOrder != null || _isEditMode) ...[
                   Builder(
                     builder: (context) {
                       final isBuy = _isEditMode
                           ? widget.record!.side == 'BUY'
                           : _selectedOrder!.side.toLowerCase() == 'buy';
-                      return SvgPicture.asset(
-                        isBuy
-                            ? 'assets/icons/record/oval-red.svg'
-                            : 'assets/icons/record/oval-blue.svg',
-                        width: context.w(11),
-                        height: context.w(11),
+                      return Row(
+                        children: [
+                          // 매수/매도에 따라 다른 색상의 oval 아이콘 표시
+                          SvgPicture.asset(
+                            isBuy
+                                ? 'assets/icons/record/oval-red.svg'
+                                : 'assets/icons/record/oval-blue.svg',
+                            width: context.w(11),
+                            height: context.w(11),
+                          ),
+                          SizedBox(width: context.w(8)),
+                          Text(
+                            _formatOrderDate(),
+                            style: AppFonts.c1.copyWith(
+                              color: AppColors.gray600,
+                              fontSize: 13,
+                              height: 1.23,
+                            ),
+                          ),
+                        ],
                       );
                     },
                   ),
-                  SizedBox(width: context.w(8)),
-                  Text(
-                    _formatOrderDate(),
-                    style: AppFonts.c1.copyWith(
-                      color: AppColors.gray600,
-                      fontSize: 13,
-                      height: 1.23,
+                  SizedBox(height: context.h(12)),
+                ],
+                // 감정 아이콘과 주문 정보
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 감정 아이콘 또는 선택 버튼
+                    GestureDetector(
+                      onTap: _selectEmotion,
+                      child: Container(
+                        width: context.w(65),
+                        height: context.h(45),
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: SvgPicture.asset(
+                          _selectedEmotion.assetPath,
+                          width: context.w(65),
+                          height: context.h(45),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: context.w(12)),
+                    // 주문 정보 또는 선택 버튼
+                    Expanded(
+                      child: _isEditMode
+                          ? Builder(
+                              builder: (context) {
+                                final isBuy = widget.record!.side == 'BUY';
+                                final sideColor = isBuy 
+                                    ? AppColors.chartRed 
+                                    : AppColors.chartBlue;
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      widget.record!.symbol,
+                                      style: AppFonts.b1Semibold,
+                                    ),
+                                    SizedBox(height: context.h(4)),
+                                    Text(
+                                      '${widget.record!.side == 'BUY' ? '매도' : '매수'}·대기 | 총액 \$${(double.tryParse(widget.record!.totalAmount?.toString() ?? '0') ?? 0.0).toStringAsFixed(2)}',
+                                      style: AppFonts.c1.copyWith(
+                                        color: sideColor,
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            )
+                          : _selectedOrder != null
+                              ? Builder(
+                                  builder: (context) {
+                                    final order = _selectedOrder!;
+                                    final isBuy = order.side.isNotEmpty && order.side.toLowerCase() == 'buy';
+                                    final sideColor = isBuy 
+                                        ? AppColors.chartRed 
+                                        : AppColors.chartBlue;
+                                    return Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          order.symbol,
+                                          style: AppFonts.b1Semibold,
+                                        ),
+                                        SizedBox(height: context.h(4)),
+                                        Text(
+                                          '${order.sideInKorean}·${order.statusInKorean} | 총액 \$${(double.tryParse(order.filledAvgPrice ?? '0') ?? 0.0).toStringAsFixed(2)}',
+                                          style: AppFonts.c1.copyWith(
+                                            color: sideColor,
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                )
+                              : GestureDetector(
+                                  onTap: _selectOrder,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.add,
+                                        color: AppColors.gray400,
+                                        size: 20,
+                                      ),
+                                      SizedBox(width: context.w(8)),
+                                      Text(
+                                        '주문 선택',
+                                        style: AppFonts.b1Semibold.copyWith(
+                                          color: AppColors.gray400,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+            // 내용 입력 필드
+            Container(
+              margin: EdgeInsets.only(
+                left: context.w(16),
+                right: context.w(16),
+                top: context.h(16),
+                bottom: context.h(16),
+              ),
+              constraints: BoxConstraints(
+                minHeight: context.h(311),
+              ),
+              padding: EdgeInsets.only(
+                left: context.w(18),
+                right: context.w(18),
+                top: context.h(16),
+                bottom: context.h(32),
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.gray30,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Stack(
+                children: [
+                  TextField(
+                    controller: _contentController,
+                    maxLines: null,
+                    minLines: null,
+                    maxLength: 200,
+                    textAlignVertical: TextAlignVertical.top,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      hintText: '투자 결정 과정, 느낀 점 등을 기록해보세요.',
+                      hintStyle: AppFonts.b1Regular.copyWith(
+                        color: AppColors.gray600,
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      counterText: '',
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                    style: AppFonts.b2Regular,
+                  ),
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Text(
+                      '${_contentController.text.length}/200',
+                      style: AppFonts.b2Regular.copyWith(
+                        color: AppColors.gray600,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ],
-          // 주문 정보 카드
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: context.w(16)),
-            width: context.w(361),
-            height: context.h(69),
-            padding: EdgeInsets.all(context.w(16)),
-            decoration: BoxDecoration(
-              color: AppColors.secondaryBG,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                // 감정 아이콘 또는 선택 버튼
-                GestureDetector(
-                  onTap: _selectEmotion,
-                  child: Container(
-                    width: context.w(53),
-                    height: context.h(38),
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: SvgPicture.asset(
-                      _selectedEmotion.assetPath,
-                      width: context.w(53),
-                      height: context.h(38),
-                    ),
-                  ),
-                ),
-                SizedBox(width: context.w(12)),
-                // 주문 정보 또는 선택 버튼
-                Expanded(
-                  child: _selectedOrder != null || _isEditMode
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              _isEditMode
-                                  ? widget.record!.symbol
-                                  : _selectedOrder!.symbol,
-                              style: AppFonts.b1Semibold,
-                            ),
-                            SizedBox(height: context.h(4)),
-                            Text(
-                              _isEditMode
-                                  ? '${widget.record!.side == 'BUY' ? '매도' : '매수'}·대기 | 총액 \$${(double.tryParse(widget.record!.totalAmount?.toString() ?? '0') ?? 0.0).toStringAsFixed(2)}'
-                                  : '${_selectedOrder!.sideInKorean}·${_selectedOrder!.statusInKorean} | 총액 \$${(double.tryParse(_selectedOrder!.filledAvgPrice ?? '0') ?? 0.0).toStringAsFixed(2)}',
-                              style: AppFonts.c1.copyWith(
-                                color: AppColors.gray600,
-                              ),
-                            ),
-                          ],
-                        )
-                      : GestureDetector(
-                          onTap: _selectOrder,
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.add,
-                                color: AppColors.gray400,
-                                size: 20,
-                              ),
-                              SizedBox(width: context.w(8)),
-                              Text(
-                                '주문 선택',
-                                style: AppFonts.b1Semibold.copyWith(
-                                  color: AppColors.gray400,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                ),
-              ],
-            ),
-          ),
-          // 내용 입력 필드
-          Expanded(
-            child: Container(
-              margin: EdgeInsets.symmetric(horizontal: context.w(16)),
-              padding: EdgeInsets.symmetric(
-                horizontal: context.w(18),
-                vertical: context.h(16),
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.gray30,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: TextField(
-                controller: _contentController,
-                maxLines: null,
-                expands: true,
-                maxLength: 200,
-                decoration: InputDecoration(
-                  hintText: '투자 결정 과정, 느낀 점 등을 기록해보세요.',
-                  hintStyle: AppFonts.b2Regular.copyWith(
-                    color: AppColors.gray400,
-                  ),
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  counterText: '${_contentController.text.length}/200',
-                ),
-                style: AppFonts.b2Regular,
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

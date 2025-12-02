@@ -6,15 +6,26 @@ part 'record_model.g.dart';
 class RecordModel {
   @JsonKey(name: 'journalId')
   final int recordId;
+  @JsonKey(name: 'orderRequestId')
   final int orderId;
   final String symbol;
+  @JsonKey(name: 'orderSide')
   final String side; // "BUY" or "SELL"
   final String content;
   final TradeEmotion tradeEmotion;
   final String createdAt;
   final String? updatedAt;
+  @JsonKey(name: 'executedAmount', fromJson: _doubleToStringNullable)
   final String? totalAmount;
+  @JsonKey(name: 'orderStatus')
   final String? status; // "PENDING", "FILLED", etc.
+  
+  static String? _doubleToStringNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return value;
+    if (value is num) return value.toString();
+    return null;
+  }
 
   RecordModel({
     required this.recordId,
@@ -36,7 +47,9 @@ class RecordModel {
 
 @JsonSerializable()
 class RecordPageResponse {
+  @JsonKey(name: 'currentPage')
   final int currentPage;
+  @JsonKey(name: 'pageSize')
   final int pageSize;
   final int totalElements;
   final int totalPages;
@@ -81,6 +94,30 @@ class UpdateRecordRequest {
   });
 
   Map<String, dynamic> toJson() => _$UpdateRecordRequestToJson(this);
+}
+
+@JsonSerializable()
+class MonthlyTradeStatisticsResponse {
+  final int year;
+  final int month;
+  @JsonKey(name: 'totalTradeCount')
+  final int totalTradeCount;
+  @JsonKey(name: 'profitRate')
+  final double profitRate;
+  @JsonKey(name: 'cumulativeProfitLoss')
+  final double cumulativeProfitLoss;
+
+  MonthlyTradeStatisticsResponse({
+    required this.year,
+    required this.month,
+    required this.totalTradeCount,
+    required this.profitRate,
+    required this.cumulativeProfitLoss,
+  });
+
+  factory MonthlyTradeStatisticsResponse.fromJson(Map<String, dynamic> json) =>
+      _$MonthlyTradeStatisticsResponseFromJson(json);
+  Map<String, dynamic> toJson() => _$MonthlyTradeStatisticsResponseToJson(this);
 }
 
 @JsonEnum()
