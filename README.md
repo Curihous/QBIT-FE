@@ -4,7 +4,8 @@
 
 ## 프로젝트 소개
 
-QBIT은 Flutter 기반의 모바일 애플리케이션입니다. iOS와 Android 플랫폼을 지원하며, 주식 거래 및 투자 관련 기능을 제공합니다.
+Flutter 기반의 **초보 투자자 친화형 모의투자 애플리케이션 QBit**의 프론트엔드 레포지토리입니다. iOS와 Android 플랫폼을 지원합니다. 
+
 
 ### 주요 기능
 - 주식 검색 및 거래
@@ -13,12 +14,13 @@ QBIT은 Flutter 기반의 모바일 애플리케이션입니다. iOS와 Android 
 - 투자 기록 관리
 - 소셜 로그인 (카카오, 구글)
 
-## 요구사항
-
+### 요구사항
 - Flutter SDK 3.8.0 이상
 - Dart SDK 3.6.0 이상
 - iOS: Xcode 14.0 이상, CocoaPods
 - Android: Android Studio, Android SDK (API Level 21 이상)
+
+<br>
 
 ## 설치 및 실행
 
@@ -65,6 +67,7 @@ flutter run -d ios
 flutter run -d android
 ```
 
+<br> 
 
 ## 프로젝트 구조
 
@@ -92,17 +95,17 @@ QBIT-FE/
 
 ## 사용된 오픈소스 라이브러리
 
-- **Flutter SDK**, **Dart SDK**: Flutter 프레임워크
-- **go_router**: 선언적 라우팅
-- **flutter_svg**: SVG 이미지 렌더링
-- **fl_chart**: 차트 라이브러리
-- **kakao_flutter_sdk**: 카카오 로그인 SDK
-- **google_sign_in**: 구글 로그인
-- **dio**: HTTP 클라이언트
-- **web_socket_channel**: WebSocket 클라이언트
-- **riverpod_generator**: 상태 관리 코드 생성
-- **flutter_secure_storage**: 보안 저장소
-- **build_runner**: 코드 생성 도구
-- **json_serializable**: JSON 직렬화
+- Flutter SDK, Dart SDK: Flutter 프레임워크
+- go_router: 선언적 라우팅
+- flutter_svg: SVG 이미지 렌더링
+- fl_chart: 차트 라이브러리
+- kakao_flutter_sdk: 카카오 로그인 SDK
+- google_sign_in: 구글 로그인
+- dio: HTTP 클라이언트
+- web_socket_channel: WebSocket 클라이언트
+- riverpod_generator: 상태 관리 코드 생성
+- flutter_secure_storage: 보안 저장소
+- build_runner: 코드 생성 도구
+- json_serializable: JSON 직렬화
 
 전체 의존성 목록: `pubspec.yaml` 파일 참조
