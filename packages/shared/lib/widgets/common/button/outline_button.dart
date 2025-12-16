@@ -51,7 +51,7 @@ class AppOutlineButton extends StatelessWidget {
             width: borderWidth,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppBorderRadius.md),
           ),
           backgroundColor: Colors.transparent,
           disabledForegroundColor: AppColors.gray400,
@@ -71,11 +71,11 @@ class AppOutlineButton extends StatelessWidget {
                 children: [
                   if (leadingIcon != null) ...[
                     leadingIcon!,
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                   ],
                   if (icon != null) ...[
                     Icon(icon, size: 20),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                   ],
                   Text(
                     text,

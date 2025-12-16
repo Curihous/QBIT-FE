@@ -19,16 +19,9 @@ class RecordActionDialog extends StatelessWidget {
           vertical: context.h(20),
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              offset: const Offset(0, 2),
-              blurRadius: 8,
-              spreadRadius: 0,
-            ),
-          ],
+          color: AppColors.gray0,
+          borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+          boxShadow: AppShadows.main,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -43,7 +36,7 @@ class RecordActionDialog extends StatelessWidget {
                 ),
                 minimumSize: Size(double.infinity, context.h(48)),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.sm),
                 ),
               ),
               child: Text(
@@ -64,7 +57,7 @@ class RecordActionDialog extends StatelessWidget {
                 ),
                 minimumSize: Size(double.infinity, context.h(48)),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.sm),
                 ),
               ),
               child: Text(
@@ -85,7 +78,7 @@ class RecordActionDialog extends StatelessWidget {
                 ),
                 minimumSize: Size(double.infinity, context.h(48)),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.sm),
                 ),
               ),
               child: Text(

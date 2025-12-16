@@ -125,7 +125,7 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.gray0,
       appBar: HeaderBack(
         title: '주식 검색',
       ),
@@ -165,7 +165,7 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
                     style: AppFonts.b1Regular.copyWith(
                       color: AppColors.gray900, 
                       height: 1.40,
-                      backgroundColor: Colors.transparent, 
+                      backgroundColor: Colors.transparent, // transparent는 그대로 유지 
                     ),
                     decoration: InputDecoration(
                       hintText: '종목을 입력하세요',
@@ -179,7 +179,7 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
                       disabledBorder: InputBorder.none,
                       focusedErrorBorder: InputBorder.none,
                       filled: true,
-                      fillColor: Colors.transparent,
+                      fillColor: Colors.transparent, // transparent는 그대로 유지
                       isDense: true,
                       isCollapsed: true,
                       contentPadding: EdgeInsets.zero,

@@ -24,7 +24,7 @@ class FilterButton extends StatelessWidget {
       onTap: onTap,
       child: Container(
         height: height ?? 28, // 기본값 28px
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+        padding: padding ?? const EdgeInsets.symmetric(horizontal: AppSpacing.sm + 2, vertical: 0),
         decoration: BoxDecoration( // 활성화, 비활성화별로 버튼 색 차이
           color: isSelected ? AppColors.primaryLight : AppColors.gray30,
           border: Border.all(
@@ -37,7 +37,7 @@ class FilterButton extends StatelessWidget {
           child: Text(
             label,
             style: AppFonts.btn3.copyWith(
-              color: isSelected ? Colors.white : AppColors.gray600,
+              color: isSelected ? AppColors.gray0 : AppColors.gray600,
             ),
           ),
         ),
@@ -119,7 +119,7 @@ class _FilterButtonGroupState extends State<FilterButtonGroup> {
                         height: widget.height,
                         padding: widget.padding,
                       ),
-                      if (i < widget.labels.length - 1) const SizedBox(width: 9),
+                      if (i < widget.labels.length - 1) const SizedBox(width: AppSpacing.sm + 1),
                     ],
                   ],
                 ),
@@ -135,7 +135,7 @@ class _FilterButtonGroupState extends State<FilterButtonGroup> {
                       height: widget.height,
                       padding: widget.padding,
                     ),
-                    if (i < widget.labels.length - 1) const SizedBox(width: 10),
+                    if (i < widget.labels.length - 1) const SizedBox(width: AppSpacing.sm + 2),
                   ],
                 ],
               ),

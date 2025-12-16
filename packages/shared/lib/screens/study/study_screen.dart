@@ -175,7 +175,7 @@ class _StudyScreenState extends State<StudyScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.gray0,
       appBar: HeaderBasic(
         title: '학습',
       ),
@@ -187,7 +187,7 @@ class _StudyScreenState extends State<StudyScreen> {
             Container(
               width: double.infinity,
               decoration: const BoxDecoration(
-                color: Color(0xFFFFE19B),
+                color: AppColors.secondaryMain,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

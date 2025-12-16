@@ -64,7 +64,7 @@ class RecordItem extends StatelessWidget {
           vertical: context.h(20),
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.gray0,
           borderRadius: AppBorderRadius.medium,
           boxShadow: AppShadows.main,
         ),

@@ -47,9 +47,9 @@ class OrderConfirmationDialog extends StatelessWidget {
           context.h(28) 
         ),
         decoration: ShapeDecoration(
-          color: Colors.white,
+          color: AppColors.gray0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppBorderRadius.xl),
           ),
         ),
         child: Column(
@@ -111,16 +111,16 @@ class OrderConfirmationDialog extends StatelessWidget {
                     child: Container(
                       height: context.h(52),
                       decoration: ShapeDecoration(
-                        color: const Color(0xFFE2E2E2), // Gray-150
+                        color: AppColors.gray150,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.sm),
                         ),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         '취소',
                         style: AppFonts.t2Semibold.copyWith(
-                          color: Colors.white,
+                          color: AppColors.gray0,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           height: 1.28,
@@ -137,16 +137,16 @@ class OrderConfirmationDialog extends StatelessWidget {
                     child: Container(
                       height: context.h(52),
                       decoration: ShapeDecoration(
-                        color: const Color(0xFF00C9A7), // Primary-Main
+                        color: AppColors.primary,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppBorderRadius.sm),
                         ),
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         '주문',
                         style: AppFonts.t2Semibold.copyWith(
-                          color: Colors.white,
+                          color: AppColors.gray0,
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                           height: 1.28,

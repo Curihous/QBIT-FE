@@ -440,7 +440,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           width: 0.50,
                           color: AppColors.gray150,
                         ),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
                       ),
                     ),
                     child: HorizontalInset.block(
@@ -476,7 +476,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       height: context.h(203), // 137 + 66
                       decoration: BoxDecoration(
                         color: AppColors.gray100,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
                       ),
                       child: const Center(
                         child: CircularProgressIndicator(),
@@ -488,7 +488,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: EdgeInsets.all(context.w(16)),
                       decoration: BoxDecoration(
                         color: AppColors.gray100,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppBorderRadius.md),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

@@ -29,7 +29,7 @@ class MonthSummaryCard extends StatelessWidget {
       height: context.h(62),
       decoration: BoxDecoration(
         color: AppColors.secondaryBG,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppBorderRadius.sm),
         border: Border.all(
           color: AppColors.secondaryMain,
           width: 1,

@@ -23,7 +23,7 @@ class AppHeader extends StatelessWidget implements PreferredSizeWidget {
     this.showBack = true,
     this.onBack,
     this.actions,
-    this.backgroundColor = Colors.white,
+    this.backgroundColor = AppColors.gray0,
     this.contentColor = AppColors.gray900,
     this.centerTitle = false,
     this.elevation = 0,

@@ -438,8 +438,8 @@ class _TradeScreenState extends State<TradeScreen> {
             margin: EdgeInsets.symmetric(vertical: context.h(16)),
             padding: EdgeInsets.symmetric(vertical: context.h(20)),
             decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            color: AppColors.gray0,
+            borderRadius: BorderRadius.circular(AppBorderRadius.md),
           ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

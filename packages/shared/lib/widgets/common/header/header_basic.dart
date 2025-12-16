@@ -22,10 +22,10 @@ class HeaderBasic extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.gray0,
       foregroundColor: AppColors.gray900,
       elevation: 0,
-      surfaceTintColor: Colors.white,
+      surfaceTintColor: AppColors.gray0,
       scrolledUnderElevation: 0,
       automaticallyImplyLeading: false,
       titleSpacing: 0,

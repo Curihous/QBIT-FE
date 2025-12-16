@@ -1265,8 +1265,8 @@ class _StockOrderTabState extends State<StockOrderTab> {
       margin: EdgeInsets.symmetric(horizontal: context.w(16), vertical: context.h(8)),
       padding: EdgeInsets.symmetric(horizontal: context.w(12), vertical: context.h(12)),
       decoration: BoxDecoration(
-        color: const Color(0xFFD1E8F8), // #D1E8F8 배경색
-        borderRadius: BorderRadius.circular(8),
+        color: AppColors.chartBlue.withOpacity(0.2), // 체결 강도 배경색 (차트 블루의 투명도 적용)
+        borderRadius: BorderRadius.circular(AppBorderRadius.sm),
         border: Border.all(color: AppColors.gray200),
       ),
       child: Row(
@@ -1668,7 +1668,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
                 height: context.h(4),
                 decoration: BoxDecoration(
                   color: AppColors.gray300,
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: BorderRadius.circular(AppBorderRadius.xs / 2),
                 ),
               ),
               SizedBox(height: context.h(20)),
@@ -1732,9 +1732,9 @@ class _StockOrderTabState extends State<StockOrderTab> {
         margin: EdgeInsets.only(bottom: context.h(12)),
         padding: EdgeInsets.all(context.w(8)),
         decoration: ShapeDecoration(
-          color: const Color(0xFFF7F7F7), // Gray-30
+          color: AppColors.gray30,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppBorderRadius.sm),
           ),
         ),
         child: Column(

@@ -73,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: context.h(56),
                     child: InkWell(
                       onTap: _isLoading ? null : _handleKakaoLogin,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppBorderRadius.md),
                       child: Stack(
                         children: [
                           Image.asset(
@@ -87,8 +87,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: double.infinity,
                               height: context.h(56),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(12),
+                                color: AppColors.gray900.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(AppBorderRadius.md),
                               ),
                               child: Center(
                                 child: SizedBox(
@@ -114,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     height: context.h(56),
                     child: InkWell(
                       onTap: _isLoading ? null : _handleGoogleLogin,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppBorderRadius.md),
                       child: Stack(
                         children: [
                           SvgPicture.asset(
@@ -128,8 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: double.infinity,
                               height: context.h(56),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(12),
+                                color: AppColors.gray900.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(AppBorderRadius.md),
                               ),
                               child: Center(
                                 child: SizedBox(

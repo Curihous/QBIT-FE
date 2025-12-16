@@ -35,13 +35,9 @@ class EmotionSelectionDialog extends StatelessWidget {
           bottom: context.h(16),
         ),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              offset: const Offset(0, 2),
-              blurRadius: 8,
+          color: AppColors.gray0,
+          borderRadius: BorderRadius.circular(AppBorderRadius.lg),
+          boxShadow: AppShadows.main,
               spreadRadius: 0,
             ),
           ],

@@ -42,11 +42,11 @@ class OrderSuccessDialog extends StatelessWidget {
         minHeight: context.h(427),
       ),
       decoration: const ShapeDecoration(
-        color: Colors.white,
+        color: AppColors.gray0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+            topLeft: Radius.circular(AppBorderRadius.xl),
+            topRight: Radius.circular(AppBorderRadius.xl),
           ),
         ),
       ),
@@ -68,7 +68,7 @@ class OrderSuccessDialog extends StatelessWidget {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: AppColors.gray0,
                         borderRadius: BorderRadius.circular(30), 
                         border: Border.all(color: AppColors.gray100),
                       ),

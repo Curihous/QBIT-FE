@@ -34,7 +34,7 @@ class TextLinkButton extends StatelessWidget {
       onPressed: onPressed,
       style: TextButton.styleFrom(
         foregroundColor: effectiveTextColor,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
         minimumSize: Size.zero,
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         disabledForegroundColor: AppColors.gray400,
@@ -44,11 +44,11 @@ class TextLinkButton extends StatelessWidget {
         children: [
           if (leadingIcon != null) ...[
             leadingIcon!,
-            const SizedBox(width: 4),
+            const SizedBox(width: AppSpacing.xs),
           ],
           if (icon != null) ...[
             Icon(icon, size: fontSize ?? 14),
-            const SizedBox(width: 4),
+            const SizedBox(width: AppSpacing.xs),
           ],
           Text(
             text,

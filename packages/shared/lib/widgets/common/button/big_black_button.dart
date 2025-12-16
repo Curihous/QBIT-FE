@@ -46,7 +46,7 @@ class BigBlackButton extends StatelessWidget {
               : (backgroundColor ?? AppColors.gray900),
           foregroundColor: textColor ?? AppColors.gray0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppBorderRadius.md),
           ),
           elevation: isDisabled ? 0 : 2,
           shadowColor: AppColors.gray900.withOpacity(0.1),
@@ -70,11 +70,11 @@ class BigBlackButton extends StatelessWidget {
                 children: [
                   if (leadingIcon != null) ...[
                     leadingIcon!,
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                   ],
                   if (icon != null) ...[
                     Icon(icon, size: 20),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                   ],
                   Text(
                     text,

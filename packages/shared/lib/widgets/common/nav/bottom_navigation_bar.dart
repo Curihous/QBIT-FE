@@ -23,18 +23,12 @@ class CustomBottomNavigationBar extends StatelessWidget {
       width: context.screenWidth,
       height: context.h(72),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.gray0,
         borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(context.w(15)),
-          topRight: Radius.circular(context.w(15)),
+          topLeft: Radius.circular(AppBorderRadius.lg),
+          topRight: Radius.circular(AppBorderRadius.lg),
         ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 8,
-            offset: Offset(0, -2),
-          ),
-        ],
+        boxShadow: AppShadows.main,
       ),
       child: Padding(
         padding: EdgeInsets.only(

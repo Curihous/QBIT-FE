@@ -32,7 +32,7 @@ class HeaderBack extends StatelessWidget implements PreferredSizeWidget {
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      backgroundColor: backgroundColor ?? Colors.white,
+      backgroundColor: backgroundColor ?? AppColors.gray0,
       foregroundColor: AppColors.gray900,
       elevation: 0,
       surfaceTintColor: Colors.transparent,
