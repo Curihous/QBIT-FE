@@ -40,8 +40,14 @@ class GoogleAuthService {
       
       // 1. 자동 로그인 시도 (이전 세션 복원)
       logger.i('🔍 자동 로그인 시도 중...');
-      GoogleSignInAccount? currentUser = await _googleSignIn.signInSilently();
-      logger.i('🔍 자동 로그인 결과: ${currentUser != null ? "성공" : "실패"}');
+      GoogleSignInAccount? currentUser;
+      try {
+        currentUser = await _googleSignIn.signInSilently();
+        logger.i('🔍 자동 로그인 결과: ${currentUser != null ? "성공" : "실패"}');
+      } catch (silentError) {
+        logger.w('🔍 자동 로그인 실패 (무시): $silentError');
+        currentUser = null;
+      }
       
       if (currentUser == null) {
         // 2. 자동 로그인 실패 시 수동 로그인
@@ -49,9 +55,16 @@ class GoogleAuthService {
         try {
           currentUser = await _googleSignIn.signIn();
           logger.i('🔍 수동 로그인 결과: ${currentUser != null ? "성공" : "실패"}');
-        } catch (signInError) {
+        } catch (signInError, signInStackTrace) {
           logger.e('🔍 수동 로그인 중 예외 발생: $signInError');
-          rethrow;
+          logger.e('🔍 스택 트레이스: $signInStackTrace');
+          // 사용자 취소는 정상적인 경우이므로 에러로 처리하지 않음
+          if (signInError.toString().contains('sign_in_canceled') || 
+              signInError.toString().contains('canceled') ||
+              signInError.toString().contains('취소')) {
+            return {'success': false, 'error': '사용자 취소'};
+          }
+          return {'success': false, 'error': '구글 로그인 실패: ${signInError.toString()}'};
         }
       }
       
@@ -62,7 +75,13 @@ class GoogleAuthService {
 
       logger.i('🔍 사용자 정보 조회 중...');
       // 인증 정보 가져오기
-      final GoogleSignInAuthentication auth = await currentUser.authentication;
+      GoogleSignInAuthentication auth;
+      try {
+        auth = await currentUser.authentication;
+      } catch (authError) {
+        logger.e('🔍 인증 정보 조회 실패: $authError');
+        return {'success': false, 'error': '인증 정보 조회 실패: ${authError.toString()}'};
+      }
       
       logger.i('🔍 구글 ID 토큰: ${auth.idToken != null ? "있음" : "없음"}');
       logger.i('🔍 구글 액세스 토큰: ${auth.accessToken != null ? "있음" : "없음"}');

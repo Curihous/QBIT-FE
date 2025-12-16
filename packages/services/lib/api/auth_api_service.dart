@@ -273,7 +273,12 @@ class AuthApiService {
       if (error is DioException) {
         logger.e('Dio 에러 상세: ${error.response?.data}');
         logger.e('Dio 에러 상태코드: ${error.response?.statusCode}');
-      
+        
+        // 404 에러인 경우 (아직 연결되지 않음) - 특별 처리
+        if (error.response?.statusCode == 404) {
+          logger.i('Alpaca 연결 상태: 아직 연결되지 않음 (404)');
+          return {'_is404': true}; // 404를 구분하기 위한 특별한 표시
+        }
       }
       return null;
     }

@@ -26,18 +26,46 @@ class AlpacaAuthService {
       logger.i('Alpaca 인증 URL 열림, 사용자 인증 대기 중...');
       
       // 브라우저에서 인증이 완료되면 백엔드가 자동으로 처리
-      // 앱으로 돌아온 후 상태 확인
+      // Deep Link 콜백을 기다리기 위해 상태 확인을 재시도
+      // 404는 아직 백엔드가 콜백을 처리하지 못한 상태이므로 정상적인 상황
       await Future.delayed(const Duration(seconds: 2));
       
-      // 4. 상태 확인
-      // 실제 Alpaca 연결 상태 확인 (개발/프로덕션 모두)
-      final statusResult = await _checkAlpacaStatus();
-      if (statusResult != null && statusResult['success'] == true) {
-        return {'success': true, 'message': 'Alpaca 연동이 완료되었습니다!'};
-      } else {
-        final errorMessage = statusResult?['error'] ?? 'Alpaca 연동 상태를 확인할 수 없습니다';
-        return {'success': false, 'error': errorMessage};
+      // 4. 상태 확인 (재시도 로직 포함, 404는 무시)
+      final maxRetries = 3;
+      final retryDelay = const Duration(seconds: 2);
+      
+      for (int i = 0; i < maxRetries; i++) {
+        final statusResult = await _checkAlpacaStatus();
+        
+        // 성공한 경우
+        if (statusResult != null && statusResult['success'] == true) {
+          return {'success': true, 'message': 'Alpaca 연동이 완료되었습니다!'};
+        }
+        
+        // 404 에러인 경우 (아직 백엔드가 콜백을 처리하지 못함) - 조용히 재시도
+        if (statusResult?['error'] != null && 
+            statusResult!['error'].toString().contains('404')) {
+          logger.i('백엔드 콜백 처리 대기 중... (${i + 1}/$maxRetries)');
+          if (i < maxRetries - 1) {
+            await Future.delayed(retryDelay);
+            continue;
+          }
+        }
+        
+        // 마지막 시도에서도 실패한 경우
+        if (i == maxRetries - 1) {
+          // Deep Link 콜백이 나중에 올 수 있으므로, 실패로 처리하지 않고
+          // 사용자에게 Deep Link를 기다리도록 안내
+          logger.i('상태 확인 실패, Deep Link 콜백을 기다립니다...');
+          return {
+            'success': true, 
+            'message': '인증이 완료되었습니다. 잠시 후 연결 상태가 업데이트됩니다.',
+            'pending': true
+          };
+        }
       }
+      
+      return {'success': false, 'error': 'Alpaca 연동 상태를 확인할 수 없습니다'};
     } catch (error) {
       logger.e('Alpaca 인증 시작 실패: $error');
       return {'success': false, 'error': error.toString()};
@@ -54,7 +82,13 @@ class AlpacaAuthService {
       
       final status = await AuthApiService.getAlpacaStatus();
       
-      if (status != null) {
+      // 404 에러인 경우 (아직 연결되지 않음) - 특별 처리
+      if (status != null && status['_is404'] == true) {
+        logger.i('Alpaca 연결 상태: 아직 연결되지 않음 (404)');
+        return {'success': false, 'error': '404 - 아직 연결되지 않음'};
+      }
+      
+      if (status != null && status['_is404'] != true) {
         // 실제 연동 상태 확인 
         final connectionStatus = status['connectionStatus'];
         final connected = status['connected'] == true;
@@ -120,7 +154,8 @@ class AlpacaAuthService {
           'tokenExpired': tokenExpired,
         };
       } else {
-        logger.e('Alpaca 연결 상태 확인 실패');
+        // status == null인 경우 (404가 아닌 다른 에러)
+        logger.e('Alpaca 연결 상태 확인 실패 (null 반환)');
         return {'success': false, 'error': '연결 상태를 확인할 수 없습니다'};
       }
     } catch (error) {

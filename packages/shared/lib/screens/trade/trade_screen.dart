@@ -56,7 +56,7 @@ class _TradeScreenState extends State<TradeScreen> {
   PortfolioOverviewResponse? _portfolioOverview;
   double? _selectedEquity; // 터치된 시점의 자산 가치
   int? _selectedTimestamp; // 터치된 시점의 타임스탬프
-  String _selectedPeriod = '1M'; // 선택된 기간: '1D', '1W', '1M'
+  String _selectedPeriod = '1D'; // 선택된 기간: '1D', '1W', '1M' (기본값: 1D)
   bool _isPortfolioLoading = false; // 포트폴리오 오버뷰 로딩 상태
   
   // 포트폴리오 포지션 관련
@@ -726,21 +726,6 @@ class _TradeScreenState extends State<TradeScreen> {
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                        // 기간 선택 버튼 (오른쪽 하단)
-                        Positioned(
-                          right: 0,
-                          top: context.h(28),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              _buildPeriodButton('1D', '1D'),
-                              SizedBox(width: context.w(4)),
-                              _buildPeriodButton('1W', '1W'),
-                              SizedBox(width: context.w(4)),
-                              _buildPeriodButton('1M', '1M'),
-                            ],
                           ),
                         ),
                       ],
