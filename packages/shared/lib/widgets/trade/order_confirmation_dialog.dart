@@ -28,9 +28,10 @@ class OrderConfirmationDialog extends StatelessWidget {
     final isBuy = orderType == '매수';
     final typeColor = isBuy ? AppColors.chartRed : AppColors.chartBlue;
     
+    // limitPrice에 이미 단위가 포함되어 있음
     final priceText = orderMethod == '시장가' 
         ? '시장가' 
-        : '${limitPrice ?? 'N/A'}${assetClass == 'crypto' ? ' USD' : '원'}';
+        : (limitPrice ?? 'N/A');
     final quantityText = '$quantity${assetClass == 'crypto' ? '개' : '주'}';
     final totalAmountText = totalAmount ?? '';
 

@@ -856,9 +856,16 @@ class _StockOrderTabState extends State<StockOrderTab> {
         limitPriceText = null;
         totalAmountText = '${_marketOrderAmount.toStringAsFixed(2)} USDT';
       } else {
+        // 미국 주식인 경우 USD 표시
+        final isUsStock = widget.assetClass == 'us_equity' || widget.assetClass == 'stock';
         quantityText = _quantity.toStringAsFixed(0);
-        limitPriceText = '${_price.toStringAsFixed(0)}원';
-        totalAmountText = '${(_quantity * _price).toStringAsFixed(0)}원';
+        if (isUsStock) {
+          limitPriceText = '${_price.toStringAsFixed(2)} USD';
+          totalAmountText = '${(_quantity * _price).toStringAsFixed(2)} USD';
+        } else {
+          limitPriceText = '${_price.toStringAsFixed(0)}원';
+          totalAmountText = '${(_quantity * _price).toStringAsFixed(0)}원';
+        }
       }
       
       final confirmed = await showDialog<bool>(
@@ -1002,6 +1009,17 @@ class _StockOrderTabState extends State<StockOrderTab> {
       if (!mounted) return;
       
       if (result != null) {
+        // 주문 ID 추출
+        int? orderId;
+        if (result['orderId'] != null) {
+          orderId = int.tryParse(result['orderId'].toString());
+        } else if (result['order'] != null && result['order'] is Map) {
+          final order = result['order'] as Map<String, dynamic>;
+          if (order['orderId'] != null) {
+            orderId = int.tryParse(order['orderId'].toString());
+          }
+        }
+        
         // 주문 성공 팝업 표시
         String displayPrice;
         String displayQuantity;
@@ -1029,6 +1047,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
           quantity: displayQuantity,
           totalAmount: displayTotalAmount,
           currency: widget.assetClass == 'crypto' ? 'USD' : '원',
+          orderId: orderId,
         );
         
         setState(() {
@@ -1342,7 +1361,9 @@ class _StockOrderTabState extends State<StockOrderTab> {
         try {
           final price = double.tryParse(limitPrice.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
           final qty = double.tryParse(quantity.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0;
-          if (widget.assetClass == 'crypto') {
+          // 미국 주식이나 암호화폐는 USD, 그 외는 원화
+          final isUsdCurrency = widget.assetClass == 'crypto' || widget.assetClass == 'us_equity' || widget.assetClass == 'stock';
+          if (isUsdCurrency) {
             totalAmount = '${(price * qty).toStringAsFixed(2)} USD';
           } else {
             totalAmount = '${(price * qty).toStringAsFixed(0)}원';
@@ -1402,6 +1423,17 @@ class _StockOrderTabState extends State<StockOrderTab> {
       if (!mounted) return;
       
       if (result != null) {
+        // 주문 ID 추출
+        int? orderId;
+        if (result['orderId'] != null) {
+          orderId = int.tryParse(result['orderId'].toString());
+        } else if (result['order'] != null && result['order'] is Map) {
+          final order = result['order'] as Map<String, dynamic>;
+          if (order['orderId'] != null) {
+            orderId = int.tryParse(order['orderId'].toString());
+          }
+        }
+        
         // 주문 성공 팝업 표시
         final displayPrice = orderMethod == '시장가' ? '시장가' : (limitPrice ?? 'N/A');
         final displayQuantity = quantity;
@@ -1475,6 +1507,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
           quantity: displayQuantity,
           totalAmount: displayTotalAmount,
           currency: widget.assetClass == 'crypto' ? 'USD' : '원',
+          orderId: orderId,
         );
         
                                 setState(() {
@@ -1767,6 +1800,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
     required String quantity,
     required String totalAmount,
     required String currency,
+    int? orderId,
   }) {
     showModalBottomSheet(
       context: context,
@@ -1782,6 +1816,7 @@ class _StockOrderTabState extends State<StockOrderTab> {
           quantity: quantity,
           totalAmount: totalAmount,
           currency: currency,
+          orderId: orderId,
         );
       },
     );

@@ -154,41 +154,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
               ),
             ),
-            
-            // 테스트 로그인 버튼 (좌쪽 상단)
-            Positioned(
-              top: 16,
-              left: 16,
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: _isLoading ? null : _handleTestLogin,
-                  borderRadius: BorderRadius.circular(8),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: const Text(
-                      '🧪 테스트',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -277,51 +242,4 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // 테스트 로그인 처리 (.env의 KAKAO_TEST_ACCESS_TOKEN 사용)
-  Future<void> _handleTestLogin() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final result = await AuthService.loginWithTestToken();
-      
-      if (mounted) {
-        if (result['success'] == true) {
-          // 로그인 성공
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('테스트 로그인 성공! 🎉'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
-            ),
-          );
-          context.go('/home');
-        } else {
-          // 로그인 실패
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('테스트 로그인 실패: ${result['error']}'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('테스트 로그인 중 오류: $error'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
 }

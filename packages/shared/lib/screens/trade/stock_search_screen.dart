@@ -243,6 +243,7 @@ class _StockSearchScreenState extends State<StockSearchScreen> {
             },
           ),
         ),
+        const SizedBox(height: 12),
           
           // 검색 결과
           Expanded(

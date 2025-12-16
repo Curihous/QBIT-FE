@@ -5,6 +5,7 @@ import 'package:qbit_shared/theme/app_fonts.dart';
 import 'package:qbit_shared/utils/responsive_utils.dart';
 import 'package:qbit_shared/widgets/common/button/big_black_button.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'dart:io' show Platform;
 
 class OrderSuccessDialog extends StatelessWidget {
@@ -15,6 +16,7 @@ class OrderSuccessDialog extends StatelessWidget {
   final String quantity;
   final String totalAmount;
   final String currency;
+  final int? orderId; // 주문 ID
 
   final String? logoUrl;
 
@@ -27,6 +29,7 @@ class OrderSuccessDialog extends StatelessWidget {
     required this.quantity,
     required this.totalAmount,
     required this.currency,
+    this.orderId,
     this.logoUrl,
   });
 
@@ -135,8 +138,11 @@ class OrderSuccessDialog extends StatelessWidget {
                     BigBlackButton(
                       text: '매매 일지 작성하기',
                       onPressed: () {
-                        // TODO: 매매 일지 작성 페이지로 이동
                         Navigator.of(context).pop();
+                        // 주문 ID가 있으면 기록 작성 화면으로 이동
+                        if (orderId != null) {
+                          context.push('/record/write', extra: orderId);
+                        }
                       },
                     ),
                     SizedBox(height: context.h(20)),
