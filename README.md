@@ -9,6 +9,7 @@
 - [설치 및 실행](#설치-및-실행)
 - [프로젝트 구조](#프로젝트-구조)
 - [사용한 오픈소스](#사용한-오픈소스)
+- [API 키 설정](#api-키-설정)
 
 ## 프로젝트 소개
 
@@ -44,8 +45,9 @@
 ## 기술 스택
 - Flutter SDK 3.8.0 이상
 - Dart SDK 3.6.0 이상
-- iOS: Xcode 14.0 이상, CocoaPods
-- Android: Android Studio, Android SDK (API Level 21 이상)
+- **Android (권장)**: Android Studio, Android SDK (API Level 21 이상)
+- **iOS (선택사항)**: Xcode 14.0 이상, CocoaPods (macOS 전용)
+- **에디터**: VSCode 또는 Android Studio
 
 <br>
 
@@ -63,35 +65,62 @@ flutter pub get
 cd packages/core && flutter pub get
 cd packages/services && flutter pub get
 cd packages/shared && flutter pub get
-cd ios && pod install
 ```
 
-#### 3. 환경 변수 설정
-`assets/env/.env` 파일을 생성하고 다음 내용을 추가하세요:
+**참고:** iOS 개발 시에만 `cd ios && pod install` 실행이 필요합니다. Android만 사용하는 경우 생략 가능합니다.
 
-```env
-BACKEND_URL=https://api.qbit.o-r.kr
-BACKEND_API_VERSION=v1
-KAKAO_NATIVE_APP_KEY=your_kakao_native_app_key
-GOOGLE_WEB_CLIENT_ID=your_google_web_client_id
-WEBSOCKET_URL=ws://15.165.205.46:8081/ws/websocket
-```
+#### 3. 환경 변수 설정 (필수 ⭐)
 
-#### 4. iOS 추가 설정 (iOS 개발 시)
+**⚠️ 보안 안내:**
+보안을 위해 실제 API Key가 포함된 `.env` 파일은 깃허브 저장소에 포함되지 않았습니다. 메일에 첨부한 `.env` 파일을 사용하여 설정을 진행해 주세요.
+
+**설정 방법:**
+
+메일에 첨부된 `.env` 파일을 프로젝트 내 `assets/.env` 경로에 배치합니다. 
+
+**방법 1: 파일 복사**
 ```bash
-# Firebase Console에서 GoogleService-Info.plist 다운로드 후
-# assets/env/GoogleService-Info.plist 또는 프로젝트 루트에 배치
-./scripts/setup_ios_google_service.sh
-./scripts/update_ios_kakao_key.sh
+# .env 파일을 assets/ 디렉토리로 복사
+cp [제출받은 경로]/.env assets/.env
 ```
 
-#### 5. 실행
-```bash
-# iOS
-flutter run -d ios
+**방법 2: 직접 생성**
+`assets` 폴더 내에 `.env` 파일을 생성하고, 메일에 첨부된 `.env` 파일의 내용을 복사하여 붙여넣어도 됩니다.
 
-# Android
+**참고:** `.env.example` 파일을 참고하여 필요한 환경 변수 목록을 확인할 수 있습니다.
+
+#### 4. 실행
+
+**방법 1: Android Studio에서 실행 (권장)**
+1. Android Studio에서 프로젝트 열기
+2. Android 에뮬레이터 실행 또는 실제 기기 연결
+3. 상단 툴바에서 실행 버튼 클릭 또는 `Shift + F10` (Windows/Linux) / `Ctrl + R` (macOS)
+
+**방법 2: VSCode에서 실행**
+1. VSCode에서 프로젝트 폴더 열기
+2. Flutter 확장 프로그램 설치 (확장 프로그램에서 "Flutter" 검색)
+3. 하단 상태바에서 디바이스 선택 (Android 에뮬레이터 또는 연결된 기기)
+4. `F5` 키를 누르거나 실행 버튼 클릭
+
+**방법 3: 터미널에서 실행**
+```bash
+# 연결된 디바이스 확인
+flutter devices
+
+# Android 실행
 flutter run -d android
+
+# iOS 실행 (macOS에서만 가능)
+flutter run -d ios
+```
+
+**참고:** 
+- Android 에뮬레이터가 없으면 Android Studio에서 AVD Manager를 통해 생성하세요.
+- 실제 Android 기기를 연결하여 실행할 수도 있습니다 (USB 디버깅 활성화 필요).
+
+#### 5. 테스트
+```bash
+flutter test
 ```
 
 <br> 
@@ -136,3 +165,19 @@ QBIT-FE/
 - json_serializable: JSON 직렬화
 
 전체 의존성 목록: `pubspec.yaml` 파일 참조
+
+<br>
+
+## 사용된 API 키 정보
+
+**참고:** 아래 키들은 이미 제출된 설정 파일(`.env`)에 모두 포함되어 있으므로, 채점 시 별도로 발급받으실 필요가 없습니다. 프로젝트 이해를 돕기 위한 명세입니다.
+
+1. **KAKAO_NATIVE_APP_KEY**: 카카오 로그인 (네이티브 앱 키)
+   - 용도: 카카오 소셜 로그인 인증
+   
+2. **GOOGLE_WEB_CLIENT_ID**: 구글 로그인 (OAuth 2.0 클라이언트 ID)
+   - 용도: Google 소셜 로그인 인증
+   
+3. **POLYGON_API_KEY**: 미국 주식 실시간 시세 데이터 (Polygon.io)
+   - 용도: 주식 시세 및 거래 데이터 조회
+
