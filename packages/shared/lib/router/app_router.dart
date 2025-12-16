@@ -19,6 +19,7 @@ import 'package:qbit_shared/screens/report/trade_report_screen.dart';
 import 'package:qbit_shared/screens/report/trade_report_intro_screen.dart';
 import 'package:qbit_shared/screens/cards/learning_card_detail_screen.dart';
 import 'package:qbit_shared/screens/column/column_detail_screen.dart';
+import 'package:qbit_services/models/learning_card_model.dart';
 import 'package:qbit_shared/screens/record/order_selection_screen.dart';
 import 'package:qbit_shared/screens/record/record_writing_screen.dart';
 import 'package:qbit_shared/screens/portfolio/portfolio_positions_screen.dart';
@@ -168,13 +169,15 @@ class AppRouter {
         path: '/learning-card/:cardType',
         name: 'learning-card',
         builder: (context, state) {
-          // 모든 카드에 대해 동일한 이미지 시퀀스 표시
-          // cardType 파라미터는 무시하고 항상 동일한 화면 표시
-          final extractedTags = state.extra is List<String> 
+          final LearningCard? card = state.extra is LearningCard
+              ? state.extra as LearningCard
+              : null;
+          final extractedTags = state.extra is List<String>
               ? state.extra as List<String>?
               : null;
           return LearningCardDetailScreen(
-            cardType: 'default', // 모든 카드에 대해 동일한 화면
+            card: card, // LearningCard 객체 전달
+            cardType: card?.category ?? state.pathParameters['cardType'] ?? 'default',
             extractedTags: extractedTags,
           );
         },
