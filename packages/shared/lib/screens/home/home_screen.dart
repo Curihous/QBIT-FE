@@ -635,6 +635,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 onViewAll: () {
                   context.push('/portfolio-positions');
                 },
+                onItemTap: (position) {
+                  context.push('/portfolio-positions/detail/${Uri.encodeComponent(position.symbol)}');
+                },
               ),
             // 하단 여백 추가
             SizedBox(height: context.h(100)),

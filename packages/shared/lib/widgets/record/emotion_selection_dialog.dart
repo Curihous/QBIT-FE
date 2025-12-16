@@ -38,9 +38,6 @@ class EmotionSelectionDialog extends StatelessWidget {
           color: AppColors.gray0,
           borderRadius: BorderRadius.circular(AppBorderRadius.lg),
           boxShadow: AppShadows.main,
-              spreadRadius: 0,
-            ),
-          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
